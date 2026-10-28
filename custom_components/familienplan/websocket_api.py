@@ -19,10 +19,20 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, SIGNAL_UPDATED
 from .core import Family
+from .photos import signed_url
+from .takeover import takeover_terms
 
 
-def snapshot(family: Family, now: datetime, user_id: str | None, is_admin: bool) -> dict[str, Any]:
+def snapshot(
+    hass: HomeAssistant,
+    entry,
+    now: datetime,
+    user_id: str | None,
+    is_admin: bool,
+) -> dict[str, Any]:
+    family: Family = entry.runtime_data.family
     actor = family.actor_for_user(user_id, is_admin=is_admin)
+    allowed, multiplier, _, _ = takeover_terms(entry, now)
 
     def iso(value: datetime | None) -> str | None:
         return value.isoformat() if value else None
@@ -30,6 +40,7 @@ def snapshot(family: Family, now: datetime, user_id: str | None, is_admin: bool)
     return {
         "me": actor.member.id if actor.member else None,
         "is_manager": actor.is_manager,
+        "takeover": {"allowed": allowed, "multiplier": multiplier},
         "members": [
             {
                 "id": m.id,
@@ -56,6 +67,13 @@ def snapshot(family: Family, now: datetime, user_id: str | None, is_admin: bool)
                 "due": iso(c.due),
                 "rotation": c.rotation,
                 "requires_approval": c.requires_approval,
+                "requires_photo": c.requires_photo,
+                "claim_multiplier": c.claim_multiplier,
+                "claim_taken_from": c.claim_taken_from,
+                # Fotos sehen nur Eltern, über einen kurz gültigen Link.
+                "photo_url": (
+                    signed_url(hass, c.photo) if c.photo and actor.is_manager else None
+                ),
                 "assignees": list(c.assignees),
                 "responsible": family.responsible(c, now),
                 "claimed_by": c.claimed_by,
@@ -89,7 +107,7 @@ async def ws_subscribe(
         connection.send_message(
             websocket_api.event_message(
                 msg["id"],
-                snapshot(entry.runtime_data.family, dt_util.utcnow(), user.id, user.is_admin),
+                snapshot(hass, entry, dt_util.utcnow(), user.id, user.is_admin),
             )
         )
 

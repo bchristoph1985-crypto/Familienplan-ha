@@ -1,7 +1,7 @@
 """Konstanten für Familienplan."""
 
 DOMAIN = "familienplan"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -15,6 +15,7 @@ ATTR_RECURRENCE = "recurrence"
 ATTR_DUE = "due"
 ATTR_ROTATION = "rotation"
 ATTR_REQUIRES_APPROVAL = "requires_approval"
+ATTR_REQUIRES_PHOTO = "requires_photo"
 ATTR_UNTIL = "until"
 ATTR_START = "start"
 ATTR_SUBSTITUTE = "substitute"
@@ -31,6 +32,19 @@ CONF_RELEASE_TIME = "release_time"
 DEFAULT_LOCK_TIME = "20:00"
 DEFAULT_RELEASE_TIME = "05:00"
 
+CONF_TAKEOVER_FROM = "takeover_from"
+CONF_TAKEOVER_DOUBLE = "takeover_double_from"
+CONF_TAKEOVER_MAX = "takeover_max"
+DEFAULT_TAKEOVER_FROM = "16:30"
+DEFAULT_TAKEOVER_DOUBLE = "19:00"
+DEFAULT_TAKEOVER_MAX = 2
+
+CONF_PHOTO_RETENTION = "photo_retention_days"
+DEFAULT_PHOTO_RETENTION = 7
+PHOTO_DIR = "familienplan_photos"
+PHOTO_URL = "/api/familienplan/photo"
+PHOTO_MAX_BYTES = 10 * 1024 * 1024
+
 SERVICE_CREATE_CHORE = "create_chore"
 SERVICE_DELETE_CHORE = "delete_chore"
 SERVICE_UPDATE_CHORE = "update_chore"
@@ -43,3 +57,4 @@ SERVICE_END_ABSENCE = "end_absence"
 SERVICE_SET_DEVICES = "set_devices"
 SERVICE_GRANT_PASS = "grant_pass"
 SERVICE_REVOKE_PASS = "revoke_pass"
+SERVICE_TAKE_OVER = "take_over_chore"

@@ -20,7 +20,8 @@
           "remove_member": "Remove family member",
           "reminders": "Reminders",
           "consequences": "Internet lock",
-          "devices": "Devices per child"
+          "devices": "Devices per child",
+          "rules": "Taking over & photos"
         }
       },
       "add_member": {
@@ -73,6 +74,16 @@
         "description": "Choose the internet switches of leisure devices, e.g. from the FRITZ!Box integration (Internet access).",
         "data": {
           "devices": "Devices"
+        }
+      },
+      "rules": {
+        "title": "Taking over & photos",
+        "description": "Siblings can take over open chores of others and get the points. Leave the time empty to turn it off.",
+        "data": {
+          "takeover_from": "Taking over allowed from",
+          "takeover_double_from": "Double points from",
+          "takeover_max": "Max. per child and day",
+          "photo_retention_days": "Delete photos after (days)"
         }
       }
     },
@@ -145,6 +156,10 @@
         "requires_approval": {
           "name": "Needs approval",
           "description": "A parent must confirm."
+        },
+        "requires_photo": {
+          "name": "Photo proof",
+          "description": "Children must take a photo to report it done."
         }
       }
     },
@@ -183,6 +198,10 @@
         "requires_approval": {
           "name": "Needs approval",
           "description": "A parent must confirm."
+        },
+        "requires_photo": {
+          "name": "Photo proof",
+          "description": "Children must take a photo to report it done."
         }
       }
     },
@@ -307,6 +326,20 @@
         "member": {
           "name": "Member",
           "description": "Name or ID."
+        }
+      }
+    },
+    "take_over_chore": {
+      "name": "Take over chore",
+      "description": "A sibling takes over someone else's open chore and gets the points.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID from the chore sensor's chore_id attribute."
+        },
+        "member": {
+          "name": "Member",
+          "description": "Who did it. Defaults to the caller."
         }
       }
     }
