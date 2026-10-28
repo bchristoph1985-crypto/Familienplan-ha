@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.7.0";
+const VERSION = "0.8.0";
 
 const T = {
   de: {
@@ -66,6 +66,9 @@ const T = {
     photoDone: "📷 Foto & erledigt",
     photoOf: "Foto ansehen",
     lastPhoto: "Letztes Foto",
+    minAge: "Ab Alter",
+    fromAge: "ab {n} J.",
+    years: "{n} J.",
     uploading: "Foto wird hochgeladen …",
     helpOthers: "Geschwistern helfen",
     helpHint: "Übernimm eine Aufgabe und hol dir die Punkte.",
@@ -127,6 +130,9 @@ const T = {
     photoDone: "📷 Photo & done",
     photoOf: "View photo",
     lastPhoto: "Last photo",
+    minAge: "Minimum age",
+    fromAge: "{n}+",
+    years: "{n} y",
     uploading: "Uploading photo …",
     helpOthers: "Help your siblings",
     helpHint: "Take over a chore and earn the points.",
@@ -387,7 +393,7 @@ class FamilienplanCard extends HTMLElement {
   }
 
   _emptyForm() {
-    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, editId: null };
+    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, editId: null };
   }
 
   _resetForm() {
@@ -413,6 +419,7 @@ class FamilienplanCard extends HTMLElement {
       rotation: c.rotation,
       approval: c.requires_approval,
       photo: c.requires_photo,
+      minAge: c.min_age || 0,
       editId: c.id,
     };
     this._render();
@@ -433,6 +440,7 @@ class FamilienplanCard extends HTMLElement {
         rotation: f.rotation,
         requires_approval: f.approval,
         requires_photo: f.photo,
+        min_age: Number(f.minAge) || 0,
       });
       this._resetForm();
       this._render();
@@ -446,6 +454,7 @@ class FamilienplanCard extends HTMLElement {
       rotation: f.rotation,
       requires_approval: f.approval,
       requires_photo: f.photo,
+      min_age: Number(f.minAge) || 0,
     };
     if (f.due) data.due = f.due;
     await this._call("create_chore", data);
@@ -668,7 +677,7 @@ class FamilienplanCard extends HTMLElement {
             <div class="title">${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.requires_photo ? " · 📷" : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.requires_photo ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -687,7 +696,9 @@ class FamilienplanCard extends HTMLElement {
           ${this._data.members
             .map(
               (m) =>
-                `<label class="check"><input type="checkbox" data-field="assignee" value="${esc(m.id)}" ${f.assignees.includes(m.id) ? "checked" : ""}>${esc(m.name)}</label>`,
+                `<label class="check"><input type="checkbox" data-field="assignee" value="${esc(m.id)}" ${f.assignees.includes(m.id) ? "checked" : ""}>${esc(m.name)}${
+                  m.age != null ? ` <span class="muted">(${esc(this._t("years", { n: m.age }))})</span>` : ""
+                }</label>`,
             )
             .join("")}
         </fieldset>
@@ -697,6 +708,7 @@ class FamilienplanCard extends HTMLElement {
             .join("")}</select></label>
           <label>${this._t("due")}<input type="datetime-local" data-field="due" value="${esc(f.due)}"></label>
           <label>${this._t("pointsLabel")}<input type="number" min="0" max="100" data-field="points" value="${esc(f.points)}"></label>
+          <label>${this._t("minAge")}<input type="number" min="0" max="18" data-field="minAge" value="${esc(f.minAge)}"></label>
         </div>
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>

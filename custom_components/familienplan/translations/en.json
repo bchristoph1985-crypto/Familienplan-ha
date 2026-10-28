@@ -28,10 +28,14 @@
       },
       "chores": {
         "title": "What do you want to start with?",
-        "description": "These chores are created right away. Shared chores rotate between the children. You can change everything later.",
+        "description": "Suggestions that suit your children's ages. Shared chores rotate, children who are too young are skipped. Add your own chores afterwards in the sidebar under Familienplan → Chores.",
         "data": {
           "starters": "Starter chores"
         }
+      },
+      "ages": {
+        "title": "How old are the children?",
+        "description": "Age in years. Each child only gets chores that suit their age and automatically moves into new chores as they grow older. You can leave it empty."
       }
     },
     "error": {
@@ -51,7 +55,8 @@
           "consequences": "Internet lock",
           "devices": "Devices per child",
           "rules": "Taking over & photos",
-          "announcements": "Speaker announcements"
+          "announcements": "Speaker announcements",
+          "ages": "Children's ages"
         }
       },
       "add_member": {
@@ -129,6 +134,10 @@
           "announce_times": "Comma separated, e.g. 17:00, 18:30. Leave empty to turn off.",
           "announce_notify": "For example notify.alexa_media_kitchen."
         }
+      },
+      "ages": {
+        "title": "How old are the children?",
+        "description": "Age in years. Each child only gets chores that suit their age and automatically moves into new chores as they grow older. You can leave it empty."
       }
     },
     "error": {
@@ -154,12 +163,12 @@
     },
     "starter": {
       "options": {
-        "table": "Set the table (daily, rotating)",
-        "dishwasher": "Empty the dishwasher (daily, rotating)",
-        "trash": "Take out the trash (daily, rotating)",
-        "room": "Tidy up room (weekly, every child)",
-        "bathroom": "Clean the bathroom (weekly, rotating)",
-        "vacuum": "Vacuum (weekly, rotating)"
+        "table": "Set the table (daily, rotating, 4+)",
+        "dishwasher": "Empty the dishwasher (daily, rotating, 7+)",
+        "trash": "Take out the trash (daily, rotating, 8+)",
+        "room": "Tidy up room (weekly, every child, 4+)",
+        "bathroom": "Clean the bathroom (weekly, rotating, 10+)",
+        "vacuum": "Vacuum (weekly, rotating, 8+)"
       }
     }
   },
@@ -215,6 +224,10 @@
         "requires_photo": {
           "name": "Photo proof",
           "description": "Children must take a photo to report it done."
+        },
+        "min_age": {
+          "name": "Minimum age",
+          "description": "Only children of this age or older take part. 0 = everyone."
         }
       }
     },
@@ -257,6 +270,10 @@
         "requires_photo": {
           "name": "Photo proof",
           "description": "Children must take a photo to report it done."
+        },
+        "min_age": {
+          "name": "Minimum age",
+          "description": "Only children of this age or older take part. 0 = everyone."
         }
       }
     },
@@ -405,6 +422,20 @@
         "message": {
           "name": "Text",
           "description": "Leave empty to announce open chores."
+        }
+      }
+    },
+    "set_age": {
+      "name": "Set age",
+      "description": "A child's age in years. Chores with a minimum age only go to children who are old enough.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        },
+        "age": {
+          "name": "Age",
+          "description": "In years."
         }
       }
     }

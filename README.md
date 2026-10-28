@@ -2,20 +2,24 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.7.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.8.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
-- **Einrichtung in vier Schritten** über *Einstellungen → Geräte & Dienste → Integration hinzufügen → Familienplan*:
+- **Einrichtung in fünf kurzen Schritten** über *Einstellungen → Geräte & Dienste → Integration hinzufügen → Familienplan*:
   1. Name der Familie
   2. Wer gehört dazu: die Personen aus Home Assistant sind schon angehakt, Kinder ohne eigenes Konto einfach mit Namen eintragen
   3. Wer sind die Eltern: HA-Administratoren sind vorgeschlagen
-  4. Startaufgaben ankreuzen (z. B. Spülmaschine reihum, Zimmer aufräumen je Kind)
+  4. Wie alt sind die Kinder (freiwillig)
+  5. Startaufgaben ankreuzen, passend zum Alter vorgeschlagen (z. B. Spülmaschine reihum ab 7, Zimmer aufräumen je Kind)
+
+  Eigene Aufgaben legt man danach unter *Familienplan → Aufgaben* an.
 
   Die Handys für Erinnerungen werden über die Companion-App automatisch zugeordnet. Danach erscheint links in der Seitenleiste **Familienplan**, ein Dashboard muss niemand einrichten.
 - Weitere Mitglieder, Erinnerungen, Ansagen, Internetsperre und Regeln später unter *Konfigurieren*
 - Aufgaben: einmalig, täglich, wöchentlich, alle 2 Wochen; Reihum-Rotation; Punkte; Elternfreigabe
 - Überfällig-Erkennung (jede Minute)
+- **Alter**: Je Kind ein Alter, je Aufgabe ein Mindestalter („ab 8“). Zu junge Kinder werden bei Reihum übersprungen und rücken automatisch nach, sobald sie alt genug sind. Unbekanntes Alter zählt als alt genug. Alter ändern unter *Konfigurieren → Alter der Kinder* oder per Dienst `familienplan.set_age`.
 - Abwesenheit (z. B. Klassenfahrt, krank) mit Beginn, Ende und Vertretung. Bei Rotation ist automatisch das nächste Kind dran; ohne Rotation übernimmt die Vertretung. Ist niemand da, ruht die Aufgabe und wird nicht überfällig.
 - Erinnerungen per HA-Push an Kinder zu einstellbaren Uhrzeiten (Standard 15:00, 17:00, 18:30), nur wenn noch etwas offen ist; Sammelnachricht an Eltern (Standard 19:00)
 - **Ansagen über Lautsprecher**: Zu einstellbaren Uhrzeiten (Standard 17:00, 18:30) sagt Familienplan an, wer heute noch etwas offen hat, z. B. „Lucas, bei dir ist noch offen: Müll und Tisch decken.“ Ist alles erledigt, bleibt es still. Geht über jede Sprachausgabe von HA auf beliebige Lautsprecher (Sonos, Google, Piper usw.) und optional über Alexa Media Player. Dienst `familienplan.announce` für eigene Ansagen aus Automationen.

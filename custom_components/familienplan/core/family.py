@@ -107,15 +107,23 @@ class Family:
         except KeyError:
             raise FamilyError(f"Unbekannte Aufgabe: {chore_id}") from None
 
-    def _available(self, member_id: str, now: datetime) -> bool:
+    def _available(self, member_id: str, now: datetime, min_age: int = 0) -> bool:
         member = self.members.get(member_id)
-        return member is not None and not member.is_away(now)
+        return (
+            member is not None
+            and not member.is_away(now)
+            and member.old_enough(min_age, now)
+        )
 
-    def _substitute(self, member_id: str, now: datetime) -> str | None:
+    def _substitute(self, member_id: str, now: datetime, min_age: int = 0) -> str | None:
         member = self.members.get(member_id)
         if member is None or member.substitute_id is None:
             return None
-        return member.substitute_id if self._available(member.substitute_id, now) else None
+        return (
+            member.substitute_id
+            if self._available(member.substitute_id, now, min_age)
+            else None
+        )
 
     def responsible(self, chore: Chore, now: datetime) -> list[str]:
         """Wer gerade dran ist, mit Abwesenheit und Vertretung.
@@ -123,23 +131,28 @@ class Family:
         Rotation: Wer abwesend ist, wird übersprungen. Sind alle weg, übernimmt
         die Vertretung der Person, die eigentlich dran wäre.
         Ohne Rotation: Abwesende werden durch ihre Vertretung ersetzt.
+        Kinder unter dem Mindestalter der Aufgabe sind nie dran.
         Leere Liste heißt: niemand da, die Aufgabe ruht.
         """
         if not chore.assignees:
             return []
+        age = chore.min_age
         if chore.rotation:
             count = len(chore.assignees)
             for step in range(count):
                 member_id = chore.assignees[(chore.rotation_index + step) % count]
-                if self._available(member_id, now):
+                if self._available(member_id, now, age):
                     return [member_id]
-            sub = self._substitute(chore.assignees[chore.rotation_index % count], now)
+            sub = self._substitute(chore.assignees[chore.rotation_index % count], now, age)
             return [sub] if sub else []
         result = []
         for member_id in chore.assignees:
-            if self._available(member_id, now):
+            member = self.members.get(member_id)
+            if member is None or not member.old_enough(age, now):
+                continue  # zu jung: die Aufgabe ist (noch) nicht für dieses Kind
+            if self._available(member_id, now, age):
                 result.append(member_id)
-            elif sub := self._substitute(member_id, now):
+            elif sub := self._substitute(member_id, now, age):
                 result.append(sub)
         return list(dict.fromkeys(result))
 
@@ -180,6 +193,15 @@ class Family:
             raise FamilyError("Dieses HA-Konto gehört schon zu einem Mitglied.")
         member = Member(uuid.uuid4().hex, name, role, user_id, notify_service)
         self.members[member.id] = member
+        return member
+
+    def set_age(self, actor: Actor, member_id: str, age: int | None, now: datetime) -> Member:
+        """Alter in Jahren setzen (gespeichert als Geburtsjahr). None löscht es."""
+        self._require_manager(actor)
+        member = self.member(member_id)
+        if age is not None and not 0 <= age <= 120:
+            raise FamilyError("Bitte ein Alter zwischen 0 und 120 angeben.")
+        member.birth_year = None if age is None else now.year - age
         return member
 
     def remove_member(self, actor: Actor, member_id: str) -> None:
@@ -296,6 +318,7 @@ class Family:
         rotation: bool = False,
         requires_approval: bool = False,
         requires_photo: bool = False,
+        min_age: int = 0,
     ) -> Chore:
         self._require_manager(actor)
         name = name.strip()
@@ -319,6 +342,7 @@ class Family:
             rotation=rotation,
             requires_approval=requires_approval,
             requires_photo=requires_photo,
+            min_age=max(0, min_age),
         )
         self.chores[chore.id] = chore
         return chore
@@ -338,6 +362,7 @@ class Family:
         rotation: bool | None = None,
         requires_approval: bool | None = None,
         requires_photo: bool | None = None,
+        min_age: int | None = None,
     ) -> Chore:
         """Nur übergebene Felder ändern. Punkte und Verlauf bleiben erhalten."""
         self._require_manager(actor)
@@ -371,6 +396,8 @@ class Family:
             chore.requires_approval = requires_approval
         if requires_photo is not None:
             chore.requires_photo = requires_photo
+        if min_age is not None:
+            chore.min_age = max(0, min_age)
         chore.recurrence = new_recurrence
         chore.due = new_due
         if chore.state is ChoreState.OVERDUE and (chore.due is None or chore.due > now):
@@ -445,6 +472,8 @@ class Family:
             raise PermissionDenied("Du kannst nur für dich selbst übernehmen.")
         if taker.role is not Role.CHILD:
             raise FamilyError("Nur Kinder können Aufgaben übernehmen.")
+        if not taker.old_enough(chore.min_age, now):
+            raise FamilyError(f"Diese Aufgabe ist erst ab {chore.min_age} Jahren.")
         responsible = self.responsible(chore, now)
         if not responsible or member_id in responsible:
             raise FamilyError("Diese Aufgabe kannst du nicht übernehmen.")

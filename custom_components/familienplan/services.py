@@ -17,7 +17,9 @@ from .const import (
     ATTR_CHORE_ID,
     ATTR_DEVICES,
     ATTR_DUE,
+    ATTR_AGE,
     ATTR_MEMBER,
+    ATTR_MIN_AGE,
     ATTR_NAME,
     ATTR_POINTS,
     ATTR_RECURRENCE,
@@ -41,6 +43,7 @@ from .const import (
     SERVICE_TAKE_OVER,
     SERVICE_REJECT_CHORE,
     SERVICE_SET_ABSENCE,
+    SERVICE_SET_AGE,
     SERVICE_UNDO_CLAIM,
     SERVICE_UPDATE_CHORE,
 )
@@ -65,6 +68,7 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_ROTATION, default=False): cv.boolean,
         vol.Optional(ATTR_REQUIRES_APPROVAL, default=False): cv.boolean,
         vol.Optional(ATTR_REQUIRES_PHOTO, default=False): cv.boolean,
+        vol.Optional(ATTR_MIN_AGE, default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=18)),
     }
 )
 
@@ -79,6 +83,7 @@ UPDATE_SCHEMA = CHORE_SCHEMA.extend(
         vol.Optional(ATTR_ROTATION): cv.boolean,
         vol.Optional(ATTR_REQUIRES_APPROVAL): cv.boolean,
         vol.Optional(ATTR_REQUIRES_PHOTO): cv.boolean,
+        vol.Optional(ATTR_MIN_AGE): vol.All(vol.Coerce(int), vol.Range(min=0, max=18)),
     }
 )
 
@@ -106,6 +111,13 @@ PASS_SCHEMA = vol.Schema(
     {vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_UNTIL): cv.datetime}
 )
 
+
+AGE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEMBER): cv.string,
+        vol.Required(ATTR_AGE): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=120))),
+    }
+)
 
 ANNOUNCE_SCHEMA = vol.Schema({vol.Optional(ATTR_MESSAGE): cv.string})
 
@@ -177,6 +189,7 @@ async def _create(hass, call, data, actor) -> None:
         rotation=call.data[ATTR_ROTATION],
         requires_approval=call.data[ATTR_REQUIRES_APPROVAL],
         requires_photo=call.data[ATTR_REQUIRES_PHOTO],
+        min_age=call.data[ATTR_MIN_AGE],
     )
 
 
@@ -198,6 +211,7 @@ async def _update(hass, call, data, actor) -> None:
         rotation=d.get(ATTR_ROTATION),
         requires_approval=d.get(ATTR_REQUIRES_APPROVAL),
         requires_photo=d.get(ATTR_REQUIRES_PHOTO),
+        min_age=d.get(ATTR_MIN_AGE),
     )
 
 
@@ -245,6 +259,12 @@ async def _announce(hass, call, data, actor) -> None:
         hass, data.family, dt_util.utcnow()
     ) or _text(hass)["say_done"]
     await async_announce(hass, data.entry, message)
+
+
+async def _set_age(hass, call, data, actor) -> None:
+    data.family.set_age(
+        actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_AGE], dt_util.utcnow()
+    )
 
 
 async def _undo(hass, call, data, actor) -> None:
@@ -306,5 +326,6 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_GRANT_PASS, _grant_pass, PASS_SCHEMA),
         (SERVICE_REVOKE_PASS, _revoke_pass, END_ABSENCE_SCHEMA),
         (SERVICE_ANNOUNCE, _announce, ANNOUNCE_SCHEMA),
+        (SERVICE_SET_AGE, _set_age, AGE_SCHEMA),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

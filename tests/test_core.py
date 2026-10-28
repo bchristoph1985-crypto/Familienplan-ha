@@ -436,3 +436,49 @@ def test_uebernehmen_mit_fotopflicht(family: Family) -> None:
         family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, day_start=DAY_START)
     family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, day_start=DAY_START, photo="b.jpg")
     assert chore.state is ChoreState.DONE and chore.photo == "b.jpg"
+
+
+# -- Alter ----------------------------------------------------------------------
+
+
+def test_mindestalter_bei_rotation_und_ohne(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    family.set_age(SYSTEM, lucas.id, 12, NOW)
+    family.set_age(SYSTEM, osmo.id, 6, NOW)
+    assert osmo.age(NOW) == 6
+    rot = family.create_chore(
+        SYSTEM, "Müll", [osmo.id, lucas.id], rotation=True, min_age=8,
+        recurrence=Recurrence.DAILY, due=NOW,
+    )
+    assert family.responsible(rot, NOW) == [lucas.id]
+    both = family.create_chore(SYSTEM, "Bad", [osmo.id, lucas.id], min_age=8)
+    assert family.responsible(both, NOW) == [lucas.id]
+    # Osmo kann nicht melden, die Aufgabe ist nicht seine
+    with pytest.raises(PermissionDenied):
+        family.claim(actor(family, "Osmo"), both.id, osmo.id, NOW)
+    # Zwei Jahre später rückt Osmo nach
+    later = NOW.replace(year=NOW.year + 2)
+    assert family.responsible(both, later) == [osmo.id, lucas.id]
+
+
+def test_unbekanntes_alter_zaehlt_als_alt_genug(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    chore = family.create_chore(SYSTEM, "Bad", [lucas.id], min_age=10)
+    assert family.responsible(chore, NOW) == [lucas.id]
+
+
+def test_zu_jung_zum_uebernehmen(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    family.set_age(SYSTEM, osmo.id, 6, NOW)
+    chore = family.create_chore(SYSTEM, "Bad", [lucas.id], min_age=10)
+    with pytest.raises(FamilyError):
+        family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, day_start=NOW.replace(hour=0))
+
+
+def test_alter_nur_eltern_und_gespeichert(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    with pytest.raises(PermissionDenied):
+        family.set_age(actor(family, "Lucas"), lucas.id, 18, NOW)
+    family.set_age(SYSTEM, lucas.id, 12, NOW)
+    restored = Family.from_dict(family.to_dict())
+    assert restored.members[lucas.id].age(NOW) == 12
