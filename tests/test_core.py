@@ -358,3 +358,81 @@ def test_kind_kann_sich_nicht_freischalten(family: Family) -> None:
         family.set_devices(actor(family, "Lucas"), lucas.id, [])
     with pytest.raises(FamilyError):
         family.set_devices(SYSTEM, by_name(family, "Papa").id, ["switch.x"])
+
+
+# -- Wegmopsen und Fotonachweis --------------------------------------------------
+
+DAY_START = NOW.replace(hour=0)
+
+
+def test_kind_braucht_foto_eltern_nicht(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    chore = family.create_chore(SYSTEM, "Bad", [lucas.id], points=3, requires_photo=True)
+    with pytest.raises(FamilyError):
+        family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW)
+    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW, photo="a.jpg")
+    assert chore.state is ChoreState.DONE
+    assert chore.photo == "a.jpg"
+
+    chore2 = family.create_chore(SYSTEM, "Flur", [lucas.id], requires_photo=True)
+    family.claim(actor(family, "Papa"), chore2.id, lucas.id, NOW)
+    assert chore2.state is ChoreState.DONE
+
+
+def test_uebernehmen_gibt_punkte_mit_faktor_und_rotation_laeuft_weiter(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    chore = family.create_chore(
+        SYSTEM, "Spülmaschine", [lucas.id, osmo.id], points=2, rotation=True,
+        recurrence=Recurrence.DAILY, due=NOW + timedelta(hours=2),
+    )
+    assert family.responsible(chore, NOW) == [lucas.id]
+    family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, multiplier=2, day_start=DAY_START)
+    assert osmo.points == 4
+    assert lucas.points == 0
+    # Weiter, als hätte Lucas erledigt: jetzt ist Osmo dran.
+    assert family.responsible(chore, NOW) == [osmo.id]
+    assert chore.claim_multiplier == 1 and chore.claim_taken_from is None
+
+
+def test_uebernehmen_mit_freigabe_merkt_faktor(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    chore = family.create_chore(SYSTEM, "Müll", [lucas.id], points=1, requires_approval=True)
+    family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, multiplier=2, day_start=DAY_START)
+    assert chore.state is ChoreState.CLAIMED
+    assert chore.claim_taken_from == lucas.id
+    family.approve(actor(family, "Papa"), chore.id, NOW)
+    assert osmo.points == 2
+
+
+def test_eigene_aufgabe_und_fuer_andere_uebernehmen_verboten(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    chore = family.create_chore(SYSTEM, "Müll", [lucas.id])
+    with pytest.raises(FamilyError):
+        family.take_over(actor(family, "Lucas"), chore.id, lucas.id, NOW, day_start=DAY_START)
+    with pytest.raises(PermissionDenied):
+        family.take_over(actor(family, "Lucas"), chore.id, osmo.id, NOW, day_start=DAY_START)
+
+
+def test_hoechstens_zwei_pro_tag_auch_nach_zuruecknehmen(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    chores = [
+        family.create_chore(SYSTEM, f"A{i}", [lucas.id], requires_approval=True) for i in range(3)
+    ]
+    osmo_actor = actor(family, "Osmo")
+    family.take_over(osmo_actor, chores[0].id, osmo.id, NOW, day_start=DAY_START)
+    family.undo_claim(osmo_actor, chores[0].id)
+    family.take_over(osmo_actor, chores[1].id, osmo.id, NOW, day_start=DAY_START)
+    with pytest.raises(FamilyError):
+        family.take_over(osmo_actor, chores[2].id, osmo.id, NOW, day_start=DAY_START)
+    # Am nächsten Tag geht es wieder.
+    tomorrow = NOW + timedelta(days=1)
+    family.take_over(osmo_actor, chores[2].id, osmo.id, tomorrow, day_start=DAY_START + timedelta(days=1))
+
+
+def test_uebernehmen_mit_fotopflicht(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    chore = family.create_chore(SYSTEM, "Bad", [lucas.id], requires_photo=True)
+    with pytest.raises(FamilyError):
+        family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, day_start=DAY_START)
+    family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, day_start=DAY_START, photo="b.jpg")
+    assert chore.state is ChoreState.DONE and chore.photo == "b.jpg"

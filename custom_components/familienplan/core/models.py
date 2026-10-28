@@ -96,8 +96,13 @@ class Chore:
     rotation: bool = False
     rotation_index: int = 0
     requires_approval: bool = False
+    requires_photo: bool = False
     state: ChoreState = ChoreState.OPEN
     claimed_by: str | None = None
+    # Bei Übernahme durch Geschwister: Punkte-Faktor und von wem übernommen
+    claim_multiplier: int = 1
+    claim_taken_from: str | None = None
+    photo: str | None = None  # Dateiname des letzten Fotonachweises
     last_completed_by: str | None = None
     last_completed_at: datetime | None = None
     history: list[dict[str, Any]] = field(default_factory=list)
@@ -113,6 +118,10 @@ class Chore:
             "rotation": self.rotation,
             "rotation_index": self.rotation_index,
             "requires_approval": self.requires_approval,
+            "requires_photo": self.requires_photo,
+            "claim_multiplier": self.claim_multiplier,
+            "claim_taken_from": self.claim_taken_from,
+            "photo": self.photo,
             "state": self.state.value,
             "claimed_by": self.claimed_by,
             "last_completed_by": self.last_completed_by,
@@ -134,6 +143,10 @@ class Chore:
             rotation=bool(data.get("rotation", False)),
             rotation_index=int(data.get("rotation_index", 0)),
             requires_approval=bool(data.get("requires_approval", False)),
+            requires_photo=bool(data.get("requires_photo", False)),
+            claim_multiplier=int(data.get("claim_multiplier", 1)),
+            claim_taken_from=data.get("claim_taken_from"),
+            photo=data.get("photo"),
             state=ChoreState(data.get("state", ChoreState.OPEN)),
             claimed_by=data.get("claimed_by"),
             last_completed_by=data.get("last_completed_by"),

@@ -295,6 +295,7 @@ class Family:
         due: datetime | None = None,
         rotation: bool = False,
         requires_approval: bool = False,
+        requires_photo: bool = False,
     ) -> Chore:
         self._require_manager(actor)
         name = name.strip()
@@ -317,6 +318,7 @@ class Family:
             due=due,
             rotation=rotation,
             requires_approval=requires_approval,
+            requires_photo=requires_photo,
         )
         self.chores[chore.id] = chore
         return chore
@@ -335,6 +337,7 @@ class Family:
         clear_due: bool = False,
         rotation: bool | None = None,
         requires_approval: bool | None = None,
+        requires_photo: bool | None = None,
     ) -> Chore:
         """Nur übergebene Felder ändern. Punkte und Verlauf bleiben erhalten."""
         self._require_manager(actor)
@@ -366,6 +369,8 @@ class Family:
             chore.rotation = rotation
         if requires_approval is not None:
             chore.requires_approval = requires_approval
+        if requires_photo is not None:
+            chore.requires_photo = requires_photo
         chore.recurrence = new_recurrence
         chore.due = new_due
         if chore.state is ChoreState.OVERDUE and (chore.due is None or chore.due > now):
@@ -389,9 +394,19 @@ class Family:
     # -- Ablauf --------------------------------------------------------------
 
     def claim(
-        self, actor: Actor, chore_id: str, member_id: str, now: datetime
+        self,
+        actor: Actor,
+        chore_id: str,
+        member_id: str,
+        now: datetime,
+        *,
+        photo: str | None = None,
     ) -> Chore:
-        """Kind meldet erledigt. Eltern dürfen für jedes Kind melden."""
+        """Kind meldet erledigt. Eltern dürfen für jedes Kind melden.
+
+        Bei Aufgaben mit Fotopflicht brauchen Kinder ein Foto. Eltern und
+        Automationen dürfen auch ohne Foto abhaken.
+        """
         chore = self.chore(chore_id)
         self.member(member_id)
         if not actor.is_manager:
@@ -399,18 +414,75 @@ class Family:
                 raise PermissionDenied("Du kannst nur für dich selbst melden.")
             if member_id not in self.responsible(chore, now):
                 raise PermissionDenied("Diese Aufgabe ist gerade nicht deine.")
+            if chore.requires_photo and not photo:
+                raise FamilyError("Für diese Aufgabe brauchst du ein Foto.")
+        self._check_claimable(chore)
+        chore.photo = photo  # altes Foto gehört zur letzten Runde
+        self._submit(chore, member_id, now, needs_check=not actor.is_manager)
+        return chore
+
+    def take_over(
+        self,
+        actor: Actor,
+        chore_id: str,
+        member_id: str,
+        now: datetime,
+        *,
+        multiplier: int = 1,
+        max_per_day: int = 2,
+        day_start: datetime,
+        photo: str | None = None,
+    ) -> Chore:
+        """Geschwister übernimmt eine fremde, offene Aufgabe („wegmopsen“).
+
+        Die Punkte bekommt, wer übernimmt, je nach Uhrzeit mit Faktor. Bei
+        Rotation geht es danach so weiter, als hätte der eigentlich
+        Zuständige erledigt. Ob das Zeitfenster offen ist, prüft der Aufrufer.
+        """
+        chore = self.chore(chore_id)
+        taker = self.member(member_id)
+        if not actor.is_manager and (actor.member is None or actor.member.id != member_id):
+            raise PermissionDenied("Du kannst nur für dich selbst übernehmen.")
+        if taker.role is not Role.CHILD:
+            raise FamilyError("Nur Kinder können Aufgaben übernehmen.")
+        responsible = self.responsible(chore, now)
+        if not responsible or member_id in responsible:
+            raise FamilyError("Diese Aufgabe kannst du nicht übernehmen.")
+        if chore.requires_photo and not photo and not actor.is_manager:
+            raise FamilyError("Für diese Aufgabe brauchst du ein Foto.")
+        self._check_claimable(chore)
+        taken_today = sum(
+            1
+            for c in self.chores.values()
+            for h in c.history
+            if h.get("event") == "taken_over"
+            and h.get("member") == member_id
+            and datetime.fromisoformat(h["at"]) >= day_start
+        )
+        if taken_today >= max_per_day:
+            raise FamilyError(f"Du hast heute schon {max_per_day} Aufgaben übernommen.")
+
+        chore.claim_multiplier = max(1, multiplier)
+        chore.claim_taken_from = responsible[0]
+        chore.photo = photo  # altes Foto gehört zur letzten Runde
+        self._log(chore, "taken_over", member_id, now)
+        self._submit(chore, member_id, now, needs_check=not actor.is_manager)
+        return chore
+
+    @staticmethod
+    def _check_claimable(chore: Chore) -> None:
         if chore.state is ChoreState.DONE:
             raise FamilyError("Die Aufgabe ist schon erledigt.")
         if chore.state is ChoreState.CLAIMED:
             raise FamilyError("Die Aufgabe wartet schon auf Freigabe.")
 
-        if chore.requires_approval and not actor.is_manager:
+    def _submit(self, chore: Chore, member_id: str, now: datetime, *, needs_check: bool) -> None:
+        if chore.requires_approval and needs_check:
             chore.state = ChoreState.CLAIMED
             chore.claimed_by = member_id
             self._log(chore, "claimed", member_id, now)
-            return chore
-        self._complete(chore, member_id, now)
-        return chore
+        else:
+            self._complete(chore, member_id, now)
 
     def undo_claim(self, actor: Actor, chore_id: str) -> Chore:
         chore = self.chore(chore_id)
@@ -422,6 +494,7 @@ class Family:
             raise PermissionDenied("Nur die eigene Meldung lässt sich zurücknehmen.")
         chore.state = ChoreState.OPEN
         chore.claimed_by = None
+        self._reset_claim(chore)
         return chore
 
     def approve(self, actor: Actor, chore_id: str, now: datetime) -> Chore:
@@ -439,6 +512,7 @@ class Family:
             raise FamilyError("Es gibt nichts abzulehnen.")
         self._log(chore, "rejected", chore.claimed_by, now)
         chore.claimed_by = None
+        self._reset_claim(chore)
         chore.state = (
             ChoreState.OVERDUE if chore.due and chore.due < now else ChoreState.OPEN
         )
@@ -473,10 +547,13 @@ class Family:
     # -- intern --------------------------------------------------------------
 
     def _complete(self, chore: Chore, member_id: str, now: datetime) -> None:
-        self.member(member_id).points += chore.points
+        self.member(member_id).points += chore.points * chore.claim_multiplier
         chore.last_completed_by = member_id
         chore.last_completed_at = now
         chore.claimed_by = None
+        # Bei Übernahme rotiert es weiter, als hätte der Zuständige erledigt.
+        rotate_from = chore.claim_taken_from or member_id
+        self._reset_claim(chore)
         self._log(chore, "completed", member_id, now)
 
         if chore.recurrence is Recurrence.NONE:
@@ -484,15 +561,20 @@ class Family:
             return
         chore.due = _next_due(chore.due, chore.recurrence, now)
         if chore.rotation and chore.assignees:
-            # Nach der Person weiter, die es erledigt hat. So zählt auch ein
-            # Einspringen bei Abwesenheit als Runde.
+            # Nach der Person weiter, die dran war bzw. erledigt hat. So zählt
+            # auch ein Einspringen bei Abwesenheit als Runde.
             start = (
-                chore.assignees.index(member_id)
-                if member_id in chore.assignees
+                chore.assignees.index(rotate_from)
+                if rotate_from in chore.assignees
                 else chore.rotation_index
             )
             chore.rotation_index = (start + 1) % len(chore.assignees)
         chore.state = ChoreState.OPEN
+
+    @staticmethod
+    def _reset_claim(chore: Chore) -> None:
+        chore.claim_multiplier = 1
+        chore.claim_taken_from = None
 
     @staticmethod
     def _log(chore: Chore, event: str, member_id: str | None, now: datetime) -> None:

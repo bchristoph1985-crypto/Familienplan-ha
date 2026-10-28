@@ -15,6 +15,9 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
     BooleanSelector,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
     EntitySelector,
     EntitySelectorConfig,
     SelectOptionDict,
@@ -26,6 +29,14 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_CONSEQUENCES,
     CONF_LOCK_TIME,
+    CONF_PHOTO_RETENTION,
+    CONF_TAKEOVER_DOUBLE,
+    CONF_TAKEOVER_FROM,
+    CONF_TAKEOVER_MAX,
+    DEFAULT_PHOTO_RETENTION,
+    DEFAULT_TAKEOVER_DOUBLE,
+    DEFAULT_TAKEOVER_FROM,
+    DEFAULT_TAKEOVER_MAX,
     CONF_PARENT_SUMMARY_TIME,
     CONF_RELEASE_TIME,
     DEFAULT_LOCK_TIME,
@@ -86,6 +97,7 @@ class MembersOptionsFlow(OptionsFlow):
             menu.append("remove_member")
         menu.append("reminders")
         menu.append("consequences")
+        menu.append("rules")
         if any(
             m.role is Role.CHILD
             for m in self.config_entry.runtime_data.family.members.values()
@@ -242,6 +254,58 @@ class MembersOptionsFlow(OptionsFlow):
                         CONF_RELEASE_TIME,
                         default=options.get(CONF_RELEASE_TIME, DEFAULT_RELEASE_TIME),
                     ): str,
+                }
+            ),
+        )
+
+    async def async_step_rules(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Wegmopsen und Fotos."""
+        options = self.config_entry.options
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            user_input = {
+                CONF_TAKEOVER_FROM: "",
+                CONF_TAKEOVER_DOUBLE: "",
+                **user_input,
+            }
+            try:
+                parse_times(user_input[CONF_TAKEOVER_FROM])
+                parse_times(user_input[CONF_TAKEOVER_DOUBLE])
+            except ValueError:
+                errors["base"] = "invalid_time"
+            else:
+                user_input[CONF_TAKEOVER_MAX] = int(user_input[CONF_TAKEOVER_MAX])
+                user_input[CONF_PHOTO_RETENTION] = int(user_input[CONF_PHOTO_RETENTION])
+                return await self._async_finish({**options, **user_input})
+
+        def number(maximum: int) -> NumberSelector:
+            return NumberSelector(
+                NumberSelectorConfig(min=1, max=maximum, step=1, mode=NumberSelectorMode.BOX)
+            )
+
+        return self.async_show_form(
+            step_id="rules",
+            errors=errors,
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_TAKEOVER_FROM,
+                        default=options.get(CONF_TAKEOVER_FROM, DEFAULT_TAKEOVER_FROM),
+                    ): str,
+                    vol.Optional(
+                        CONF_TAKEOVER_DOUBLE,
+                        default=options.get(CONF_TAKEOVER_DOUBLE, DEFAULT_TAKEOVER_DOUBLE),
+                    ): str,
+                    vol.Required(
+                        CONF_TAKEOVER_MAX,
+                        default=options.get(CONF_TAKEOVER_MAX, DEFAULT_TAKEOVER_MAX),
+                    ): number(10),
+                    vol.Required(
+                        CONF_PHOTO_RETENTION,
+                        default=options.get(CONF_PHOTO_RETENTION, DEFAULT_PHOTO_RETENTION),
+                    ): number(90),
                 }
             ),
         )

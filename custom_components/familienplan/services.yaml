@@ -34,6 +34,10 @@ create_chore:
       default: false
       selector:
         boolean:
+    requires_photo:
+      default: false
+      selector:
+        boolean:
 delete_chore:
   fields: &chore
     chore_id:
@@ -110,6 +114,9 @@ update_chore:
     requires_approval:
       selector:
         boolean:
+    requires_photo:
+      selector:
+        boolean:
 set_devices:
   fields:
     member:
@@ -135,5 +142,14 @@ revoke_pass:
   fields:
     member:
       required: true
+      selector:
+        text:
+take_over_chore:
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    member:
       selector:
         text:

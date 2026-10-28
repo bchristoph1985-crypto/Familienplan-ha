@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 from .const import CARD_URL, DOMAIN, SIGNAL_UPDATED, STORAGE_VERSION, VERSION
 from .consequences import async_apply
 from .core import Family
+from .photos import PhotoUploadView, PhotoView, cleanup, forget_missing
 from .reminders import async_setup_reminders
 from .services import async_register_services
 from .websocket_api import async_register_websocket
@@ -58,6 +59,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async_register_services(hass)
     async_register_websocket(hass)
     await _async_register_card(hass)
+    if hass.http is not None:
+        hass.http.register_view(PhotoUploadView())
+        hass.http.register_view(PhotoView())
     return True
 
 
@@ -86,6 +90,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry)
     await data.async_tick()
     entry.async_on_unload(
         async_track_time_interval(hass, data.async_tick, timedelta(minutes=1))
+    )
+
+    async def photo_cleanup(_now=None) -> None:
+        await hass.async_add_executor_job(cleanup, hass, entry)
+        if await hass.async_add_executor_job(forget_missing, hass, entry):
+            await data.async_save()
+
+    entry.async_on_unload(
+        async_track_time_interval(hass, photo_cleanup, timedelta(hours=1))
     )
     for unsub in async_setup_reminders(hass, entry):
         entry.async_on_unload(unsub)

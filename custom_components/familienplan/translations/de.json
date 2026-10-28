@@ -20,7 +20,8 @@
           "remove_member": "Familienmitglied entfernen",
           "reminders": "Erinnerungen",
           "consequences": "Internetsperre",
-          "devices": "Geräte je Kind"
+          "devices": "Geräte je Kind",
+          "rules": "Übernehmen und Fotos"
         }
       },
       "add_member": {
@@ -73,6 +74,16 @@
         "description": "Internet-Schalter der Freizeitgeräte wählen, z. B. aus der FRITZ!Box-Integration („Internetzugang“).",
         "data": {
           "devices": "Geräte"
+        }
+      },
+      "rules": {
+        "title": "Übernehmen und Fotos",
+        "description": "Geschwister können offene Aufgaben anderer übernehmen und bekommen die Punkte. Uhrzeit leer lassen zum Ausschalten.",
+        "data": {
+          "takeover_from": "Übernehmen erlaubt ab",
+          "takeover_double_from": "Doppelte Punkte ab",
+          "takeover_max": "Höchstens pro Kind und Tag",
+          "photo_retention_days": "Fotos löschen nach (Tagen)"
         }
       }
     },
@@ -145,6 +156,10 @@
         "requires_approval": {
           "name": "Freigabe nötig",
           "description": "Ein Elternteil muss bestätigen."
+        },
+        "requires_photo": {
+          "name": "Fotonachweis",
+          "description": "Kinder müssen zum Melden ein Foto machen."
         }
       }
     },
@@ -183,6 +198,10 @@
         "requires_approval": {
           "name": "Freigabe nötig",
           "description": "Ein Elternteil muss bestätigen."
+        },
+        "requires_photo": {
+          "name": "Fotonachweis",
+          "description": "Kinder müssen zum Melden ein Foto machen."
         }
       }
     },
@@ -307,6 +326,20 @@
         "member": {
           "name": "Mitglied",
           "description": "Name oder ID."
+        }
+      }
+    },
+    "take_over_chore": {
+      "name": "Aufgabe übernehmen",
+      "description": "Ein Geschwister übernimmt eine fremde offene Aufgabe und bekommt die Punkte.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID aus dem Attribut chore_id des Aufgaben-Sensors."
+        },
+        "member": {
+          "name": "Mitglied",
+          "description": "Wer es erledigt hat. Standard: wer meldet."
         }
       }
     }

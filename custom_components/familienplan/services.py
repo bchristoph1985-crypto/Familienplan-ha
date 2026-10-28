@@ -22,6 +22,7 @@ from .const import (
     ATTR_POINTS,
     ATTR_RECURRENCE,
     ATTR_REQUIRES_APPROVAL,
+    ATTR_REQUIRES_PHOTO,
     ATTR_ROTATION,
     ATTR_START,
     ATTR_SUBSTITUTE,
@@ -35,12 +36,14 @@ from .const import (
     SERVICE_GRANT_PASS,
     SERVICE_REVOKE_PASS,
     SERVICE_SET_DEVICES,
+    SERVICE_TAKE_OVER,
     SERVICE_REJECT_CHORE,
     SERVICE_SET_ABSENCE,
     SERVICE_UNDO_CLAIM,
     SERVICE_UPDATE_CHORE,
 )
 from .consequences import next_release
+from .takeover import takeover_terms
 from .core import Actor, FamilyError, Recurrence
 
 if TYPE_CHECKING:
@@ -59,6 +62,7 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_DUE): cv.datetime,
         vol.Optional(ATTR_ROTATION, default=False): cv.boolean,
         vol.Optional(ATTR_REQUIRES_APPROVAL, default=False): cv.boolean,
+        vol.Optional(ATTR_REQUIRES_PHOTO, default=False): cv.boolean,
     }
 )
 
@@ -72,6 +76,7 @@ UPDATE_SCHEMA = CHORE_SCHEMA.extend(
         vol.Optional(ATTR_DUE): vol.Any(None, vol.All(cv.string, vol.Length(max=0)), cv.datetime),
         vol.Optional(ATTR_ROTATION): cv.boolean,
         vol.Optional(ATTR_REQUIRES_APPROVAL): cv.boolean,
+        vol.Optional(ATTR_REQUIRES_PHOTO): cv.boolean,
     }
 )
 
@@ -110,7 +115,11 @@ def _runtime(hass: HomeAssistant) -> FamilienplanData:
 async def _actor(hass: HomeAssistant, call: ServiceCall, data: FamilienplanData) -> Actor:
     user_id = call.context.user_id
     user = await hass.auth.async_get_user(user_id) if user_id else None
-    return data.family.actor_for_user(user_id, is_admin=bool(user and user.is_admin))
+    return actor_for_user(data, user_id, bool(user and user.is_admin))
+
+
+def actor_for_user(data: FamilienplanData, user_id: str | None, is_admin: bool) -> Actor:
+    return data.family.actor_for_user(user_id, is_admin=is_admin)
 
 
 def _member_id(data: FamilienplanData, value: str) -> str:
@@ -162,6 +171,7 @@ async def _create(hass, call, data, actor) -> None:
         due=due,
         rotation=call.data[ATTR_ROTATION],
         requires_approval=call.data[ATTR_REQUIRES_APPROVAL],
+        requires_photo=call.data[ATTR_REQUIRES_PHOTO],
     )
 
 
@@ -182,6 +192,7 @@ async def _update(hass, call, data, actor) -> None:
         clear_due=ATTR_DUE in d and not due,
         rotation=d.get(ATTR_ROTATION),
         requires_approval=d.get(ATTR_REQUIRES_APPROVAL),
+        requires_photo=d.get(ATTR_REQUIRES_PHOTO),
     )
 
 
@@ -189,14 +200,32 @@ async def _delete(hass, call, data, actor) -> None:
     data.family.delete_chore(actor, call.data[ATTR_CHORE_ID])
 
 
-async def _claim(hass, call, data, actor) -> None:
+def _who(data, call, actor) -> str:
     if ATTR_MEMBER in call.data:
-        member_id = _member_id(data, call.data[ATTR_MEMBER])
-    elif actor.member is not None:
-        member_id = actor.member.id
-    else:
-        raise ServiceValidationError("Bitte angeben, wer die Aufgabe erledigt hat.")
-    data.family.claim(actor, call.data[ATTR_CHORE_ID], member_id, dt_util.utcnow())
+        return _member_id(data, call.data[ATTR_MEMBER])
+    if actor.member is not None:
+        return actor.member.id
+    raise ServiceValidationError("Bitte angeben, wer die Aufgabe erledigt hat.")
+
+
+async def _claim(hass, call, data, actor) -> None:
+    data.family.claim(actor, call.data[ATTR_CHORE_ID], _who(data, call, actor), dt_util.utcnow())
+
+
+def take_over(data, actor, chore_id: str, member_id: str, photo: str | None = None) -> None:
+    """Gemeinsam für Dienst und Foto-Upload."""
+    now = dt_util.utcnow()
+    allowed, multiplier, max_per_day, day_start = takeover_terms(data.entry, now)
+    if not allowed and not actor.is_manager:
+        raise FamilyError("Übernehmen geht erst später am Tag.")
+    data.family.take_over(
+        actor, chore_id, member_id, now,
+        multiplier=multiplier, max_per_day=max_per_day, day_start=day_start, photo=photo,
+    )
+
+
+async def _take_over(hass, call, data, actor) -> None:
+    take_over(data, actor, call.data[ATTR_CHORE_ID], _who(data, call, actor))
 
 
 async def _undo(hass, call, data, actor) -> None:
@@ -248,6 +277,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_UPDATE_CHORE, _update, UPDATE_SCHEMA),
         (SERVICE_DELETE_CHORE, _delete, CHORE_SCHEMA),
         (SERVICE_CLAIM_CHORE, _claim, CLAIM_SCHEMA),
+        (SERVICE_TAKE_OVER, _take_over, CLAIM_SCHEMA),
         (SERVICE_UNDO_CLAIM, _undo, CHORE_SCHEMA),
         (SERVICE_APPROVE_CHORE, _approve, CHORE_SCHEMA),
         (SERVICE_REJECT_CHORE, _reject, CHORE_SCHEMA),
