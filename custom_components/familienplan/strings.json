@@ -21,7 +21,8 @@
           "reminders": "Reminders",
           "consequences": "Internet lock",
           "devices": "Devices per child",
-          "rules": "Taking over & photos"
+          "rules": "Taking over & photos",
+          "announcements": "Speaker announcements"
         }
       },
       "add_member": {
@@ -85,11 +86,26 @@
           "takeover_max": "Max. per child and day",
           "photo_retention_days": "Delete photos after (days)"
         }
+      },
+      "announcements": {
+        "title": "Speaker announcements",
+        "description": "At these times Familienplan announces who still has open chores today. If everything is done, it stays quiet. Choose speakers plus a text-to-speech engine (e.g. Google Translate, Piper) or a service that speaks by itself (e.g. Alexa Media Player). Both work together.",
+        "data": {
+          "announce_times": "Times",
+          "speakers": "Speakers",
+          "tts_engine": "Text-to-speech",
+          "announce_notify": "Speaking notification services"
+        },
+        "data_description": {
+          "announce_times": "Comma separated, e.g. 17:00, 18:30. Leave empty to turn off.",
+          "announce_notify": "For example notify.alexa_media_kitchen."
+        }
       }
     },
     "error": {
       "invalid_member": "Name missing or this user is already linked to a member.",
-      "invalid_time": "Please use times like 17:00."
+      "invalid_time": "Please use times like 17:00.",
+      "tts_missing": "Please also choose a text-to-speech engine for the speakers."
     }
   },
   "selector": {
@@ -340,6 +356,16 @@
         "member": {
           "name": "Member",
           "description": "Who did it. Defaults to the caller."
+        }
+      }
+    },
+    "announce": {
+      "name": "Make announcement",
+      "description": "Announces on the configured speakers what is still open today, or your own text.",
+      "fields": {
+        "message": {
+          "name": "Text",
+          "description": "Leave empty to announce open chores."
         }
       }
     }

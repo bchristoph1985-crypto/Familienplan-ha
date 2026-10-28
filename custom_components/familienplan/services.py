@@ -28,6 +28,8 @@ from .const import (
     ATTR_SUBSTITUTE,
     ATTR_UNTIL,
     DOMAIN,
+    ATTR_MESSAGE,
+    SERVICE_ANNOUNCE,
     SERVICE_APPROVE_CHORE,
     SERVICE_CLAIM_CHORE,
     SERVICE_CREATE_CHORE,
@@ -44,7 +46,7 @@ from .const import (
 )
 from .consequences import next_release
 from .takeover import takeover_terms
-from .core import Actor, FamilyError, Recurrence
+from .core import Actor, FamilyError, PermissionDenied, Recurrence
 
 if TYPE_CHECKING:
     from . import FamilienplanData
@@ -103,6 +105,9 @@ DEVICES_SCHEMA = vol.Schema(
 PASS_SCHEMA = vol.Schema(
     {vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_UNTIL): cv.datetime}
 )
+
+
+ANNOUNCE_SCHEMA = vol.Schema({vol.Optional(ATTR_MESSAGE): cv.string})
 
 
 def _runtime(hass: HomeAssistant) -> FamilienplanData:
@@ -228,6 +233,20 @@ async def _take_over(hass, call, data, actor) -> None:
     take_over(data, actor, call.data[ATTR_CHORE_ID], _who(data, call, actor))
 
 
+async def _announce(hass, call, data, actor) -> None:
+    """Jetzt ansagen: eigener Text oder, ohne Text, was heute noch offen ist."""
+    from .reminders import _text, announce_configured, announcement, async_announce  # noqa: PLC0415
+
+    if not actor.is_manager:
+        raise PermissionDenied("Nur Eltern können Ansagen machen.")
+    if not announce_configured(data.entry):
+        raise FamilyError("Es sind keine Lautsprecher eingestellt.")
+    message = call.data.get(ATTR_MESSAGE) or announcement(
+        hass, data.family, dt_util.utcnow()
+    ) or _text(hass)["say_done"]
+    await async_announce(hass, data.entry, message)
+
+
 async def _undo(hass, call, data, actor) -> None:
     data.family.undo_claim(actor, call.data[ATTR_CHORE_ID])
 
@@ -286,5 +305,6 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_SET_DEVICES, _set_devices, DEVICES_SCHEMA),
         (SERVICE_GRANT_PASS, _grant_pass, PASS_SCHEMA),
         (SERVICE_REVOKE_PASS, _revoke_pass, END_ABSENCE_SCHEMA),
+        (SERVICE_ANNOUNCE, _announce, ANNOUNCE_SCHEMA),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

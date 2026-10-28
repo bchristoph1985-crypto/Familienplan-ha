@@ -153,3 +153,9 @@ take_over_chore:
     member:
       selector:
         text:
+announce:
+  fields:
+    message:
+      selector:
+        text:
+          multiline: true

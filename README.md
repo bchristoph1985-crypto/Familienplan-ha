@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.5.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.6.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
@@ -12,11 +12,12 @@ Stand: Version 0.5.0. Noch nicht für den Alltag gedacht.
 - Überfällig-Erkennung (jede Minute)
 - Abwesenheit (z. B. Klassenfahrt, krank) mit Beginn, Ende und Vertretung. Bei Rotation ist automatisch das nächste Kind dran; ohne Rotation übernimmt die Vertretung. Ist niemand da, ruht die Aufgabe und wird nicht überfällig.
 - Erinnerungen per HA-Push an Kinder zu einstellbaren Uhrzeiten (Standard 15:00, 17:00, 18:30), nur wenn noch etwas offen ist; Sammelnachricht an Eltern (Standard 19:00)
+- **Ansagen über Lautsprecher**: Zu einstellbaren Uhrzeiten (Standard 17:00, 18:30) sagt Familienplan an, wer heute noch etwas offen hat, z. B. „Lucas, bei dir ist noch offen: Müll und Tisch decken.“ Ist alles erledigt, bleibt es still. Geht über jede Sprachausgabe von HA auf beliebige Lautsprecher (Sonos, Google, Piper usw.) und optional über Alexa Media Player. Dienst `familienplan.announce` für eigene Ansagen aus Automationen.
 - Sensoren: Punkte je Mitglied, Status je Aufgabe
 - **Internetsperre** (ausgeschaltet bis man sie aktiviert): Eltern wählen je Kind Internet-Schalter von Freizeitgeräten (z. B. FRITZ!Box „Internetzugang“). Hat das Kind im Sperrzeitraum (Standard 20:00–05:00) überfällige Aufgaben, gehen diese Schalter aus. Sie gehen wieder an, sobald alles erledigt oder gemeldet ist, spätestens am Ende des Zeitraums. Schaltet jemand ein gesperrtes Gerät wieder an, wird es nach spätestens einer Minute erneut gesperrt. Eltern können eine Freikarte geben. Abwesende Kinder werden nie gesperrt. Familienplan gibt nur Geräte frei, die es selbst gesperrt hat, und fasst keine anderen Schalter an.
 - **Fotonachweis** je Aufgabe: Kinder machen beim Abhaken ein Foto (Kamera öffnet sich in der Karte). Fotos bleiben lokal in `config/familienplan_photos`, sind nicht öffentlich, nur Eltern sehen sie über einen kurz gültigen Link. Nach 7 Tagen (einstellbar) werden sie gelöscht.
 - **Aufgaben übernehmen („wegmopsen“)**: Ab 16:30 können Kinder offene Aufgaben der Geschwister übernehmen und bekommen die Punkte, ab 19:00 doppelt. Höchstens 2 pro Tag. Bei Reihum-Aufgaben geht die Reihenfolge danach normal weiter. Zeiten und Anzahl unter *Konfigurieren → Regeln*.
-- Dienste: `familienplan.create_chore`, `update_chore`, `delete_chore`, `claim_chore`, `take_over_chore`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`, `set_devices`, `grant_pass`, `revoke_pass`
+- Dienste: `familienplan.create_chore`, `update_chore`, `delete_chore`, `claim_chore`, `take_over_chore`, `announce`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`, `set_devices`, `grant_pass`, `revoke_pass`
 
 ## Dashboard-Karte
 
@@ -61,6 +62,6 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 ## Offen
 
 - Name und Lizenz (siehe Phase-0-Dokument)
-- Erinnerung nur, wenn das Kind zu Hause ist; Ansagen über Lautsprecher
+- Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
 - Pro-Funktionen und Lizenzschlüssel (Phase 3)

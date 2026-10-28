@@ -1,7 +1,7 @@
 """Konstanten für Familienplan."""
 
 DOMAIN = "familienplan"
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -25,6 +25,13 @@ CONF_REMINDER_TIMES = "reminder_times"
 CONF_PARENT_SUMMARY_TIME = "parent_summary_time"
 DEFAULT_REMINDER_TIMES = "15:00, 17:00, 18:30"
 DEFAULT_PARENT_SUMMARY_TIME = "19:00"
+
+CONF_ANNOUNCE_TIMES = "announce_times"
+CONF_SPEAKERS = "speakers"
+CONF_TTS_ENGINE = "tts_engine"
+CONF_ANNOUNCE_NOTIFY = "announce_notify"
+DEFAULT_ANNOUNCE_TIMES = "17:00, 18:30"
+ATTR_MESSAGE = "message"
 
 CONF_CONSEQUENCES = "consequences"
 CONF_LOCK_TIME = "lock_time"
@@ -58,3 +65,4 @@ SERVICE_SET_DEVICES = "set_devices"
 SERVICE_GRANT_PASS = "grant_pass"
 SERVICE_REVOKE_PASS = "revoke_pass"
 SERVICE_TAKE_OVER = "take_over_chore"
+SERVICE_ANNOUNCE = "announce"
