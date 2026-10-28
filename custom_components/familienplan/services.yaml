@@ -55,3 +55,25 @@ approve_chore:
   fields: *chore
 reject_chore:
   fields: *chore
+set_absence:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    until:
+      required: true
+      selector:
+        datetime:
+    start:
+      selector:
+        datetime:
+    substitute:
+      selector:
+        text:
+end_absence:
+  fields:
+    member:
+      required: true
+      selector:
+        text:

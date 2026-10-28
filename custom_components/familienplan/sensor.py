@@ -10,6 +10,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from . import FamilienplanConfigEntry, FamilienplanData
 from .const import DOMAIN, SIGNAL_UPDATED
@@ -86,13 +87,19 @@ class MemberPointsSensor(_FamilienplanSensor):
         member = self._data.family.members.get(self._member_id)
         if member is None:
             return {}
+        now = dt_util.utcnow()
+        substitute = self._data.family.members.get(member.substitute_id or "")
         return {
             "member_id": member.id,
             "role": member.role.value,
+            "away": member.is_away(now),
+            "away_from": member.away_from.isoformat() if member.away_from else None,
+            "away_until": member.away_until.isoformat() if member.away_until else None,
+            "substitute": substitute.name if substitute else None,
             "chores": [
                 {"id": c.id, "name": c.name, "state": c.state.value,
                  "due": c.due.isoformat() if c.due else None}
-                for c in self._data.family.chores_for(member.id)
+                for c in self._data.family.chores_for(member.id, now)
             ],
         }
 
@@ -130,9 +137,11 @@ class ChoreSensor(_FamilienplanSensor):
             member = family.members.get(member_id) if member_id else None
             return member.name if member else None
 
+        responsible = family.responsible(chore, dt_util.utcnow())
         return {
             "chore_id": chore.id,
-            "responsible": [name(m) for m in family.responsible(chore)],
+            "responsible": [name(m) for m in responsible],
+            "paused": bool(chore.assignees) and not responsible,
             "assignees": [name(m) for m in chore.assignees],
             "points": chore.points,
             "recurrence": chore.recurrence.value,

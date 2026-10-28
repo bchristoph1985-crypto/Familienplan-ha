@@ -22,12 +22,17 @@ from .const import (
     ATTR_RECURRENCE,
     ATTR_REQUIRES_APPROVAL,
     ATTR_ROTATION,
+    ATTR_START,
+    ATTR_SUBSTITUTE,
+    ATTR_UNTIL,
     DOMAIN,
     SERVICE_APPROVE_CHORE,
     SERVICE_CLAIM_CHORE,
     SERVICE_CREATE_CHORE,
     SERVICE_DELETE_CHORE,
+    SERVICE_END_ABSENCE,
     SERVICE_REJECT_CHORE,
+    SERVICE_SET_ABSENCE,
     SERVICE_UNDO_CLAIM,
 )
 from .core import Actor, FamilyError, Recurrence
@@ -52,6 +57,17 @@ CREATE_SCHEMA = vol.Schema(
 )
 
 CLAIM_SCHEMA = CHORE_SCHEMA.extend({vol.Optional(ATTR_MEMBER): cv.string})
+
+ABSENCE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEMBER): cv.string,
+        vol.Required(ATTR_UNTIL): cv.datetime,
+        vol.Optional(ATTR_START): cv.datetime,
+        vol.Optional(ATTR_SUBSTITUTE): cv.string,
+    }
+)
+
+END_ABSENCE_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string})
 
 
 def _runtime(hass: HomeAssistant) -> FamilienplanData:
@@ -96,10 +112,17 @@ def _guarded(
     return wrapper
 
 
+def _utc(value):
+    """Zeit aus dem Dienstaufruf. Ohne Zeitzone gilt die HA-Zeitzone."""
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt_util.get_default_time_zone())
+    return dt_util.as_utc(value)
+
+
 async def _create(hass, call, data, actor) -> None:
-    due = call.data.get(ATTR_DUE)
-    if due is not None:
-        due = dt_util.as_utc(due if due.tzinfo else due.replace(tzinfo=dt_util.get_default_time_zone()))
+    due = _utc(call.data.get(ATTR_DUE))
     data.family.create_chore(
         actor,
         call.data[ATTR_NAME],
@@ -138,6 +161,21 @@ async def _reject(hass, call, data, actor) -> None:
     data.family.reject(actor, call.data[ATTR_CHORE_ID], dt_util.utcnow())
 
 
+async def _set_absence(hass, call, data, actor) -> None:
+    substitute = call.data.get(ATTR_SUBSTITUTE)
+    data.family.set_absence(
+        actor,
+        _member_id(data, call.data[ATTR_MEMBER]),
+        _utc(call.data[ATTR_UNTIL]),
+        start=_utc(call.data.get(ATTR_START)),
+        substitute_id=_member_id(data, substitute) if substitute else None,
+    )
+
+
+async def _end_absence(hass, call, data, actor) -> None:
+    data.family.end_absence(actor, _member_id(data, call.data[ATTR_MEMBER]))
+
+
 @callback
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
@@ -147,5 +185,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_UNDO_CLAIM, _undo, CHORE_SCHEMA),
         (SERVICE_APPROVE_CHORE, _approve, CHORE_SCHEMA),
         (SERVICE_REJECT_CHORE, _reject, CHORE_SCHEMA),
+        (SERVICE_SET_ABSENCE, _set_absence, ABSENCE_SCHEMA),
+        (SERVICE_END_ABSENCE, _end_absence, END_ABSENCE_SCHEMA),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

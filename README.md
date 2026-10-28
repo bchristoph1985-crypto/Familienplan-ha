@@ -10,8 +10,10 @@ Stand: Phase 1, Grundgerüst (Version 0.1.0). Noch nicht für den Alltag gedacht
 - Familienmitglieder (Eltern/Kind) über *Konfigurieren* anlegen, optional mit HA-Konto verknüpft
 - Aufgaben: einmalig, täglich, wöchentlich, alle 2 Wochen; Reihum-Rotation; Punkte; Elternfreigabe
 - Überfällig-Erkennung (jede Minute)
+- Abwesenheit (z. B. Klassenfahrt, krank) mit Beginn, Ende und Vertretung. Bei Rotation ist automatisch das nächste Kind dran; ohne Rotation übernimmt die Vertretung. Ist niemand da, ruht die Aufgabe und wird nicht überfällig.
+- Erinnerungen per HA-Push an Kinder zu einstellbaren Uhrzeiten (Standard 15:00, 17:00, 18:30), nur wenn noch etwas offen ist; Sammelnachricht an Eltern (Standard 19:00)
 - Sensoren: Punkte je Mitglied, Status je Aufgabe
-- Dienste: `familienplan.create_chore`, `delete_chore`, `claim_chore`, `undo_claim`, `approve_chore`, `reject_chore`
+- Dienste: `familienplan.create_chore`, `delete_chore`, `claim_chore`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`
 
 ## Rechte (serverseitig geprüft)
 
@@ -41,5 +43,6 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 ## Offen
 
 - Name und Lizenz (siehe Phase-0-Dokument)
-- Erinnerungen, Abwesenheit/Vertretung, Karten fürs Dashboard (Phase 1/2)
+- Erinnerung nur, wenn das Kind zu Hause ist; Ansagen über Lautsprecher
+- Karten fürs Dashboard (Phase 2)
 - Pro-Funktionen und Lizenzschlüssel (Phase 3)
