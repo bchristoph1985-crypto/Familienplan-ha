@@ -2,12 +2,18 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.6.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.7.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
-- Einrichtung über *Einstellungen → Geräte & Dienste → Integration hinzufügen → Familienplan*
-- Familienmitglieder (Eltern/Kind) über *Konfigurieren* anlegen, optional mit HA-Konto verknüpft
+- **Einrichtung in vier Schritten** über *Einstellungen → Geräte & Dienste → Integration hinzufügen → Familienplan*:
+  1. Name der Familie
+  2. Wer gehört dazu: die Personen aus Home Assistant sind schon angehakt, Kinder ohne eigenes Konto einfach mit Namen eintragen
+  3. Wer sind die Eltern: HA-Administratoren sind vorgeschlagen
+  4. Startaufgaben ankreuzen (z. B. Spülmaschine reihum, Zimmer aufräumen je Kind)
+
+  Die Handys für Erinnerungen werden über die Companion-App automatisch zugeordnet. Danach erscheint links in der Seitenleiste **Familienplan**, ein Dashboard muss niemand einrichten.
+- Weitere Mitglieder, Erinnerungen, Ansagen, Internetsperre und Regeln später unter *Konfigurieren*
 - Aufgaben: einmalig, täglich, wöchentlich, alle 2 Wochen; Reihum-Rotation; Punkte; Elternfreigabe
 - Überfällig-Erkennung (jede Minute)
 - Abwesenheit (z. B. Klassenfahrt, krank) mit Beginn, Ende und Vertretung. Bei Rotation ist automatisch das nächste Kind dran; ohne Rotation übernimmt die Vertretung. Ist niemand da, ruht die Aufgabe und wird nicht überfällig.
@@ -19,9 +25,11 @@ Stand: Version 0.6.0. Noch nicht für den Alltag gedacht.
 - **Aufgaben übernehmen („wegmopsen“)**: Ab 16:30 können Kinder offene Aufgaben der Geschwister übernehmen und bekommen die Punkte, ab 19:00 doppelt. Höchstens 2 pro Tag. Bei Reihum-Aufgaben geht die Reihenfolge danach normal weiter. Zeiten und Anzahl unter *Konfigurieren → Regeln*.
 - Dienste: `familienplan.create_chore`, `update_chore`, `delete_chore`, `claim_chore`, `take_over_chore`, `announce`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`, `set_devices`, `grant_pass`, `revoke_pass`
 
-## Dashboard-Karte
+## Seitenleiste und Dashboard-Karte
 
-Die Karte wird von der Integration mitgeliefert, eine Ressource muss man nicht anlegen.
+Nach der Einrichtung gibt es den Menüpunkt **Familienplan** in der Seitenleiste. Eltern sehen dort die Eltern-Ansicht, Kinder ihre eigenen Aufgaben.
+
+Wer die Karte zusätzlich auf ein eigenes Dashboard legen will (z. B. Küchen-Tablet), kann das ohne Ressource tun:
 
 ```yaml
 type: custom:familienplan-card

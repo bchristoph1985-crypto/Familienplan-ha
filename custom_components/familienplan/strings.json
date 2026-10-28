@@ -2,11 +2,40 @@
   "config": {
     "step": {
       "user": {
-        "title": "Familienplan",
+        "title": "Set up Familienplan",
+        "description": "Four short steps and you are ready to go.",
         "data": {
           "family_name": "Family name"
         }
+      },
+      "members": {
+        "title": "Who is in the family?",
+        "description": "Tick everyone who takes part. Phones for reminders are detected automatically.",
+        "data": {
+          "people": "People from Home Assistant",
+          "extra_children": "Children without their own account"
+        },
+        "data_description": {
+          "extra_children": "Optional, comma separated, e.g. Lucas, Osmo."
+        }
+      },
+      "parents": {
+        "title": "Who are the parents?",
+        "description": "Parents can create and approve chores. Everyone else is a child.",
+        "data": {
+          "parents": "Parents"
+        }
+      },
+      "chores": {
+        "title": "What do you want to start with?",
+        "description": "These chores are created right away. Shared chores rotate between the children. You can change everything later.",
+        "data": {
+          "starters": "Starter chores"
+        }
       }
+    },
+    "error": {
+      "no_members": "Please select or enter at least one family member."
     },
     "abort": {
       "single_instance_allowed": "Familienplan is already set up."
@@ -121,6 +150,16 @@
         "daily": "Daily",
         "weekly": "Weekly",
         "biweekly": "Every 2 weeks"
+      }
+    },
+    "starter": {
+      "options": {
+        "table": "Set the table (daily, rotating)",
+        "dishwasher": "Empty the dishwasher (daily, rotating)",
+        "trash": "Take out the trash (daily, rotating)",
+        "room": "Tidy up room (weekly, every child)",
+        "bathroom": "Clean the bathroom (weekly, rotating)",
+        "vacuum": "Vacuum (weekly, rotating)"
       }
     }
   },

@@ -1,10 +1,12 @@
 """Konstanten für Familienplan."""
 
 DOMAIN = "familienplan"
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
+DATA_INITIAL_FAMILY = "initial_family"
+PANEL_URL = "familienplan"
 
 ATTR_CHORE_ID = "chore_id"
 ATTR_MEMBER = "member"

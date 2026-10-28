@@ -2,11 +2,40 @@
   "config": {
     "step": {
       "user": {
-        "title": "Familienplan",
+        "title": "Familienplan einrichten",
+        "description": "Vier kurze Schritte, danach ist alles startklar.",
         "data": {
           "family_name": "Name der Familie"
         }
+      },
+      "members": {
+        "title": "Wer gehört zur Familie?",
+        "description": "Haken bei allen, die mitmachen. Handys für Erinnerungen werden automatisch erkannt.",
+        "data": {
+          "people": "Personen aus Home Assistant",
+          "extra_children": "Kinder ohne eigenes Konto"
+        },
+        "data_description": {
+          "extra_children": "Optional, mit Komma getrennt, z. B. Lucas, Osmo."
+        }
+      },
+      "parents": {
+        "title": "Wer sind die Eltern?",
+        "description": "Eltern dürfen Aufgaben anlegen und freigeben. Alle anderen sind Kinder.",
+        "data": {
+          "parents": "Eltern"
+        }
+      },
+      "chores": {
+        "title": "Womit wollt ihr starten?",
+        "description": "Diese Aufgaben werden gleich angelegt. Gemeinsame Aufgaben wechseln reihum zwischen den Kindern. Alles lässt sich später ändern.",
+        "data": {
+          "starters": "Startaufgaben"
+        }
       }
+    },
+    "error": {
+      "no_members": "Bitte mindestens ein Familienmitglied auswählen oder eintragen."
     },
     "abort": {
       "single_instance_allowed": "Familienplan ist schon eingerichtet."
@@ -121,6 +150,16 @@
         "daily": "Täglich",
         "weekly": "Wöchentlich",
         "biweekly": "Alle 2 Wochen"
+      }
+    },
+    "starter": {
+      "options": {
+        "table": "Tisch decken (täglich, reihum)",
+        "dishwasher": "Spülmaschine ausräumen (täglich, reihum)",
+        "trash": "Müll rausbringen (täglich, reihum)",
+        "room": "Zimmer aufräumen (wöchentlich, jedes Kind)",
+        "bathroom": "Bad putzen (wöchentlich, reihum)",
+        "vacuum": "Staubsaugen (wöchentlich, reihum)"
       }
     }
   },

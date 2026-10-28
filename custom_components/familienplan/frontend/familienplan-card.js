@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.6.0";
+const VERSION = "0.7.0";
 
 const T = {
   de: {
@@ -805,6 +805,54 @@ const STYLE = `
   input, select { font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--divider-color, #ccc); background: var(--card-background-color); color: var(--primary-text-color); min-width: 0; }
   @media (max-width: 420px) { .row { flex-wrap: wrap; } .actions { width: 100%; justify-content: flex-start; } }
 `;
+
+// Eigene Seite in der Seitenleiste („Familienplan“). Zeigt die Karte groß,
+// damit niemand erst ein Dashboard einrichten muss.
+class FamilienplanPanel extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._narrow = false;
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._card) this._build();
+    this._card.hass = hass;
+    const menu = this.shadowRoot.querySelector("ha-menu-button");
+    if (menu) menu.hass = hass;
+  }
+
+  set narrow(narrow) {
+    this._narrow = narrow;
+    const menu = this.shadowRoot.querySelector("ha-menu-button");
+    if (menu) menu.narrow = narrow;
+  }
+
+  _build() {
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display: block; min-height: 100vh; background: var(--primary-background-color); }
+        .bar { display: flex; align-items: center; gap: 8px; height: var(--header-height, 56px); padding: 0 12px;
+               background: var(--app-header-background-color, var(--primary-color)); color: var(--app-header-text-color, #fff); }
+        .bar h1 { font-size: 20px; font-weight: 400; margin: 0; }
+        .wrap { max-width: 720px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
+        @media (max-width: 600px) { .wrap { padding: 8px; } }
+      </style>
+      <div class="bar"><ha-menu-button></ha-menu-button><h1>Familienplan</h1></div>
+      <div class="wrap"></div>`;
+    const menu = this.shadowRoot.querySelector("ha-menu-button");
+    menu.hass = this._hass;
+    menu.narrow = this._narrow;
+    this._card = document.createElement("familienplan-card");
+    this._card.setConfig({ mode: "auto" });
+    this.shadowRoot.querySelector(".wrap").appendChild(this._card);
+  }
+}
+
+if (!customElements.get("familienplan-panel")) {
+  customElements.define("familienplan-panel", FamilienplanPanel);
+}
 
 if (!customElements.get("familienplan-card")) {
   customElements.define("familienplan-card", FamilienplanCard);
