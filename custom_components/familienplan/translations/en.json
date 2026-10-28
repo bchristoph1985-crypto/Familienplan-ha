@@ -1,0 +1,167 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Familienplan",
+        "data": {
+          "family_name": "Family name"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Familienplan is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "add_member": "Add family member",
+          "remove_member": "Remove family member"
+        }
+      },
+      "add_member": {
+        "title": "Add family member",
+        "data": {
+          "name": "Name",
+          "role": "Role",
+          "user": "Home Assistant user"
+        },
+        "data_description": {
+          "user": "Links this member to a login, so permissions are checked when they use the app."
+        }
+      },
+      "remove_member": {
+        "title": "Remove family member",
+        "data": {
+          "member": "Member"
+        }
+      }
+    },
+    "error": {
+      "invalid_member": "Name missing or this user is already linked to a member."
+    }
+  },
+  "selector": {
+    "role": {
+      "options": {
+        "parent": "Parent",
+        "child": "Child"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "none": "Once",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "biweekly": "Every 2 weeks"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "points": {
+        "name": "{member} points"
+      },
+      "chore": {
+        "name": "{chore}",
+        "state": {
+          "open": "Open",
+          "claimed": "Waiting for approval",
+          "done": "Done",
+          "overdue": "Overdue"
+        }
+      }
+    }
+  },
+  "services": {
+    "create_chore": {
+      "name": "Create chore",
+      "description": "Parents only.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "What needs doing."
+        },
+        "assignees": {
+          "name": "Assignees",
+          "description": "Member names or IDs."
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points awarded when done."
+        },
+        "recurrence": {
+          "name": "Repeat",
+          "description": "How often the chore comes back."
+        },
+        "due": {
+          "name": "Due",
+          "description": "First due date. Required for repeating chores."
+        },
+        "rotation": {
+          "name": "Rotate",
+          "description": "Assignees take turns after each completion."
+        },
+        "requires_approval": {
+          "name": "Needs approval",
+          "description": "A parent must confirm."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Delete chore",
+      "description": "Parents only.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID from the chore sensor's chore_id attribute."
+        }
+      }
+    },
+    "claim_chore": {
+      "name": "Mark chore done",
+      "description": "Children can only report their own chores.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID from the chore sensor's chore_id attribute."
+        },
+        "member": {
+          "name": "Member",
+          "description": "Who did it. Defaults to the caller."
+        }
+      }
+    },
+    "undo_claim": {
+      "name": "Undo report",
+      "description": "Only your own report, or a parent.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID from the chore sensor's chore_id attribute."
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Approve chore",
+      "description": "Parents only.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID from the chore sensor's chore_id attribute."
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Reject chore",
+      "description": "Parents only.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID from the chore sensor's chore_id attribute."
+        }
+      }
+    }
+  }
+}

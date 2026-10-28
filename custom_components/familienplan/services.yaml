@@ -1,0 +1,57 @@
+create_chore:
+  fields:
+    name:
+      required: true
+      selector:
+        text:
+    assignees:
+      required: true
+      example: "Lucas"
+      selector:
+        text:
+          multiple: true
+    points:
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: box
+    recurrence:
+      default: none
+      selector:
+        select:
+          translation_key: recurrence
+          options: [none, daily, weekly, biweekly]
+    due:
+      selector:
+        datetime:
+    rotation:
+      default: false
+      selector:
+        boolean:
+    requires_approval:
+      default: false
+      selector:
+        boolean:
+delete_chore:
+  fields: &chore
+    chore_id:
+      required: true
+      selector:
+        text:
+claim_chore:
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    member:
+      selector:
+        text:
+undo_claim:
+  fields: *chore
+approve_chore:
+  fields: *chore
+reject_chore:
+  fields: *chore

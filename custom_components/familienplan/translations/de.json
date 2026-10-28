@@ -1,0 +1,167 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Familienplan",
+        "data": {
+          "family_name": "Name der Familie"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Familienplan ist schon eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "add_member": "Familienmitglied hinzufügen",
+          "remove_member": "Familienmitglied entfernen"
+        }
+      },
+      "add_member": {
+        "title": "Familienmitglied hinzufügen",
+        "data": {
+          "name": "Name",
+          "role": "Rolle",
+          "user": "Home-Assistant-Konto"
+        },
+        "data_description": {
+          "user": "Verknüpft das Mitglied mit einem Login. So wird beim Bedienen in der App geprüft, was es darf."
+        }
+      },
+      "remove_member": {
+        "title": "Familienmitglied entfernen",
+        "data": {
+          "member": "Mitglied"
+        }
+      }
+    },
+    "error": {
+      "invalid_member": "Name fehlt oder dieses Konto gehört schon zu einem Mitglied."
+    }
+  },
+  "selector": {
+    "role": {
+      "options": {
+        "parent": "Elternteil",
+        "child": "Kind"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "none": "Einmalig",
+        "daily": "Täglich",
+        "weekly": "Wöchentlich",
+        "biweekly": "Alle 2 Wochen"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "points": {
+        "name": "{member} Punkte"
+      },
+      "chore": {
+        "name": "{chore}",
+        "state": {
+          "open": "Offen",
+          "claimed": "Wartet auf Freigabe",
+          "done": "Erledigt",
+          "overdue": "Überfällig"
+        }
+      }
+    }
+  },
+  "services": {
+    "create_chore": {
+      "name": "Aufgabe anlegen",
+      "description": "Nur für Eltern.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Was zu tun ist."
+        },
+        "assignees": {
+          "name": "Zuständig",
+          "description": "Namen oder IDs der Mitglieder."
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Punkte für die Erledigung."
+        },
+        "recurrence": {
+          "name": "Wiederholung",
+          "description": "Wie oft die Aufgabe wiederkommt."
+        },
+        "due": {
+          "name": "Frist",
+          "description": "Erste Frist. Pflicht bei wiederkehrenden Aufgaben."
+        },
+        "rotation": {
+          "name": "Reihum",
+          "description": "Nach jeder Erledigung ist die nächste Person dran."
+        },
+        "requires_approval": {
+          "name": "Freigabe nötig",
+          "description": "Ein Elternteil muss bestätigen."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Aufgabe löschen",
+      "description": "Nur für Eltern.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID aus dem Attribut chore_id des Aufgaben-Sensors."
+        }
+      }
+    },
+    "claim_chore": {
+      "name": "Aufgabe erledigt melden",
+      "description": "Kinder können nur eigene Aufgaben melden.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID aus dem Attribut chore_id des Aufgaben-Sensors."
+        },
+        "member": {
+          "name": "Mitglied",
+          "description": "Wer es erledigt hat. Standard: wer meldet."
+        }
+      }
+    },
+    "undo_claim": {
+      "name": "Meldung zurücknehmen",
+      "description": "Nur die eigene Meldung, oder Eltern.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID aus dem Attribut chore_id des Aufgaben-Sensors."
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Aufgabe freigeben",
+      "description": "Nur für Eltern.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID aus dem Attribut chore_id des Aufgaben-Sensors."
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Aufgabe ablehnen",
+      "description": "Nur für Eltern.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID aus dem Attribut chore_id des Aufgaben-Sensors."
+        }
+      }
+    }
+  }
+}
