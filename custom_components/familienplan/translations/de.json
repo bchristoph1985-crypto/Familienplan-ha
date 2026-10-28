@@ -21,7 +21,8 @@
           "reminders": "Erinnerungen",
           "consequences": "Internetsperre",
           "devices": "Geräte je Kind",
-          "rules": "Übernehmen und Fotos"
+          "rules": "Übernehmen und Fotos",
+          "announcements": "Ansagen über Lautsprecher"
         }
       },
       "add_member": {
@@ -85,11 +86,26 @@
           "takeover_max": "Höchstens pro Kind und Tag",
           "photo_retention_days": "Fotos löschen nach (Tagen)"
         }
+      },
+      "announcements": {
+        "title": "Ansagen über Lautsprecher",
+        "description": "Zu den Uhrzeiten sagt Familienplan an, wer heute noch etwas offen hat. Ist alles erledigt, bleibt es still. Wähle Lautsprecher plus Sprachausgabe (z. B. Google Translate, Piper) oder einen Dienst, der selbst spricht (z. B. Alexa Media Player). Beides geht auch gleichzeitig.",
+        "data": {
+          "announce_times": "Uhrzeiten",
+          "speakers": "Lautsprecher",
+          "tts_engine": "Sprachausgabe (TTS)",
+          "announce_notify": "Sprechende Benachrichtigungsdienste"
+        },
+        "data_description": {
+          "announce_times": "Mit Komma getrennt, z. B. 17:00, 18:30. Leer lassen schaltet Ansagen aus.",
+          "announce_notify": "Zum Beispiel notify.alexa_media_kueche."
+        }
       }
     },
     "error": {
       "invalid_member": "Name fehlt oder dieses Konto gehört schon zu einem Mitglied.",
-      "invalid_time": "Bitte Uhrzeiten wie 17:00 eingeben."
+      "invalid_time": "Bitte Uhrzeiten wie 17:00 eingeben.",
+      "tts_missing": "Für Lautsprecher bitte auch eine Sprachausgabe wählen."
     }
   },
   "selector": {
@@ -340,6 +356,16 @@
         "member": {
           "name": "Mitglied",
           "description": "Wer es erledigt hat. Standard: wer meldet."
+        }
+      }
+    },
+    "announce": {
+      "name": "Ansage machen",
+      "description": "Sagt über die eingestellten Lautsprecher an, was heute noch offen ist, oder einen eigenen Text.",
+      "fields": {
+        "message": {
+          "name": "Text",
+          "description": "Leer lassen: offene Aufgaben ansagen."
         }
       }
     }

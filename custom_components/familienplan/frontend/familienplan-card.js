@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.5.0";
+const VERSION = "0.6.0";
 
 const T = {
   de: {

@@ -27,6 +27,11 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
+    CONF_ANNOUNCE_NOTIFY,
+    CONF_ANNOUNCE_TIMES,
+    CONF_SPEAKERS,
+    CONF_TTS_ENGINE,
+    DEFAULT_ANNOUNCE_TIMES,
     CONF_CONSEQUENCES,
     CONF_LOCK_TIME,
     CONF_PHOTO_RETENTION,
@@ -96,6 +101,7 @@ class MembersOptionsFlow(OptionsFlow):
         if self.config_entry.runtime_data.family.members:
             menu.append("remove_member")
         menu.append("reminders")
+        menu.append("announcements")
         menu.append("consequences")
         menu.append("rules")
         if any(
@@ -222,6 +228,66 @@ class MembersOptionsFlow(OptionsFlow):
                             CONF_PARENT_SUMMARY_TIME, DEFAULT_PARENT_SUMMARY_TIME
                         ),
                     ): str,
+                }
+            ),
+        )
+
+    async def async_step_announcements(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ansagen über Lautsprecher."""
+        options = self.config_entry.options
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            # Geleerte Felder schickt HA nicht mit, darum hier zurücksetzen.
+            user_input = {
+                CONF_SPEAKERS: [],
+                CONF_TTS_ENGINE: "",
+                CONF_ANNOUNCE_NOTIFY: [],
+                CONF_ANNOUNCE_TIMES: "",
+                **user_input,
+            }
+            try:
+                parse_times(user_input[CONF_ANNOUNCE_TIMES])
+            except ValueError:
+                errors["base"] = "invalid_time"
+            else:
+                if user_input[CONF_SPEAKERS] and not user_input[CONF_TTS_ENGINE]:
+                    errors["base"] = "tts_missing"
+                else:
+                    return await self._async_finish({**options, **user_input})
+
+        notify_services = [
+            SelectOptionDict(value=name, label=f"notify.{name}")
+            for name in sorted(self.hass.services.async_services_for_domain("notify"))
+            if name not in ("send_message", "persistent_notification")
+        ]
+        engine = options.get(CONF_TTS_ENGINE)
+        return self.async_show_form(
+            step_id="announcements",
+            errors=errors,
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_ANNOUNCE_TIMES,
+                        default=options.get(CONF_ANNOUNCE_TIMES, DEFAULT_ANNOUNCE_TIMES),
+                    ): str,
+                    vol.Optional(
+                        CONF_SPEAKERS, default=options.get(CONF_SPEAKERS, [])
+                    ): EntitySelector(EntitySelectorConfig(domain="media_player", multiple=True)),
+                    vol.Optional(
+                        CONF_TTS_ENGINE,
+                        **({"description": {"suggested_value": engine}} if engine else {}),
+                    ): EntitySelector(EntitySelectorConfig(domain="tts")),
+                    vol.Optional(
+                        CONF_ANNOUNCE_NOTIFY, default=options.get(CONF_ANNOUNCE_NOTIFY, [])
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=notify_services,
+                            multiple=True,
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
                 }
             ),
         )
