@@ -51,12 +51,15 @@ from .const import (
     CONF_REMINDER_TIMES,
     DEFAULT_PARENT_SUMMARY_TIME,
     DEFAULT_REMINDER_TIMES,
+    CONF_LICENSE_KEY,
+    CONF_LICENSE_REMOVE,
     DATA_INITIAL_FAMILY,
     DOMAIN,
 )
 from homeassistant.util import dt as dt_util
 
 from .core import SYSTEM, FamilyError, Role
+from .licensing import LicenseError
 from .reminders import parse_times
 from .setup_helpers import (
     DEFAULT_REWARDS,
@@ -320,7 +323,7 @@ class MembersOptionsFlow(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        menu = ["add_member"]
+        menu = ["pro", "add_member"]
         if self.config_entry.runtime_data.family.members:
             menu.append("remove_member")
         if any(
@@ -338,6 +341,42 @@ class MembersOptionsFlow(OptionsFlow):
         ):
             menu.append("devices")
         return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_pro(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Lizenzschlüssel eintragen oder hier wieder freigeben."""
+        manager = self.config_entry.runtime_data.license
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                if user_input.get(CONF_LICENSE_REMOVE):
+                    await manager.async_deactivate()
+                elif key := user_input.get(CONF_LICENSE_KEY, "").strip():
+                    await manager.async_activate(key)
+            except LicenseError as err:
+                errors["base"] = err.reason
+            else:
+                return await self._async_finish()
+
+        status = manager.status()
+        if status["licensed"]:
+            state = f"Pro ist freigeschaltet (Schlüssel {status['key']})."
+        elif status["trial_days_left"]:
+            state = f"Testphase: Pro läuft noch {status['trial_days_left']} Tage."
+        else:
+            state = "Kostenlose Version. Pro ist aus."
+        schema: dict[Any, Any] = {}
+        if status["licensed"]:
+            schema[vol.Optional(CONF_LICENSE_REMOVE, default=False)] = BooleanSelector()
+        else:
+            schema[vol.Optional(CONF_LICENSE_KEY)] = str
+        return self.async_show_form(
+            step_id="pro",
+            errors=errors,
+            description_placeholders={"state": state},
+            data_schema=vol.Schema(schema),
+        )
 
     async def async_step_add_member(
         self, user_input: dict[str, Any] | None = None

@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.10.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.11.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
@@ -32,6 +32,27 @@ Stand: Version 0.10.0. Noch nicht für den Alltag gedacht.
 - **Datenschutz bei Fotos**: Die Familie wählt im Assistenten (später unter *Konfigurieren → Regeln*), ob Fotos sofort nach Bestätigen oder Ablehnen gelöscht werden (Standard) oder bis zu 7 Tage (einstellbar) bleiben. Nimmt ein Kind seine Meldung zurück, wird das Foto immer sofort gelöscht.
 - **Aufgaben übernehmen („wegmopsen“)**: Ab 16:30 können Kinder offene Aufgaben der Geschwister übernehmen und bekommen die Punkte, ab 19:00 doppelt. Höchstens 2 pro Tag. Bei Reihum-Aufgaben geht die Reihenfolge danach normal weiter. Zeiten und Anzahl unter *Konfigurieren → Regeln*.
 - Dienste: `familienplan.create_chore`, `update_chore`, `delete_chore`, `claim_chore`, `take_over_chore`, `announce`, `create_reward`, `update_reward`, `delete_reward`, `redeem_reward`, `approve_redemption`, `reject_redemption`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`, `set_devices`, `grant_pass`, `revoke_pass`
+
+## Kostenlos und Pro
+
+| Kostenlos | Pro |
+|---|---|
+| Aufgaben, Alter, Reihum, Fristen | Internetsperre (FRITZ!Box & Co.) |
+| Punkte und Belohnungen | Fotonachweis |
+| Push-Erinnerungen | Aufgaben übernehmen („wegmopsen“) |
+| Seitenleiste und Karte | Lautsprecher-Ansagen |
+| | Abwesenheit mit Vertretung |
+
+Nach der Installation läuft Pro 30 Tage zum Ausprobieren. Danach den
+Lizenzschlüssel unter *Einstellungen › Geräte & Dienste › Familienplan ›
+Konfigurieren › Pro / Lizenz* eintragen. Er wird einmal online bei Polar
+aktiviert und etwa einmal pro Woche nachgeprüft. Ohne Internet bleibt Pro an.
+Pro endet nur, wenn Polar den Schlüssel ablehnt (z. B. nach Erstattung). Dann
+gibt Familienplan gesperrte Geräte sofort frei, Fotoaufgaben gehen ohne Foto,
+Einstellungen bleiben erhalten.
+
+Vor dem Verkauf muss in `const.py` die `POLAR_ORGANIZATION_ID` des Shops
+eingetragen werden.
 
 ## Seitenleiste und Dashboard-Karte
 

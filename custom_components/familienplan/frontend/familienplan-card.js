@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.10.0";
+const VERSION = "0.11.0";
 
 const T = {
   de: {
@@ -91,6 +91,11 @@ const T = {
     takeOver: "Übernehmen",
     takenFrom: "übernommen für {name}",
     double: "doppelte Punkte",
+    trial: "Pro-Testphase: noch {n} Tage",
+    free: "Kostenlose Version",
+    proHint: "Pro freischalten: Einstellungen › Geräte & Dienste › Familienplan › Konfigurieren › Pro / Lizenz",
+    proOnly: "Gehört zu Pro",
+    awayPro: "Abwesenheit mit Vertretung gehört zu Pro.",
     rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen" },
   },
   en: {
@@ -171,6 +176,11 @@ const T = {
     takeOver: "Take over",
     takenFrom: "taken over for {name}",
     double: "double points",
+    trial: "Pro trial: {n} days left",
+    free: "Free version",
+    proHint: "Unlock Pro: Settings › Devices & services › Familienplan › Configure › Pro / license",
+    proOnly: "Part of Pro",
+    awayPro: "Absence with substitute is part of Pro.",
     rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks" },
   },
 };
@@ -346,14 +356,14 @@ class FamilienplanCard extends HTMLElement {
         const chore = this._data.chores.find((c) => c.id === id);
         const data = { chore_id: id };
         if (member && member !== this._data.me) data.member = member;
-        if (chore?.requires_photo && !this._data.is_manager) this._pickPhoto("claim", data);
+        if (this._photoNeeded(chore)) this._pickPhoto("claim", data);
         else this._call("claim_chore", data);
         break;
       }
       case "take": {
         const chore = this._data.chores.find((c) => c.id === id);
         const data = { chore_id: id };
-        if (chore?.requires_photo && !this._data.is_manager) this._pickPhoto("take_over", data);
+        if (this._photoNeeded(chore)) this._pickPhoto("take_over", data);
         else this._call("take_over_chore", data);
         break;
       }
@@ -584,7 +594,7 @@ class FamilienplanCard extends HTMLElement {
       }
     } else if (showClaim && !ro) {
       const label = forName ? this._t("doneFor", { name: esc(forName) }) : this._t("done");
-      const photo = chore.requires_photo && !this._data.is_manager;
+      const photo = this._photoNeeded(chore);
       action = `<button class="primary" data-action="claim" data-id="${esc(chore.id)}" data-member="${esc(memberId)}">${
         photo ? this._t("photoDone") : "✓ " + label
       }</button>`;
@@ -593,11 +603,31 @@ class FamilienplanCard extends HTMLElement {
       <li class="row ${chore.state}">
         ${chore.state === "claimed" ? this._thumb(chore) : ""}
         <div class="main">
-          <div class="title">${esc(chore.name)}${chore.requires_photo ? ' <span class="muted">📷</span>' : ""}</div>
+          <div class="title">${esc(chore.name)}${this._photoIcon(chore)}</div>
           <div class="sub">${this._dueLabel(chore)} · <span class="pts">${chore.points} P</span>${this._takenInfo(chore)}</div>
         </div>
         <div class="actions">${action}</div>
       </li>`;
+  }
+
+  // Ohne Pro (Testphase vorbei, kein Schlüssel) gibt es keinen Fotonachweis.
+  _pro() {
+    return this._data?.pro?.pro !== false;
+  }
+
+  _photoNeeded(chore) {
+    return !!chore?.requires_photo && this._pro() && !this._data.is_manager;
+  }
+
+  _photoIcon(chore) {
+    return chore.requires_photo && this._pro() ? ' <span class="muted">📷</span>' : "";
+  }
+
+  _proLine() {
+    const p = this._data.pro;
+    if (!p || p.licensed) return "";
+    if (p.pro) return `<p class="muted small pro">${esc(this._t("trial", { n: p.trial_days_left }))}</p>`;
+    return `<p class="muted small pro">${esc(this._t("free"))} · ${esc(this._t("proHint"))}</p>`;
   }
 
   _thumb(chore) {
@@ -628,7 +658,7 @@ class FamilienplanCard extends HTMLElement {
 
   _renderTakeOver(member) {
     const t = this._data.takeover;
-    if (!t?.allowed || this._config.readonly || member.id !== this._data.me) return "";
+    if (!t?.allowed || !this._pro() || this._config.readonly || member.id !== this._data.me) return "";
     const chores = this._takeable(member.id);
     if (!chores.length) return "";
     const rows = chores
@@ -638,7 +668,7 @@ class FamilienplanCard extends HTMLElement {
         return `
         <li class="row ${c.state}">
           <div class="main">
-            <div class="title">${esc(c.name)}${c.requires_photo ? ' <span class="muted">📷</span>' : ""}</div>
+            <div class="title">${esc(c.name)}${this._photoIcon(c)}</div>
             <div class="sub muted">${esc(owner)} · <span class="pts">${pts} P</span></div>
           </div>
           <div class="actions"><button class="primary" data-action="take" data-id="${esc(c.id)}">${this._t("takeOver")}${
@@ -789,7 +819,8 @@ class FamilienplanCard extends HTMLElement {
       <nav class="tabs">${tabs
         .map(([id, label]) => `<button class="tab ${this._tab === id ? "on" : ""}" data-action="tab" data-id="${id}">${label}</button>`)
         .join("")}</nav>
-      ${body}`;
+      ${body}
+      ${this._proLine()}`;
   }
 
   _children() {
@@ -807,7 +838,7 @@ class FamilienplanCard extends HTMLElement {
           status += ` <span class="chip">${esc(this._t("pass", { time }))}</span>`;
         }
         let passBtn = "";
-        if (m.has_devices && !this._config.readonly) {
+        if (m.has_devices && this._pro() && !this._config.readonly) {
           passBtn = m.pass_until
             ? `<button class="link" data-action="revoke-pass" data-id="${esc(m.id)}">${this._t("takePass")}</button>`
             : `<button class="link" data-action="pass" data-id="${esc(m.id)}">${this._t("givePass")}</button>`;
@@ -873,7 +904,7 @@ class FamilienplanCard extends HTMLElement {
             <div class="title">${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.requires_photo ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.requires_photo && this._pro() ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -908,7 +939,9 @@ class FamilienplanCard extends HTMLElement {
         </div>
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
-        <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""}>${this._t("photo")}</label>
+        <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""} ${this._pro() ? "" : "disabled"}>${this._t("photo")}${
+          this._pro() ? "" : ` <span class="chip">${this._t("proOnly")}</span>`
+        }</label>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
       </details>
@@ -923,6 +956,7 @@ class FamilienplanCard extends HTMLElement {
   }
 
   _renderAway() {
+    if (!this._pro()) return `<p class="empty muted">${esc(this._t("awayPro"))}</p>${this._proLine()}`;
     return `<ul>${this._children()
       .map((m) => {
         const form = this._awayForm[m.id] || {};
@@ -997,6 +1031,7 @@ const STYLE = `
   a.link { color: var(--primary-color); text-decoration: none; padding: 0 8px; white-space: nowrap; }
   .thumb img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; display: block; }
   p.small { font-size: 0.85em; margin: 0 0 4px; }
+  p.pro { margin-top: 12px; text-align: center; }
   section.help { margin-top: 16px; padding-top: 8px; border-top: 2px solid var(--divider-color, #e0e0e0); }
   .bar { height: 6px; border-radius: 3px; background: var(--divider-color, #e0e0e0); margin-top: 6px; overflow: hidden; max-width: 220px; }
   .bar span { display: block; height: 100%; background: var(--success-color, #43a047); }

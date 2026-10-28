@@ -1,12 +1,23 @@
 """Konstanten für Familienplan."""
 
+from datetime import timedelta
+
 DOMAIN = "familienplan"
-VERSION = "0.10.0"
+VERSION = "0.11.0"
 CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
 DATA_INITIAL_FAMILY = "initial_family"
 PANEL_URL = "familienplan"
+
+# Kostenlos / Pro. Die Organisations-ID gibt es nach dem Anlegen des Shops bei Polar.
+POLAR_API = "https://api.polar.sh"
+POLAR_ORGANIZATION_ID = ""
+TRIAL_DAYS = 30
+VALIDATE_EVERY = timedelta(days=7)
+CONF_LICENSE_KEY = "license_key"
+CONF_LICENSE_REMOVE = "license_remove"
+PRO_ONLY = "Das gehört zu Familienplan Pro. Den Schlüssel trägst du in den Optionen unter „Pro“ ein."
 
 ATTR_CHORE_ID = "chore_id"
 ATTR_MEMBER = "member"

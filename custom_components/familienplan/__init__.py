@@ -31,6 +31,7 @@ from .const import (
 )
 from .consequences import async_apply
 from .core import Family
+from .licensing import LicenseManager
 from .photos import PhotoUploadView, PhotoView, cleanup, forget_missing
 from .reminders import async_setup_reminders
 from .services import async_register_services
@@ -48,6 +49,19 @@ class FamilienplanData:
     entry: ConfigEntry
     store: Store
     family: Family
+    license: LicenseManager
+
+    @property
+    def pro(self) -> bool:
+        return self.license.is_pro()
+
+    def sync_pro(self) -> bool:
+        """Pro-Stand in den Kern übernehmen. True, wenn er sich geändert hat."""
+        pro = self.pro
+        if self.family.photo_proof == pro:
+            return False
+        self.family.photo_proof = pro
+        return True
 
     async def async_save(self) -> None:
         """Sperren anpassen, speichern, Entitäten informieren. Nach jeder Änderung aufrufen."""
@@ -60,6 +74,8 @@ class FamilienplanData:
 
     async def async_tick(self, _now=None) -> None:
         changed = self.family.refresh(dt_util.utcnow())
+        # Ende der Testphase: Karte sofort auf den neuen Stand bringen.
+        changed = self.sync_pro() or changed
         if await async_apply(self.hass, self.entry) or changed:
             await self._async_store()
 
@@ -95,7 +111,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry)
     store: Store = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
     stored = await store.async_load()
     initial = entry.data.get(DATA_INITIAL_FAMILY)
-    data = FamilienplanData(hass, entry, store, Family.from_dict(stored or initial))
+    license_manager = LicenseManager(hass)
+    await license_manager.async_load()
+    data = FamilienplanData(
+        hass, entry, store, Family.from_dict(stored or initial), license_manager
+    )
+    data.sync_pro()
     entry.runtime_data = data
     if initial is not None:
         # Ergebnis des Einrichtungsassistenten einmalig übernehmen.
@@ -113,6 +134,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry)
         await hass.async_add_executor_job(cleanup, hass, entry)
         if await hass.async_add_executor_job(forget_missing, hass, entry):
             await data.async_save()
+        if await license_manager.async_validate_if_due():
+            await data.async_tick()
 
     entry.async_on_unload(
         async_track_time_interval(hass, photo_cleanup, timedelta(hours=1))

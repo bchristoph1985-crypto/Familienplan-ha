@@ -66,11 +66,12 @@
           "add_member": "Add family member",
           "remove_member": "Remove family member",
           "reminders": "Reminders",
-          "consequences": "Internet lock",
+          "consequences": "Internet lock (Pro)",
           "devices": "Devices per child",
-          "rules": "Taking over & photos",
-          "announcements": "Speaker announcements",
-          "ages": "Children's ages"
+          "rules": "Taking over & photos (Pro)",
+          "announcements": "Speaker announcements (Pro)",
+          "ages": "Children's ages",
+          "pro": "Pro / license"
         }
       },
       "add_member": {
@@ -153,12 +154,26 @@
       "ages": {
         "title": "How old are the children?",
         "description": "Age in years. Each child only gets chores that suit their age and automatically moves into new chores as they grow older. You can leave it empty."
+      },
+      "pro": {
+        "title": "Familienplan Pro",
+        "description": "{state}\n\nFree: chores, points, rewards, reminders.\nPro: internet lock, photo proof, taking over chores, speaker announcements, absence with substitute.\n\nYou get the key by e-mail after purchase. It is activated online once, after that everything runs locally.",
+        "data": {
+          "license_key": "License key",
+          "license_remove": "Release the key here (e.g. before moving to new hardware)"
+        }
       }
     },
     "error": {
       "invalid_member": "Name missing or this user is already linked to a member.",
       "invalid_time": "Please use times like 17:00.",
-      "tts_missing": "Please also choose a text-to-speech engine for the speakers."
+      "tts_missing": "Please also choose a text-to-speech engine for the speakers.",
+      "key_missing": "Please enter a license key.",
+      "shop_not_ready": "Sales are not set up yet. Keys cannot be activated yet.",
+      "cannot_connect": "Cannot reach the license server. Please try again later.",
+      "key_unknown": "This key does not exist. Please enter it exactly as in the e-mail.",
+      "too_many_activations": "The key is already active on too many devices. Release it there first.",
+      "key_revoked": "This key is no longer valid."
     }
   },
   "selector": {

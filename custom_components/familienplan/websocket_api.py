@@ -40,6 +40,11 @@ def snapshot(
     return {
         "me": actor.member.id if actor.member else None,
         "is_manager": actor.is_manager,
+        "pro": {
+            k: v
+            for k, v in entry.runtime_data.license.status(now).items()
+            if actor.is_manager or k != "key"
+        },
         "takeover": {"allowed": allowed, "multiplier": multiplier},
         "members": [
             {

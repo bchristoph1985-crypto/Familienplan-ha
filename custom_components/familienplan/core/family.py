@@ -78,6 +78,9 @@ class Family:
         self.locked: dict[str, list[str]] = {}
         self.rewards: dict[str, Reward] = {}
         self.redemptions: list[Redemption] = []
+        # Fotonachweis gehört zu Pro. Ohne Pro gilt jede Aufgabe als ohne
+        # Fotopflicht, die Einstellung an der Aufgabe bleibt aber erhalten.
+        self.photo_proof = True
 
     # -- Speichern -----------------------------------------------------------
 
@@ -463,12 +466,15 @@ class Family:
                 raise PermissionDenied("Du kannst nur für dich selbst melden.")
             if member_id not in self.responsible(chore, now):
                 raise PermissionDenied("Diese Aufgabe ist gerade nicht deine.")
-            if chore.requires_photo and not photo:
+            if self.needs_photo(chore) and not photo:
                 raise FamilyError("Für diese Aufgabe brauchst du ein Foto.")
         self._check_claimable(chore)
         chore.photo = photo  # altes Foto gehört zur letzten Runde
         self._submit(chore, member_id, now, needs_check=self._needs_check(actor, chore))
         return chore
+
+    def needs_photo(self, chore: Chore) -> bool:
+        return chore.requires_photo and self.photo_proof
 
     @staticmethod
     def _needs_check(actor: Actor, chore: Chore) -> bool:
@@ -510,7 +516,7 @@ class Family:
         responsible = self.responsible(chore, now)
         if not responsible or member_id in responsible:
             raise FamilyError("Diese Aufgabe kannst du nicht übernehmen.")
-        if chore.requires_photo and not photo and not actor.is_manager:
+        if self.needs_photo(chore) and not photo and not actor.is_manager:
             raise FamilyError("Für diese Aufgabe brauchst du ein Foto.")
         self._check_claimable(chore)
         taken_today = sum(
