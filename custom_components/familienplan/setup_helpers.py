@@ -73,6 +73,28 @@ STARTER_NAMES_EN = {
 }
 
 
+# Vorgeschlagene Belohnungen: Schlüssel -> (Name, Punkte)
+STARTER_REWARDS: dict[str, tuple[str, int]] = {
+    "screen": ("30 Minuten extra Bildschirmzeit", 15),
+    "bedtime": ("30 Minuten später ins Bett", 20),
+    "dinner": ("Abendessen aussuchen", 25),
+    "movie": ("Filmabend aussuchen", 40),
+    "pocket": ("1 € Taschengeld extra", 40),
+    "friend": ("Freund oder Freundin einladen", 50),
+    "trip": ("Ausflug aussuchen", 100),
+}
+DEFAULT_REWARDS = ["screen", "dinner", "movie", "trip"]
+REWARD_NAMES_EN = {
+    "screen": "30 minutes extra screen time",
+    "bedtime": "Stay up 30 minutes longer",
+    "dinner": "Choose dinner",
+    "movie": "Choose movie night",
+    "pocket": "1 extra pocket money",
+    "friend": "Invite a friend",
+    "trip": "Choose a day trip",
+}
+
+
 def _first_due(recurrence: Recurrence, now: datetime) -> datetime:
     """Täglich: heute 19:00 (oder morgen). Wöchentlich: nächster Samstag 12:00."""
     local = dt_util.as_local(now)
@@ -105,6 +127,7 @@ def build_family(
     now: datetime,
     *,
     ages: dict[str, int] | None = None,
+    rewards: list[str] | None = None,
     english: bool = False,
 ) -> Family:
     """Familie aus den Antworten des Assistenten bauen.
@@ -123,6 +146,11 @@ def build_family(
         family.add_member(SYSTEM, name, Role.CHILD)
 
     children = [m for m in family.members.values() if m.role is Role.CHILD]
+    if children:
+        for key in rewards or []:
+            if key in STARTER_REWARDS:
+                name, cost = STARTER_REWARDS[key]
+                family.create_reward(SYSTEM, REWARD_NAMES_EN[key] if english else name, cost)
     for child in children:
         if child.name in ages:
             family.set_age(SYSTEM, child.id, ages[child.name], now)

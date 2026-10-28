@@ -170,5 +170,73 @@ class Chore:
         )
 
 
+class RedemptionState(StrEnum):
+    PENDING = "pending"  # Kind hat eingelöst, Punkte sind schon abgezogen
+    APPROVED = "approved"
+    REJECTED = "rejected"  # Punkte wurden zurückgegeben
+
+
+@dataclass
+class Reward:
+    """Belohnung, die Kinder mit Punkten einlösen. Eltern legen sie selbst fest."""
+
+    id: str
+    name: str
+    cost: int
+    members: list[str] = field(default_factory=list)  # leer = alle Kinder
+
+    def available_for(self, member_id: str) -> bool:
+        return not self.members or member_id in self.members
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"id": self.id, "name": self.name, "cost": self.cost, "members": list(self.members)}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Reward:
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            cost=int(data.get("cost", 0)),
+            members=list(data.get("members", [])),
+        )
+
+
+@dataclass
+class Redemption:
+    id: str
+    reward_id: str
+    reward_name: str  # bleibt lesbar, auch wenn die Belohnung gelöscht wird
+    member_id: str
+    cost: int
+    requested_at: datetime
+    state: RedemptionState = RedemptionState.PENDING
+    decided_at: datetime | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "reward_id": self.reward_id,
+            "reward_name": self.reward_name,
+            "member_id": self.member_id,
+            "cost": self.cost,
+            "requested_at": self.requested_at.isoformat(),
+            "state": self.state.value,
+            "decided_at": self.decided_at.isoformat() if self.decided_at else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Redemption:
+        return cls(
+            id=data["id"],
+            reward_id=data["reward_id"],
+            reward_name=data.get("reward_name", ""),
+            member_id=data["member_id"],
+            cost=int(data.get("cost", 0)),
+            requested_at=datetime.fromisoformat(data["requested_at"]),
+            state=RedemptionState(data.get("state", RedemptionState.PENDING)),
+            decided_at=_parse_dt(data.get("decided_at")),
+        )
+
+
 def _parse_dt(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None

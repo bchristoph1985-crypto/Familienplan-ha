@@ -14,6 +14,7 @@ from custom_components.familienplan.core import (
     FamilyError,
     PermissionDenied,
     Recurrence,
+    RedemptionState,
     Role,
 )
 
@@ -482,3 +483,66 @@ def test_alter_nur_eltern_und_gespeichert(family: Family) -> None:
     family.set_age(SYSTEM, lucas.id, 12, NOW)
     restored = Family.from_dict(family.to_dict())
     assert restored.members[lucas.id].age(NOW) == 12
+
+
+# -- Belohnungen ------------------------------------------------------------------
+
+
+def test_belohnung_einloesen_bestaetigen(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    lucas.points = 50
+    reward = family.create_reward(SYSTEM, "Kinoabend", 40)
+    redemption = family.redeem(actor(family, "Lucas"), reward.id, lucas.id, NOW)
+    assert lucas.points == 10  # sofort abgezogen
+    assert family.pending_redemptions() == [redemption]
+    with pytest.raises(PermissionDenied):
+        family.approve_redemption(actor(family, "Lucas"), redemption.id, NOW)
+    family.approve_redemption(actor(family, "Papa"), redemption.id, NOW)
+    assert redemption.state is RedemptionState.APPROVED
+    assert lucas.points == 10
+    with pytest.raises(FamilyError):
+        family.reject_redemption(actor(family, "Papa"), redemption.id, NOW)
+
+
+def test_ablehnen_und_zuruecknehmen_gibt_punkte_zurueck(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    lucas.points = 30
+    reward = family.create_reward(SYSTEM, "Eis", 20)
+    r1 = family.redeem(actor(family, "Lucas"), reward.id, lucas.id, NOW)
+    family.reject_redemption(actor(family, "Papa"), r1.id, NOW)
+    assert lucas.points == 30
+    r2 = family.redeem(actor(family, "Lucas"), reward.id, lucas.id, NOW)
+    with pytest.raises(PermissionDenied):
+        family.reject_redemption(actor(family, "Osmo"), r2.id, NOW)
+    family.reject_redemption(actor(family, "Lucas"), r2.id, NOW)  # selbst zurücknehmen
+    assert lucas.points == 30
+
+
+def test_nicht_genug_punkte_und_nur_fuer_eigene(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    lucas.points = 5
+    reward = family.create_reward(SYSTEM, "Ausflug", 100)
+    with pytest.raises(FamilyError):
+        family.redeem(actor(family, "Lucas"), reward.id, lucas.id, NOW)
+    osmo.points = 200
+    with pytest.raises(PermissionDenied):
+        family.redeem(actor(family, "Lucas"), reward.id, osmo.id, NOW)
+    only_osmo = family.create_reward(SYSTEM, "Lego", 10, [osmo.id])
+    lucas.points = 50
+    with pytest.raises(FamilyError):
+        family.redeem(actor(family, "Lucas"), only_osmo.id, lucas.id, NOW)
+    with pytest.raises(PermissionDenied):
+        family.create_reward(actor(family, "Lucas"), "Alles", 1)
+
+
+def test_belohnungen_werden_gespeichert(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    lucas.points = 20
+    reward = family.create_reward(SYSTEM, "Eis", 10, [lucas.id])
+    family.redeem(SYSTEM, reward.id, lucas.id, NOW)
+    restored = Family.from_dict(family.to_dict())
+    assert restored.rewards[reward.id].members == [lucas.id]
+    assert restored.pending_redemptions()[0].reward_name == "Eis"
+    # Kind entfernt: die nur für Lucas gedachte Belohnung verschwindet
+    family.remove_member(SYSTEM, lucas.id)
+    assert reward.id not in family.rewards

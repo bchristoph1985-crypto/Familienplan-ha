@@ -57,8 +57,10 @@ from homeassistant.util import dt as dt_util
 from .core import SYSTEM, FamilyError, Role
 from .reminders import parse_times
 from .setup_helpers import (
+    DEFAULT_REWARDS,
     DEFAULT_STARTERS,
     STARTER_CHORES,
+    STARTER_REWARDS,
     Person,
     build_family,
     find_people,
@@ -85,6 +87,7 @@ CONF_PEOPLE = "people"
 CONF_EXTRA_CHILDREN = "extra_children"
 CONF_PARENTS = "parents"
 CONF_STARTERS = "starters"
+CONF_REWARDS = "rewards"
 NO_USER = "__none__"
 
 
@@ -105,6 +108,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
         self._extra: list[str] = []
         self._parents: list[str] = []
         self._ages: dict[str, int] = {}
+        self._starters: list[str] = []
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -206,24 +210,48 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({vol.Optional(name): _age_selector() for name in names}),
         )
 
-    async def async_step_chores(
+    async def async_step_rewards(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        english = not (self.hass.config.language or "").startswith("de")
+        """Belohnungen, die Kinder mit ihren Punkten einlösen können."""
         if user_input is not None:
+            english = not (self.hass.config.language or "").startswith("de")
             people = [p for p in self._people if p.entity_id in self._selected]
             family = build_family(
                 people,
                 self._parents,
                 self._extra,
-                user_input.get(CONF_STARTERS, []),
+                self._starters,
                 dt_util.utcnow(),
                 ages=self._ages,
+                rewards=user_input.get(CONF_REWARDS, []),
                 english=english,
             )
             return self.async_create_entry(
                 title=self._title, data={DATA_INITIAL_FAMILY: family.to_dict()}
             )
+        return self.async_show_form(
+            step_id="rewards",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_REWARDS, default=DEFAULT_REWARDS): SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(STARTER_REWARDS),
+                            translation_key="reward",
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_chores(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if user_input is not None:
+            self._starters = user_input.get(CONF_STARTERS, [])
+            return await self.async_step_rewards()
         names = self._child_names()
         fitting = suitable_starters([self._ages.get(n) for n in names])
         return self.async_show_form(

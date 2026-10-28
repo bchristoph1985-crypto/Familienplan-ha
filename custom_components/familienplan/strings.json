@@ -36,6 +36,13 @@
       "ages": {
         "title": "How old are the children?",
         "description": "Age in years. Each child only gets chores that suit their age and automatically moves into new chores as they grow older. You can leave it empty."
+      },
+      "rewards": {
+        "title": "Which rewards are there?",
+        "description": "Children earn points with completed chores and redeem them here. You confirm every redemption. Add your own rewards and prices later under Familienplan → Rewards.",
+        "data": {
+          "rewards": "Rewards"
+        }
       }
     },
     "error": {
@@ -169,6 +176,17 @@
         "room": "Tidy up room (weekly, every child, 4+)",
         "bathroom": "Clean the bathroom (weekly, rotating, 10+)",
         "vacuum": "Vacuum (weekly, rotating, 8+)"
+      }
+    },
+    "reward": {
+      "options": {
+        "screen": "30 minutes extra screen time (15 points)",
+        "bedtime": "Stay up 30 minutes longer (20 points)",
+        "dinner": "Choose dinner (25 points)",
+        "movie": "Choose movie night (40 points)",
+        "pocket": "1 extra pocket money (40 points)",
+        "friend": "Invite a friend (50 points)",
+        "trip": "Choose a day trip (100 points)"
       }
     }
   },
@@ -436,6 +454,90 @@
         "age": {
           "name": "Age",
           "description": "In years."
+        }
+      }
+    },
+    "create_reward": {
+      "name": "Create reward",
+      "description": "New reward children can redeem with points.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "For example movie night."
+        },
+        "cost": {
+          "name": "Points",
+          "description": "How many points it costs."
+        },
+        "members": {
+          "name": "For whom",
+          "description": "Children (name or ID). Empty = all children."
+        }
+      }
+    },
+    "update_reward": {
+      "name": "Update reward",
+      "description": "Change name, points or children of a reward.",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "ID of the reward."
+        },
+        "name": {
+          "name": "Name",
+          "description": "New name."
+        },
+        "cost": {
+          "name": "Points",
+          "description": "New price."
+        },
+        "members": {
+          "name": "For whom",
+          "description": "Children. Empty = all children."
+        }
+      }
+    },
+    "delete_reward": {
+      "name": "Delete reward",
+      "description": "Deletes a reward. Open redemptions stay.",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "ID of the reward."
+        }
+      }
+    },
+    "redeem_reward": {
+      "name": "Redeem reward",
+      "description": "A child redeems a reward. Points are deducted, parents confirm.",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "ID of the reward."
+        },
+        "member": {
+          "name": "Member",
+          "description": "For whom. Default: whoever redeems."
+        }
+      }
+    },
+    "approve_redemption": {
+      "name": "Confirm redemption",
+      "description": "Parents confirm the child gets the reward.",
+      "fields": {
+        "redemption_id": {
+          "name": "Redemption ID",
+          "description": "ID of the redemption."
+        }
+      }
+    },
+    "reject_redemption": {
+      "name": "Reject redemption",
+      "description": "Rejects and gives the points back.",
+      "fields": {
+        "redemption_id": {
+          "name": "Redemption ID",
+          "description": "ID of the redemption."
         }
       }
     }

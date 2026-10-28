@@ -84,6 +84,22 @@ def snapshot(
             }
             for c in family.chores.values()
         ],
+        "rewards": [
+            {"id": r.id, "name": r.name, "cost": r.cost, "members": list(r.members)}
+            for r in family.rewards.values()
+        ],
+        # Eltern sehen alle offenen Einlösungen, Kinder nur ihre eigenen.
+        "redemptions": [
+            {
+                "id": r.id,
+                "reward_name": r.reward_name,
+                "member_id": r.member_id,
+                "cost": r.cost,
+                "requested_at": iso(r.requested_at),
+            }
+            for r in family.pending_redemptions()
+            if actor.is_manager or (actor.member and actor.member.id == r.member_id)
+        ],
     }
 
 

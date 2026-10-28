@@ -170,8 +170,12 @@ async def test_einrichtungsassistent(
         flow["flow_id"], {"Jan": 15, "Lucas": 12, "Osmo": 6}
     )
     assert flow["step_id"] == "chores"
-    result = await hass.config_entries.flow.async_configure(
+    flow = await hass.config_entries.flow.async_configure(
         flow["flow_id"], {"starters": ["dishwasher", "room"]}
+    )
+    assert flow["step_id"] == "rewards"
+    result = await hass.config_entries.flow.async_configure(
+        flow["flow_id"], {"rewards": ["screen", "trip"]}
     )
     assert result["type"] == "create_entry"
     assert result["title"] == "Familie B"
@@ -190,6 +194,10 @@ async def test_einrichtungsassistent(
         "Zimmer aufräumen (Jan)",
         "Zimmer aufräumen (Lucas)",
         "Zimmer aufräumen (Osmo)",
+    ]
+    assert sorted((r.name, r.cost) for r in family.rewards.values()) == [
+        ("30 Minuten extra Bildschirmzeit", 15),
+        ("Ausflug aussuchen", 100),
     ]
     dish = next(c for c in family.chores.values() if c.name == "Spülmaschine ausräumen")
     assert dish.rotation and len(dish.assignees) == 3
@@ -219,7 +227,8 @@ async def test_einrichtung_ohne_personen(hass: HomeAssistant) -> None:
     # Nur Startaufgaben, die zu einer Fünfjährigen passen
     options = next(iter(flow["data_schema"].schema.values())).config["options"]
     assert options == ["table", "room"]
-    result = await hass.config_entries.flow.async_configure(flow["flow_id"], {"starters": []})
+    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"starters": []})
+    result = await hass.config_entries.flow.async_configure(flow["flow_id"], {"rewards": []})
     assert result["title"] == "Familie"
     await hass.async_block_till_done()
     entry = hass.config_entries.async_entries(DOMAIN)[0]

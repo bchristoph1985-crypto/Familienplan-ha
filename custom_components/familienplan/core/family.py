@@ -12,9 +12,19 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
-from .models import Chore, ChoreState, Member, Recurrence, Role
+from .models import (
+    Chore,
+    ChoreState,
+    Member,
+    Recurrence,
+    Redemption,
+    RedemptionState,
+    Reward,
+    Role,
+)
 
 HISTORY_LIMIT = 50
+REDEMPTION_LIMIT = 100
 
 _INTERVALS = {
     Recurrence.DAILY: timedelta(days=1),
@@ -66,6 +76,8 @@ class Family:
         # Welche Geräte wir je Mitglied gesperrt haben. Nur diese geben wir
         # später wieder frei, nie etwas, das jemand anders ausgeschaltet hat.
         self.locked: dict[str, list[str]] = {}
+        self.rewards: dict[str, Reward] = {}
+        self.redemptions: list[Redemption] = []
 
     # -- Speichern -----------------------------------------------------------
 
@@ -74,6 +86,8 @@ class Family:
             "members": [m.to_dict() for m in self.members.values()],
             "chores": [c.to_dict() for c in self.chores.values()],
             "locked": {k: list(v) for k, v in self.locked.items()},
+            "rewards": [r.to_dict() for r in self.rewards.values()],
+            "redemptions": [r.to_dict() for r in self.redemptions],
         }
 
     @classmethod
@@ -83,6 +97,8 @@ class Family:
         chores = {c["id"]: Chore.from_dict(c) for c in data.get("chores", [])}
         family = cls(members, chores)
         family.locked = {k: list(v) for k, v in data.get("locked", {}).items()}
+        family.rewards = {r["id"]: Reward.from_dict(r) for r in data.get("rewards", [])}
+        family.redemptions = [Redemption.from_dict(r) for r in data.get("redemptions", [])]
         return family
 
     # -- Hilfen --------------------------------------------------------------
@@ -209,6 +225,12 @@ class Family:
         self.member(member_id)
         del self.members[member_id]
         self.locked.pop(member_id, None)
+        for reward in list(self.rewards.values()):
+            if member_id in reward.members:
+                reward.members.remove(member_id)
+                if not reward.members:
+                    # War nur für dieses Kind gedacht, nicht plötzlich für alle.
+                    del self.rewards[reward.id]
         for other in self.members.values():
             if other.substitute_id == member_id:
                 other.substitute_id = None
@@ -572,6 +594,122 @@ class Family:
                 chore.state = ChoreState.OVERDUE
                 changed = True
         return changed
+
+    # -- Belohnungen -----------------------------------------------------------
+
+    def reward(self, reward_id: str) -> Reward:
+        try:
+            return self.rewards[reward_id]
+        except KeyError:
+            raise FamilyError("Unbekannte Belohnung.") from None
+
+    def _check_reward(self, name: str, cost: int, members: list[str]) -> str:
+        name = name.strip()
+        if not name:
+            raise FamilyError("Name fehlt.")
+        if cost < 1:
+            raise FamilyError("Eine Belohnung kostet mindestens 1 Punkt.")
+        for member_id in members:
+            if self.member(member_id).role is not Role.CHILD:
+                raise FamilyError("Belohnungen gibt es nur für Kinder.")
+        return name
+
+    def create_reward(
+        self, actor: Actor, name: str, cost: int, members: list[str] | None = None
+    ) -> Reward:
+        self._require_manager(actor)
+        members = list(dict.fromkeys(members or []))
+        name = self._check_reward(name, cost, members)
+        reward = Reward(uuid.uuid4().hex, name, cost, members)
+        self.rewards[reward.id] = reward
+        return reward
+
+    def update_reward(
+        self,
+        actor: Actor,
+        reward_id: str,
+        *,
+        name: str | None = None,
+        cost: int | None = None,
+        members: list[str] | None = None,
+    ) -> Reward:
+        self._require_manager(actor)
+        reward = self.reward(reward_id)
+        new_members = list(dict.fromkeys(members)) if members is not None else reward.members
+        new_name = self._check_reward(
+            name if name is not None else reward.name,
+            cost if cost is not None else reward.cost,
+            new_members,
+        )
+        reward.name = new_name
+        if cost is not None:
+            reward.cost = cost
+        reward.members = new_members
+        return reward
+
+    def delete_reward(self, actor: Actor, reward_id: str) -> None:
+        """Offene Einlösungen bleiben bestehen und können noch entschieden werden."""
+        self._require_manager(actor)
+        self.reward(reward_id)
+        del self.rewards[reward_id]
+
+    def redeem(self, actor: Actor, reward_id: str, member_id: str, now: datetime) -> Redemption:
+        """Kind löst ein. Die Punkte werden sofort abgezogen, Eltern bestätigen."""
+        reward = self.reward(reward_id)
+        member = self.member(member_id)
+        if not actor.is_manager and (actor.member is None or actor.member.id != member_id):
+            raise PermissionDenied("Du kannst nur für dich selbst einlösen.")
+        if member.role is not Role.CHILD or not reward.available_for(member_id):
+            raise FamilyError("Diese Belohnung gibt es für dich nicht.")
+        if member.points < reward.cost:
+            raise FamilyError(
+                f"Dafür brauchst du {reward.cost} Punkte, du hast {member.points}."
+            )
+        member.points -= reward.cost
+        redemption = Redemption(
+            uuid.uuid4().hex, reward.id, reward.name, member_id, reward.cost, now
+        )
+        self.redemptions.append(redemption)
+        self._trim_redemptions()
+        return redemption
+
+    def _redemption(self, redemption_id: str) -> Redemption:
+        for redemption in self.redemptions:
+            if redemption.id == redemption_id:
+                if redemption.state is not RedemptionState.PENDING:
+                    raise FamilyError("Darüber wurde schon entschieden.")
+                return redemption
+        raise FamilyError("Unbekannte Einlösung.")
+
+    def approve_redemption(self, actor: Actor, redemption_id: str, now: datetime) -> Redemption:
+        self._require_manager(actor)
+        redemption = self._redemption(redemption_id)
+        redemption.state = RedemptionState.APPROVED
+        redemption.decided_at = now
+        return redemption
+
+    def reject_redemption(self, actor: Actor, redemption_id: str, now: datetime) -> Redemption:
+        """Ablehnen gibt die Punkte zurück. Das Kind kann auch selbst zurücknehmen."""
+        redemption = self._redemption(redemption_id)
+        if not actor.is_manager and (
+            actor.member is None or actor.member.id != redemption.member_id
+        ):
+            raise PermissionDenied("Nur Eltern dürfen das.")
+        redemption.state = RedemptionState.REJECTED
+        redemption.decided_at = now
+        if redemption.member_id in self.members:
+            self.members[redemption.member_id].points += redemption.cost
+        return redemption
+
+    def pending_redemptions(self) -> list[Redemption]:
+        return [r for r in self.redemptions if r.state is RedemptionState.PENDING]
+
+    def _trim_redemptions(self) -> None:
+        # Offene nie wegwerfen, nur alte entschiedene.
+        done = [r for r in self.redemptions if r.state is not RedemptionState.PENDING]
+        excess = len(self.redemptions) - REDEMPTION_LIMIT
+        for old in done[: max(0, excess)]:
+            self.redemptions.remove(old)
 
     # -- intern --------------------------------------------------------------
 

@@ -30,7 +30,17 @@ from .const import (
     ATTR_SUBSTITUTE,
     ATTR_UNTIL,
     DOMAIN,
+    ATTR_COST,
+    ATTR_MEMBERS,
     ATTR_MESSAGE,
+    ATTR_REDEMPTION_ID,
+    ATTR_REWARD_ID,
+    SERVICE_APPROVE_REDEMPTION,
+    SERVICE_CREATE_REWARD,
+    SERVICE_DELETE_REWARD,
+    SERVICE_REDEEM_REWARD,
+    SERVICE_REJECT_REDEMPTION,
+    SERVICE_UPDATE_REWARD,
     SERVICE_ANNOUNCE,
     SERVICE_APPROVE_CHORE,
     SERVICE_CLAIM_CHORE,
@@ -120,6 +130,26 @@ AGE_SCHEMA = vol.Schema(
 )
 
 ANNOUNCE_SCHEMA = vol.Schema({vol.Optional(ATTR_MESSAGE): cv.string})
+
+_COST = vol.All(vol.Coerce(int), vol.Range(min=1, max=100000))
+CREATE_REWARD_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_NAME): cv.string,
+        vol.Required(ATTR_COST): _COST,
+        vol.Optional(ATTR_MEMBERS, default=[]): vol.All(cv.ensure_list, [cv.string]),
+    }
+)
+UPDATE_REWARD_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_REWARD_ID): cv.string,
+        vol.Optional(ATTR_NAME): cv.string,
+        vol.Optional(ATTR_COST): _COST,
+        vol.Optional(ATTR_MEMBERS): vol.All(cv.ensure_list, [cv.string]),
+    }
+)
+REWARD_SCHEMA = vol.Schema({vol.Required(ATTR_REWARD_ID): cv.string})
+REDEEM_SCHEMA = REWARD_SCHEMA.extend({vol.Optional(ATTR_MEMBER): cv.string})
+REDEMPTION_SCHEMA = vol.Schema({vol.Required(ATTR_REDEMPTION_ID): cv.string})
 
 
 def _runtime(hass: HomeAssistant) -> FamilienplanData:
@@ -261,6 +291,48 @@ async def _announce(hass, call, data, actor) -> None:
     await async_announce(hass, data.entry, message)
 
 
+async def _create_reward(hass, call, data, actor) -> None:
+    data.family.create_reward(
+        actor,
+        call.data[ATTR_NAME],
+        call.data[ATTR_COST],
+        [_member_id(data, m) for m in call.data[ATTR_MEMBERS]],
+    )
+
+
+async def _update_reward(hass, call, data, actor) -> None:
+    d = call.data
+    data.family.update_reward(
+        actor,
+        d[ATTR_REWARD_ID],
+        name=d.get(ATTR_NAME),
+        cost=d.get(ATTR_COST),
+        members=[_member_id(data, m) for m in d[ATTR_MEMBERS]] if ATTR_MEMBERS in d else None,
+    )
+
+
+async def _delete_reward(hass, call, data, actor) -> None:
+    data.family.delete_reward(actor, call.data[ATTR_REWARD_ID])
+
+
+async def _redeem(hass, call, data, actor) -> None:
+    from .reminders import notify_parents  # noqa: PLC0415
+
+    redemption = data.family.redeem(
+        actor, call.data[ATTR_REWARD_ID], _who(data, call, actor), dt_util.utcnow()
+    )
+    member = data.family.members[redemption.member_id]
+    await notify_parents(hass, data.family, "redeemed", name=member.name, reward=redemption.reward_name)
+
+
+async def _approve_redemption(hass, call, data, actor) -> None:
+    data.family.approve_redemption(actor, call.data[ATTR_REDEMPTION_ID], dt_util.utcnow())
+
+
+async def _reject_redemption(hass, call, data, actor) -> None:
+    data.family.reject_redemption(actor, call.data[ATTR_REDEMPTION_ID], dt_util.utcnow())
+
+
 async def _set_age(hass, call, data, actor) -> None:
     data.family.set_age(
         actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_AGE], dt_util.utcnow()
@@ -327,5 +399,11 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_REVOKE_PASS, _revoke_pass, END_ABSENCE_SCHEMA),
         (SERVICE_ANNOUNCE, _announce, ANNOUNCE_SCHEMA),
         (SERVICE_SET_AGE, _set_age, AGE_SCHEMA),
+        (SERVICE_CREATE_REWARD, _create_reward, CREATE_REWARD_SCHEMA),
+        (SERVICE_UPDATE_REWARD, _update_reward, UPDATE_REWARD_SCHEMA),
+        (SERVICE_DELETE_REWARD, _delete_reward, REWARD_SCHEMA),
+        (SERVICE_REDEEM_REWARD, _redeem, REDEEM_SCHEMA),
+        (SERVICE_APPROVE_REDEMPTION, _approve_redemption, REDEMPTION_SCHEMA),
+        (SERVICE_REJECT_REDEMPTION, _reject_redemption, REDEMPTION_SCHEMA),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)
