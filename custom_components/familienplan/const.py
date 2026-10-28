@@ -1,6 +1,8 @@
 """Konstanten für Familienplan."""
 
 DOMAIN = "familienplan"
+VERSION = "0.2.0"
+CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
 
