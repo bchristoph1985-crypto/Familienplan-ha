@@ -174,10 +174,15 @@ async def test_einrichtungsassistent(
         flow["flow_id"], {"starters": ["dishwasher", "room"]}
     )
     assert flow["step_id"] == "rewards"
-    result = await hass.config_entries.flow.async_configure(
+    flow = await hass.config_entries.flow.async_configure(
         flow["flow_id"], {"rewards": ["screen", "trip"]}
     )
+    assert flow["step_id"] == "photos"
+    result = await hass.config_entries.flow.async_configure(
+        flow["flow_id"], {"photo_privacy": "keep"}
+    )
     assert result["type"] == "create_entry"
+    assert result["options"] == {"photo_delete_after_review": False}
     assert result["title"] == "Familie B"
     await hass.async_block_till_done()
 
@@ -228,8 +233,11 @@ async def test_einrichtung_ohne_personen(hass: HomeAssistant) -> None:
     options = next(iter(flow["data_schema"].schema.values())).config["options"]
     assert options == ["table", "room"]
     flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"starters": []})
-    result = await hass.config_entries.flow.async_configure(flow["flow_id"], {"rewards": []})
+    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"rewards": []})
+    result = await hass.config_entries.flow.async_configure(flow["flow_id"], {})
     assert result["title"] == "Familie"
+    # Ohne Auswahl: Fotos werden nach der Entscheidung gelöscht
+    assert result["options"] == {"photo_delete_after_review": True}
     await hass.async_block_till_done()
     entry = hass.config_entries.async_entries(DOMAIN)[0]
     assert [m.name for m in entry.runtime_data.family.members.values()] == ["Mia"]

@@ -339,16 +339,40 @@ async def _set_age(hass, call, data, actor) -> None:
     )
 
 
+async def _drop_photo(hass, data, chore_id: str, photo: str | None, always: bool) -> None:
+    """Foto nach der Entscheidung löschen, wenn die Familie das so eingestellt hat.
+
+    Zurückgenommene Meldungen verlieren ihr Foto immer, es gehört zu nichts mehr.
+    """
+    from .photos import async_discard, delete_after_review  # noqa: PLC0415
+
+    if photo is None or not (always or delete_after_review(data.entry)):
+        return
+    chore = data.family.chores.get(chore_id)
+    if chore is not None and chore.photo == photo:
+        chore.photo = None
+    await async_discard(hass, photo)
+
+
 async def _undo(hass, call, data, actor) -> None:
-    data.family.undo_claim(actor, call.data[ATTR_CHORE_ID])
+    chore = data.family.chore(call.data[ATTR_CHORE_ID])
+    photo = chore.photo
+    data.family.undo_claim(actor, chore.id)
+    await _drop_photo(hass, data, chore.id, photo, always=True)
 
 
 async def _approve(hass, call, data, actor) -> None:
-    data.family.approve(actor, call.data[ATTR_CHORE_ID], dt_util.utcnow())
+    chore = data.family.chore(call.data[ATTR_CHORE_ID])
+    photo = chore.photo
+    data.family.approve(actor, chore.id, dt_util.utcnow())
+    await _drop_photo(hass, data, chore.id, photo, always=False)
 
 
 async def _reject(hass, call, data, actor) -> None:
-    data.family.reject(actor, call.data[ATTR_CHORE_ID], dt_util.utcnow())
+    chore = data.family.chore(call.data[ATTR_CHORE_ID])
+    photo = chore.photo
+    data.family.reject(actor, chore.id, dt_util.utcnow())
+    await _drop_photo(hass, data, chore.id, photo, always=False)
 
 
 async def _set_absence(hass, call, data, actor) -> None:

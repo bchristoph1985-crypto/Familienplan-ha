@@ -467,8 +467,19 @@ class Family:
                 raise FamilyError("Für diese Aufgabe brauchst du ein Foto.")
         self._check_claimable(chore)
         chore.photo = photo  # altes Foto gehört zur letzten Runde
-        self._submit(chore, member_id, now, needs_check=not actor.is_manager)
+        self._submit(chore, member_id, now, needs_check=self._needs_check(actor, chore))
         return chore
+
+    @staticmethod
+    def _needs_check(actor: Actor, chore: Chore) -> bool:
+        """Eltern prüfen, wenn die Aufgabe Freigabe braucht oder ein Foto dabei ist.
+
+        Ein Fotonachweis, den niemand ansieht, wäre sinnlos. Darum gehen
+        Fotos von Kindern immer zur Bestätigung an die Eltern.
+        """
+        if actor.is_manager:
+            return False
+        return chore.requires_approval or (chore.requires_photo and chore.photo is not None)
 
     def take_over(
         self,
@@ -517,7 +528,7 @@ class Family:
         chore.claim_taken_from = responsible[0]
         chore.photo = photo  # altes Foto gehört zur letzten Runde
         self._log(chore, "taken_over", member_id, now)
-        self._submit(chore, member_id, now, needs_check=not actor.is_manager)
+        self._submit(chore, member_id, now, needs_check=self._needs_check(actor, chore))
         return chore
 
     @staticmethod
@@ -528,7 +539,7 @@ class Family:
             raise FamilyError("Die Aufgabe wartet schon auf Freigabe.")
 
     def _submit(self, chore: Chore, member_id: str, now: datetime, *, needs_check: bool) -> None:
-        if chore.requires_approval and needs_check:
+        if needs_check:
             chore.state = ChoreState.CLAIMED
             chore.claimed_by = member_id
             self._log(chore, "claimed", member_id, now)

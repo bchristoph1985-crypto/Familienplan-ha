@@ -1,7 +1,7 @@
 """Konstanten für Familienplan."""
 
 DOMAIN = "familienplan"
-VERSION = "0.9.0"
+VERSION = "0.10.0"
 CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -56,6 +56,9 @@ DEFAULT_TAKEOVER_MAX = 2
 
 CONF_PHOTO_RETENTION = "photo_retention_days"
 DEFAULT_PHOTO_RETENTION = 7
+# Datenschutz: Fotos nach der Entscheidung der Eltern sofort löschen (Standard)
+CONF_PHOTO_DELETE_AFTER_REVIEW = "photo_delete_after_review"
+DEFAULT_PHOTO_DELETE_AFTER_REVIEW = True
 PHOTO_DIR = "familienplan_photos"
 PHOTO_URL = "/api/familienplan/photo"
 PHOTO_MAX_BYTES = 10 * 1024 * 1024

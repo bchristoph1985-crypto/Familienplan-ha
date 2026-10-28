@@ -43,6 +43,13 @@
         "data": {
           "rewards": "Belohnungen"
         }
+      },
+      "photos": {
+        "title": "Fotos und Datenschutz",
+        "description": "Bei Aufgaben mit Fotonachweis machen Kinder ein Foto, das nur Eltern sehen. Die Fotos bleiben in eurem Home Assistant und gehen nirgendwohin. Ob eine Aufgabe einen Fotonachweis braucht, legt ihr je Aufgabe fest, standardmäßig ist er aus.",
+        "data": {
+          "photo_privacy": "Was passiert mit den Fotos?"
+        }
       }
     },
     "error": {
@@ -125,7 +132,8 @@
           "takeover_from": "Übernehmen erlaubt ab",
           "takeover_double_from": "Doppelte Punkte ab",
           "takeover_max": "Höchstens pro Kind und Tag",
-          "photo_retention_days": "Fotos löschen nach (Tagen)"
+          "photo_retention_days": "Sonst spätestens löschen nach (Tagen)",
+          "photo_delete_after_review": "Fotos sofort nach Bestätigen oder Ablehnen löschen"
         }
       },
       "announcements": {
@@ -187,6 +195,12 @@
         "pocket": "1 € Taschengeld extra (40 Punkte)",
         "friend": "Freund oder Freundin einladen (50 Punkte)",
         "trip": "Ausflug aussuchen (100 Punkte)"
+      }
+    },
+    "photo_privacy": {
+      "options": {
+        "delete": "Sofort löschen, sobald wir bestätigt oder abgelehnt haben (empfohlen)",
+        "keep": "7 Tage aufbewahren, dann automatisch löschen"
       }
     }
   },

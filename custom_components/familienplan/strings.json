@@ -43,6 +43,13 @@
         "data": {
           "rewards": "Rewards"
         }
+      },
+      "photos": {
+        "title": "Photos and privacy",
+        "description": "For chores with photo proof, children take a photo that only parents can see. Photos stay in your Home Assistant and never leave it. You decide per chore whether photo proof is needed; it is off by default.",
+        "data": {
+          "photo_privacy": "What happens to the photos?"
+        }
       }
     },
     "error": {
@@ -125,7 +132,8 @@
           "takeover_from": "Taking over allowed from",
           "takeover_double_from": "Double points from",
           "takeover_max": "Max. per child and day",
-          "photo_retention_days": "Delete photos after (days)"
+          "photo_retention_days": "Otherwise delete at the latest after (days)",
+          "photo_delete_after_review": "Delete photos right after approving or rejecting"
         }
       },
       "announcements": {
@@ -187,6 +195,12 @@
         "pocket": "1 extra pocket money (40 points)",
         "friend": "Invite a friend (50 points)",
         "trip": "Choose a day trip (100 points)"
+      }
+    },
+    "photo_privacy": {
+      "options": {
+        "delete": "Delete right after we approve or reject (recommended)",
+        "keep": "Keep for 7 days, then delete automatically"
       }
     }
   },

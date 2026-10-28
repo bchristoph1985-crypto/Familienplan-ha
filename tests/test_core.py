@@ -372,8 +372,11 @@ def test_kind_braucht_foto_eltern_nicht(family: Family) -> None:
     with pytest.raises(FamilyError):
         family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW)
     family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW, photo="a.jpg")
-    assert chore.state is ChoreState.DONE
+    # Fotos gehen immer an die Eltern, auch ohne „Freigabe nötig“
+    assert chore.state is ChoreState.CLAIMED
     assert chore.photo == "a.jpg"
+    family.approve(actor(family, "Papa"), chore.id, NOW)
+    assert chore.state is ChoreState.DONE and lucas.points == 3
 
     chore2 = family.create_chore(SYSTEM, "Flur", [lucas.id], requires_photo=True)
     family.claim(actor(family, "Papa"), chore2.id, lucas.id, NOW)
@@ -436,7 +439,7 @@ def test_uebernehmen_mit_fotopflicht(family: Family) -> None:
     with pytest.raises(FamilyError):
         family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, day_start=DAY_START)
     family.take_over(actor(family, "Osmo"), chore.id, osmo.id, NOW, day_start=DAY_START, photo="b.jpg")
-    assert chore.state is ChoreState.DONE and chore.photo == "b.jpg"
+    assert chore.state is ChoreState.CLAIMED and chore.photo == "b.jpg"
 
 
 # -- Alter ----------------------------------------------------------------------

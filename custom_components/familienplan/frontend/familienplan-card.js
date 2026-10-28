@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.9.0";
+const VERSION = "0.10.0";
 
 const T = {
   de: {
@@ -62,7 +62,7 @@ const T = {
     givePass: "Freikarte",
     takePass: "Freikarte weg",
     pointsLabel: "Punkte",
-    photo: "Fotonachweis",
+    photo: "Fotonachweis (Foto sehen nur Eltern)",
     photoDone: "📷 Foto & erledigt",
     photoOf: "Foto ansehen",
     lastPhoto: "Letztes Foto",
@@ -142,7 +142,7 @@ const T = {
     givePass: "Free pass",
     takePass: "Remove pass",
     pointsLabel: "Points",
-    photo: "Photo proof",
+    photo: "Photo proof (only parents see it)",
     photoDone: "📷 Photo & done",
     photoOf: "View photo",
     lastPhoto: "Last photo",

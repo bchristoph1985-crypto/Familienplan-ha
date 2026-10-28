@@ -143,3 +143,48 @@ async def test_fotos_werden_nach_frist_geloescht(hass: HomeAssistant, setup) -> 
     assert not old.exists() and new.exists()
     assert forget_missing(hass, setup)
     assert chore.photo is None
+
+
+async def _photo_claim(hass, setup, kid_client):
+    family, by = _ids(setup)
+    chore = family.create_chore(SYSTEM, "Zimmer", [by["Osmo"]], points=2, requires_photo=True)
+    await setup.runtime_data.async_save()
+    resp = await _upload(kid_client, chore.id)
+    assert resp.status == 200, await resp.text()
+    assert chore.state is ChoreState.CLAIMED  # Foto geht immer an die Eltern
+    return chore, photo_dir(hass) / chore.photo
+
+
+@pytest.mark.parametrize(("delete", "kept"), [(True, False), (False, True)])
+async def test_foto_nach_bestaetigung(
+    hass: HomeAssistant, setup, hass_client, hass_read_only_access_token, aiohttp_client,
+    hass_admin_user, delete, kept,
+) -> None:
+    hass.config_entries.async_update_entry(setup, options={"photo_delete_after_review": delete})
+    await hass.async_block_till_done()
+    await hass_client()
+    kid = await aiohttp_client(hass.http.app, headers={"Authorization": f"Bearer {hass_read_only_access_token}"})
+    chore, path = await _photo_claim(hass, setup, kid)
+    await hass.services.async_call(
+        DOMAIN, "approve_chore", {"chore_id": chore.id}, blocking=True,
+        context=Context(user_id=hass_admin_user.id),
+    )
+    assert path.exists() is kept
+    assert (chore.photo is not None) is kept
+
+
+async def test_zuruecknehmen_loescht_foto_immer(
+    hass: HomeAssistant, setup, hass_client, hass_read_only_access_token, aiohttp_client,
+    hass_read_only_user,
+) -> None:
+    hass.config_entries.async_update_entry(setup, options={"photo_delete_after_review": False})
+    await hass.async_block_till_done()
+    await hass_client()
+    kid = await aiohttp_client(hass.http.app, headers={"Authorization": f"Bearer {hass_read_only_access_token}"})
+    chore, path = await _photo_claim(hass, setup, kid)
+    await hass.services.async_call(
+        DOMAIN, "undo_claim", {"chore_id": chore.id}, blocking=True,
+        context=Context(user_id=hass_read_only_user.id),
+    )
+    assert not path.exists()
+    assert chore.photo is None

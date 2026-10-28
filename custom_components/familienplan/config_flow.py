@@ -34,7 +34,9 @@ from .const import (
     DEFAULT_ANNOUNCE_TIMES,
     CONF_CONSEQUENCES,
     CONF_LOCK_TIME,
+    CONF_PHOTO_DELETE_AFTER_REVIEW,
     CONF_PHOTO_RETENTION,
+    DEFAULT_PHOTO_DELETE_AFTER_REVIEW,
     CONF_TAKEOVER_DOUBLE,
     CONF_TAKEOVER_FROM,
     CONF_TAKEOVER_MAX,
@@ -88,6 +90,9 @@ CONF_EXTRA_CHILDREN = "extra_children"
 CONF_PARENTS = "parents"
 CONF_STARTERS = "starters"
 CONF_REWARDS = "rewards"
+CONF_PHOTO_PRIVACY = "photo_privacy"
+PHOTO_DELETE = "delete"
+PHOTO_KEEP = "keep"
 NO_USER = "__none__"
 
 
@@ -109,6 +114,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
         self._parents: list[str] = []
         self._ages: dict[str, int] = {}
         self._starters: list[str] = []
+        self._rewards: list[str] = []
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -215,21 +221,8 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Belohnungen, die Kinder mit ihren Punkten einlösen können."""
         if user_input is not None:
-            english = not (self.hass.config.language or "").startswith("de")
-            people = [p for p in self._people if p.entity_id in self._selected]
-            family = build_family(
-                people,
-                self._parents,
-                self._extra,
-                self._starters,
-                dt_util.utcnow(),
-                ages=self._ages,
-                rewards=user_input.get(CONF_REWARDS, []),
-                english=english,
-            )
-            return self.async_create_entry(
-                title=self._title, data={DATA_INITIAL_FAMILY: family.to_dict()}
-            )
+            self._rewards = user_input.get(CONF_REWARDS, [])
+            return await self.async_step_photos()
         return self.async_show_form(
             step_id="rewards",
             data_schema=vol.Schema(
@@ -239,6 +232,45 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
                             options=list(STARTER_REWARDS),
                             translation_key="reward",
                             multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_photos(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Datenschutz: Was passiert mit Fotos vom Fotonachweis?"""
+        if user_input is not None:
+            english = not (self.hass.config.language or "").startswith("de")
+            people = [p for p in self._people if p.entity_id in self._selected]
+            family = build_family(
+                people,
+                self._parents,
+                self._extra,
+                self._starters,
+                dt_util.utcnow(),
+                ages=self._ages,
+                rewards=self._rewards,
+                english=english,
+            )
+            return self.async_create_entry(
+                title=self._title,
+                data={DATA_INITIAL_FAMILY: family.to_dict()},
+                options={
+                    CONF_PHOTO_DELETE_AFTER_REVIEW: user_input[CONF_PHOTO_PRIVACY] == PHOTO_DELETE,
+                },
+            )
+        return self.async_show_form(
+            step_id="photos",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_PHOTO_PRIVACY, default=PHOTO_DELETE): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[PHOTO_DELETE, PHOTO_KEEP],
+                            translation_key="photo_privacy",
                             mode=SelectSelectorMode.LIST,
                         )
                     )
@@ -587,6 +619,12 @@ class MembersOptionsFlow(OptionsFlow):
                         CONF_TAKEOVER_MAX,
                         default=options.get(CONF_TAKEOVER_MAX, DEFAULT_TAKEOVER_MAX),
                     ): number(10),
+                    vol.Required(
+                        CONF_PHOTO_DELETE_AFTER_REVIEW,
+                        default=options.get(
+                            CONF_PHOTO_DELETE_AFTER_REVIEW, DEFAULT_PHOTO_DELETE_AFTER_REVIEW
+                        ),
+                    ): BooleanSelector(),
                     vol.Required(
                         CONF_PHOTO_RETENTION,
                         default=options.get(CONF_PHOTO_RETENTION, DEFAULT_PHOTO_RETENTION),
