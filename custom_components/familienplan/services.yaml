@@ -110,3 +110,30 @@ update_chore:
     requires_approval:
       selector:
         boolean:
+set_devices:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    devices:
+      required: true
+      selector:
+        entity:
+          domain: switch
+          multiple: true
+grant_pass:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    until:
+      selector:
+        datetime:
+revoke_pass:
+  fields:
+    member:
+      required: true
+      selector:
+        text:

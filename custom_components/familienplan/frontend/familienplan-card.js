@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 
 const T = {
   de: {
@@ -57,6 +57,10 @@ const T = {
     notSetUp: "Familienplan ist nicht eingerichtet.",
     noMember: "Dieses Konto gehört zu keinem Familienmitglied.",
     paused: "ruht",
+    locked: "🔒 Internet gesperrt",
+    pass: "Freikarte bis {time}",
+    givePass: "Freikarte",
+    takePass: "Freikarte weg",
     pointsLabel: "Punkte",
     rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen" },
   },
@@ -104,6 +108,10 @@ const T = {
     notSetUp: "Familienplan is not set up.",
     noMember: "This account is not linked to a family member.",
     paused: "paused",
+    locked: "🔒 Internet locked",
+    pass: "Free pass until {time}",
+    givePass: "Free pass",
+    takePass: "Remove pass",
     pointsLabel: "Points",
     rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks" },
   },
@@ -265,6 +273,12 @@ class FamilienplanCard extends HTMLElement {
         });
         break;
       }
+      case "pass":
+        this._call("grant_pass", { member: id });
+        break;
+      case "revoke-pass":
+        this._call("revoke_pass", { member: id });
+        break;
       case "end-away":
         this._call("end_absence", { member: id });
         break;
@@ -418,6 +432,7 @@ class FamilienplanCard extends HTMLElement {
         <div class="hello">${esc(this._t("hello", { name: member.name }))}</div>
         <div class="badge">${esc(this._t("points", { n: member.points }))}</div>
       </div>
+      ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
       ${list}`;
   }
 
@@ -450,13 +465,24 @@ class FamilienplanCard extends HTMLElement {
     return this._children()
       .map((m) => {
         const chores = this._openFor(m.id);
-        const status = m.away ? `<span class="chip">${esc(this._awayText(m))}</span>` : "";
+        let status = m.away ? `<span class="chip">${esc(this._awayText(m))}</span>` : "";
+        if (m.locked) status += ` <span class="chip bad">${this._t("locked")}</span>`;
+        if (m.pass_until) {
+          const time = new Date(m.pass_until).toLocaleTimeString(this._locale(), { hour: "2-digit", minute: "2-digit" });
+          status += ` <span class="chip">${esc(this._t("pass", { time }))}</span>`;
+        }
+        let passBtn = "";
+        if (m.has_devices && !this._config.readonly) {
+          passBtn = m.pass_until
+            ? `<button class="link" data-action="revoke-pass" data-id="${esc(m.id)}">${this._t("takePass")}</button>`
+            : `<button class="link" data-action="pass" data-id="${esc(m.id)}">${this._t("givePass")}</button>`;
+        }
         const list = chores.length
           ? `<ul>${chores.map((c) => this._choreRow(c, m.id, { showClaim: c.state !== "claimed", forName: m.name })).join("")}</ul>`
           : `<p class="empty small">${this._t("allDone")}</p>`;
         return `
           <section>
-            <div class="section-head"><strong>${esc(m.name)}</strong> ${status}<span class="badge">${esc(this._t("points", { n: m.points }))}</span></div>
+            <div class="section-head"><strong>${esc(m.name)}</strong> ${status}${passBtn}<span class="badge">${esc(this._t("points", { n: m.points }))}</span></div>
             ${list}
           </section>`;
       })
@@ -604,7 +630,7 @@ const STYLE = `
   .chip { display: inline-block; font-size: 0.8em; padding: 2px 8px; border-radius: 10px; background: var(--secondary-background-color); }
   .chip.bad { background: none; border: 1px solid var(--error-color, #db4437); }
   .chip.wait { color: var(--warning-color, #f4b400); }
-  .head, .section-head { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
+  .head, .section-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 4px; }
   .hello { font-size: 1.3em; font-weight: 500; flex: 1; }
   .section-head strong { flex: 0 0 auto; }
   .badge { margin-left: auto; font-size: 0.85em; padding: 2px 10px; border-radius: 12px; background: var(--primary-color); color: var(--text-primary-color, #fff); white-space: nowrap; }

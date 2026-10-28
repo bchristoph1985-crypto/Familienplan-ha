@@ -63,6 +63,9 @@ class Family:
     ) -> None:
         self.members: dict[str, Member] = members or {}
         self.chores: dict[str, Chore] = chores or {}
+        # Welche Geräte wir je Mitglied gesperrt haben. Nur diese geben wir
+        # später wieder frei, nie etwas, das jemand anders ausgeschaltet hat.
+        self.locked: dict[str, list[str]] = {}
 
     # -- Speichern -----------------------------------------------------------
 
@@ -70,6 +73,7 @@ class Family:
         return {
             "members": [m.to_dict() for m in self.members.values()],
             "chores": [c.to_dict() for c in self.chores.values()],
+            "locked": {k: list(v) for k, v in self.locked.items()},
         }
 
     @classmethod
@@ -77,7 +81,9 @@ class Family:
         data = data or {}
         members = {m["id"]: Member.from_dict(m) for m in data.get("members", [])}
         chores = {c["id"]: Chore.from_dict(c) for c in data.get("chores", [])}
-        return cls(members, chores)
+        family = cls(members, chores)
+        family.locked = {k: list(v) for k, v in data.get("locked", {}).items()}
+        return family
 
     # -- Hilfen --------------------------------------------------------------
 
@@ -180,6 +186,7 @@ class Family:
         self._require_manager(actor)
         self.member(member_id)
         del self.members[member_id]
+        self.locked.pop(member_id, None)
         for other in self.members.values():
             if other.substitute_id == member_id:
                 other.substitute_id = None
@@ -222,6 +229,58 @@ class Family:
         member = self.member(member_id)
         member.away_from = member.away_until = member.substitute_id = None
         return member
+
+    # -- Konsequenzen ---------------------------------------------------------
+
+    def set_devices(self, actor: Actor, member_id: str, devices: list[str]) -> Member:
+        """Freizeitgeräte, deren Internet bei offenen Aufgaben gesperrt wird."""
+        self._require_manager(actor)
+        member = self.member(member_id)
+        if member.role is not Role.CHILD and devices:
+            raise FamilyError("Sperren gibt es nur für Kinder.")
+        member.devices = list(dict.fromkeys(devices))
+        return member
+
+    def grant_pass(self, actor: Actor, member_id: str, until: datetime) -> Member:
+        """Freikarte: bis `until` keine Sperre, egal was offen ist."""
+        self._require_manager(actor)
+        member = self.member(member_id)
+        member.pass_until = until
+        return member
+
+    def revoke_pass(self, actor: Actor, member_id: str) -> Member:
+        self._require_manager(actor)
+        member = self.member(member_id)
+        member.pass_until = None
+        return member
+
+    def should_lock(self, member_id: str, now: datetime) -> bool:
+        """Ob die Geräte dieses Kindes gerade gesperrt sein sollen.
+
+        Gesperrt wird nur bei überfälligen Aufgaben. Gemeldete Aufgaben, die
+        auf Freigabe warten, zählen nicht: Das Kind hat seinen Teil getan.
+        Abwesende und Kinder mit Freikarte werden nie gesperrt.
+        """
+        member = self.members.get(member_id)
+        if (
+            member is None
+            or member.role is not Role.CHILD
+            or not member.devices
+            or member.is_away(now)
+            or member.has_pass(now)
+        ):
+            return False
+        return any(
+            c.state is ChoreState.OVERDUE and member_id in self.responsible(c, now)
+            for c in self.chores.values()
+        )
+
+    def lock_reasons(self, member_id: str, now: datetime) -> list[Chore]:
+        return [
+            c
+            for c in self.chores.values()
+            if c.state is ChoreState.OVERDUE and member_id in self.responsible(c, now)
+        ]
 
     # -- Aufgaben verwalten --------------------------------------------------
 
@@ -396,6 +455,9 @@ class Family:
         for member in self.members.values():
             if member.away_until is not None and now >= member.away_until:
                 member.away_from = member.away_until = member.substitute_id = None
+                changed = True
+            if member.pass_until is not None and now >= member.pass_until:
+                member.pass_until = None
                 changed = True
         for chore in self.chores.values():
             if (

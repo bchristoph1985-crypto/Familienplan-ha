@@ -96,6 +96,9 @@ class MemberPointsSensor(_FamilienplanSensor):
             "away_from": member.away_from.isoformat() if member.away_from else None,
             "away_until": member.away_until.isoformat() if member.away_until else None,
             "substitute": substitute.name if substitute else None,
+            "devices": list(member.devices),
+            "internet_locked": bool(self._data.family.locked.get(member.id)),
+            "pass_until": member.pass_until.isoformat() if member.has_pass(now) else None,
             "chores": [
                 {"id": c.id, "name": c.name, "state": c.state.value,
                  "due": c.due.isoformat() if c.due else None}

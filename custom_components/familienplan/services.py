@@ -15,6 +15,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     ATTR_ASSIGNEES,
     ATTR_CHORE_ID,
+    ATTR_DEVICES,
     ATTR_DUE,
     ATTR_MEMBER,
     ATTR_NAME,
@@ -31,11 +32,15 @@ from .const import (
     SERVICE_CREATE_CHORE,
     SERVICE_DELETE_CHORE,
     SERVICE_END_ABSENCE,
+    SERVICE_GRANT_PASS,
+    SERVICE_REVOKE_PASS,
+    SERVICE_SET_DEVICES,
     SERVICE_REJECT_CHORE,
     SERVICE_SET_ABSENCE,
     SERVICE_UNDO_CLAIM,
     SERVICE_UPDATE_CHORE,
 )
+from .consequences import next_release
 from .core import Actor, FamilyError, Recurrence
 
 if TYPE_CHECKING:
@@ -82,6 +87,17 @@ ABSENCE_SCHEMA = vol.Schema(
 )
 
 END_ABSENCE_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string})
+
+DEVICES_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEMBER): cv.string,
+        vol.Required(ATTR_DEVICES): vol.All(cv.ensure_list, [cv.entity_domain("switch")]),
+    }
+)
+
+PASS_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_UNTIL): cv.datetime}
+)
 
 
 def _runtime(hass: HomeAssistant) -> FamilienplanData:
@@ -210,6 +226,21 @@ async def _end_absence(hass, call, data, actor) -> None:
     data.family.end_absence(actor, _member_id(data, call.data[ATTR_MEMBER]))
 
 
+async def _set_devices(hass, call, data, actor) -> None:
+    data.family.set_devices(
+        actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_DEVICES]
+    )
+
+
+async def _grant_pass(hass, call, data, actor) -> None:
+    until = _utc(call.data.get(ATTR_UNTIL)) or next_release(data.entry, dt_util.utcnow())
+    data.family.grant_pass(actor, _member_id(data, call.data[ATTR_MEMBER]), until)
+
+
+async def _revoke_pass(hass, call, data, actor) -> None:
+    data.family.revoke_pass(actor, _member_id(data, call.data[ATTR_MEMBER]))
+
+
 @callback
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
@@ -222,5 +253,8 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_REJECT_CHORE, _reject, CHORE_SCHEMA),
         (SERVICE_SET_ABSENCE, _set_absence, ABSENCE_SCHEMA),
         (SERVICE_END_ABSENCE, _end_absence, END_ABSENCE_SCHEMA),
+        (SERVICE_SET_DEVICES, _set_devices, DEVICES_SCHEMA),
+        (SERVICE_GRANT_PASS, _grant_pass, PASS_SCHEMA),
+        (SERVICE_REVOKE_PASS, _revoke_pass, END_ABSENCE_SCHEMA),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

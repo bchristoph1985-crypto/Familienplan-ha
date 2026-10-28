@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.3.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.4.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
@@ -13,7 +13,8 @@ Stand: Version 0.3.0. Noch nicht für den Alltag gedacht.
 - Abwesenheit (z. B. Klassenfahrt, krank) mit Beginn, Ende und Vertretung. Bei Rotation ist automatisch das nächste Kind dran; ohne Rotation übernimmt die Vertretung. Ist niemand da, ruht die Aufgabe und wird nicht überfällig.
 - Erinnerungen per HA-Push an Kinder zu einstellbaren Uhrzeiten (Standard 15:00, 17:00, 18:30), nur wenn noch etwas offen ist; Sammelnachricht an Eltern (Standard 19:00)
 - Sensoren: Punkte je Mitglied, Status je Aufgabe
-- Dienste: `familienplan.create_chore`, `delete_chore`, `claim_chore`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`
+- **Internetsperre** (ausgeschaltet bis man sie aktiviert): Eltern wählen je Kind Internet-Schalter von Freizeitgeräten (z. B. FRITZ!Box „Internetzugang“). Hat das Kind im Sperrzeitraum (Standard 20:00–05:00) überfällige Aufgaben, gehen diese Schalter aus. Sie gehen wieder an, sobald alles erledigt oder gemeldet ist, spätestens am Ende des Zeitraums. Schaltet jemand ein gesperrtes Gerät wieder an, wird es nach spätestens einer Minute erneut gesperrt. Eltern können eine Freikarte geben. Abwesende Kinder werden nie gesperrt. Familienplan gibt nur Geräte frei, die es selbst gesperrt hat, und fasst keine anderen Schalter an.
+- Dienste: `familienplan.create_chore`, `delete_chore`, `claim_chore`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`, `set_devices`, `grant_pass`, `revoke_pass`
 
 ## Dashboard-Karte
 

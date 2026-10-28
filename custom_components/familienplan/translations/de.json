@@ -18,7 +18,9 @@
         "menu_options": {
           "add_member": "Familienmitglied hinzufügen",
           "remove_member": "Familienmitglied entfernen",
-          "reminders": "Erinnerungen"
+          "reminders": "Erinnerungen",
+          "consequences": "Internetsperre",
+          "devices": "Geräte je Kind"
         }
       },
       "add_member": {
@@ -49,6 +51,28 @@
         "data_description": {
           "reminder_times": "Mit Komma getrennt, z. B. 15:00, 17:00, 18:30. Kommt nur, wenn noch etwas offen ist.",
           "parent_summary_time": "Leer lassen zum Ausschalten."
+        }
+      },
+      "consequences": {
+        "title": "Internetsperre",
+        "description": "Hat ein Kind im Sperrzeitraum noch überfällige Aufgaben, wird das Internet seiner ausgewählten Geräte abgeschaltet. Es kommt zurück, sobald alles erledigt ist, spätestens am Ende des Zeitraums. Handys bitte nicht eintragen.",
+        "data": {
+          "consequences": "Internetsperre einschalten",
+          "lock_time": "Sperren ab",
+          "release_time": "Freigeben um"
+        }
+      },
+      "devices": {
+        "title": "Geräte je Kind",
+        "data": {
+          "member": "Kind"
+        }
+      },
+      "devices_select": {
+        "title": "Geräte für {member}",
+        "description": "Internet-Schalter der Freizeitgeräte wählen, z. B. aus der FRITZ!Box-Integration („Internetzugang“).",
+        "data": {
+          "devices": "Geräte"
         }
       }
     },
@@ -240,6 +264,44 @@
     },
     "end_absence": {
       "name": "Abwesenheit beenden",
+      "description": "Nur für Eltern.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        }
+      }
+    },
+    "set_devices": {
+      "name": "Geräte festlegen",
+      "description": "Nur für Eltern. Internet-Schalter, die bei überfälligen Aufgaben gesperrt werden.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        },
+        "devices": {
+          "name": "Geräte",
+          "description": "Schalter-Entitäten."
+        }
+      }
+    },
+    "grant_pass": {
+      "name": "Freikarte geben",
+      "description": "Nur für Eltern. Keine Sperre bis zur angegebenen Zeit.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        },
+        "until": {
+          "name": "Bis",
+          "description": "Standard: Ende des heutigen Sperrzeitraums."
+        }
+      }
+    },
+    "revoke_pass": {
+      "name": "Freikarte zurücknehmen",
       "description": "Nur für Eltern.",
       "fields": {
         "member": {

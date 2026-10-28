@@ -305,3 +305,56 @@ def test_freigabe_abschalten_bucht_offene_meldung(family: Family) -> None:
     family.update_chore(SYSTEM, chore.id, NOW, requires_approval=False)
     assert chore.state is ChoreState.DONE
     assert lucas.points == 5
+
+
+# -- Konsequenzen -----------------------------------------------------------
+
+
+def test_sperre_nur_bei_ueberfaelligem(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    family.set_devices(SYSTEM, lucas.id, ["switch.ps5_internet"])
+    chore = family.create_chore(
+        SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=NOW - timedelta(hours=1)
+    )
+    assert not family.should_lock(lucas.id, NOW)  # noch nicht als überfällig erkannt
+    family.refresh(NOW)
+    assert family.should_lock(lucas.id, NOW)
+    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW)
+    assert not family.should_lock(lucas.id, NOW)
+
+
+def test_gemeldet_wartet_auf_freigabe_sperrt_nicht(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    family.set_devices(SYSTEM, lucas.id, ["switch.ps5_internet"])
+    chore = family.create_chore(
+        SYSTEM, "Bad", [lucas.id], recurrence=Recurrence.WEEKLY,
+        due=NOW - timedelta(hours=1), requires_approval=True,
+    )
+    family.refresh(NOW)
+    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW)
+    assert not family.should_lock(lucas.id, NOW)
+
+
+def test_freikarte_und_abwesenheit_verhindern_sperre(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    family.set_devices(SYSTEM, lucas.id, ["switch.ps5_internet"])
+    family.create_chore(
+        SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=NOW - timedelta(hours=1)
+    )
+    family.refresh(NOW)
+    family.grant_pass(SYSTEM, lucas.id, NOW + timedelta(hours=2))
+    assert not family.should_lock(lucas.id, NOW)
+    assert family.should_lock(lucas.id, NOW + timedelta(hours=3))
+    family.revoke_pass(SYSTEM, lucas.id)
+    family.set_absence(SYSTEM, lucas.id, NOW + timedelta(days=1))
+    assert not family.should_lock(lucas.id, NOW)
+
+
+def test_kind_kann_sich_nicht_freischalten(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    with pytest.raises(PermissionDenied):
+        family.grant_pass(actor(family, "Lucas"), lucas.id, NOW + timedelta(days=1))
+    with pytest.raises(PermissionDenied):
+        family.set_devices(actor(family, "Lucas"), lucas.id, [])
+    with pytest.raises(FamilyError):
+        family.set_devices(SYSTEM, by_name(family, "Papa").id, ["switch.x"])

@@ -42,6 +42,11 @@ class Member:
     away_from: datetime | None = None
     away_until: datetime | None = None
     substitute_id: str | None = None
+    devices: list[str] = field(default_factory=list)
+    pass_until: datetime | None = None
+
+    def has_pass(self, now: datetime) -> bool:
+        return self.pass_until is not None and now < self.pass_until
 
     def is_away(self, now: datetime) -> bool:
         if self.away_until is None or now >= self.away_until:
@@ -59,6 +64,8 @@ class Member:
             "away_from": self.away_from.isoformat() if self.away_from else None,
             "away_until": self.away_until.isoformat() if self.away_until else None,
             "substitute_id": self.substitute_id,
+            "devices": list(self.devices),
+            "pass_until": self.pass_until.isoformat() if self.pass_until else None,
         }
 
     @classmethod
@@ -73,6 +80,8 @@ class Member:
             away_from=_parse_dt(data.get("away_from")),
             away_until=_parse_dt(data.get("away_until")),
             substitute_id=data.get("substitute_id"),
+            devices=list(data.get("devices", [])),
+            pass_until=_parse_dt(data.get("pass_until")),
         )
 
 
