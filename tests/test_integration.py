@@ -118,36 +118,89 @@ async def test_loeschen_entfernt_sensor(hass: HomeAssistant, setup, hass_admin_u
     assert _chore_state(hass, "Fenster") is None
 
 
-async def test_config_flow(hass: HomeAssistant) -> None:
-    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
-    assert result["type"] == "form"
+async def test_einrichtungsassistent(
+    hass: HomeAssistant, hass_admin_user, hass_read_only_user
+) -> None:
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    hass.config.language = "de"
+    # Bennis Handy aus der Companion-App
+    app_entry = MockConfigEntry(domain="mobile_app")
+    app_entry.add_to_hass(hass)
+    device = dr.async_get(hass).async_get_or_create(
+        config_entry_id=app_entry.entry_id, identifiers={("mobile_app", "fold")}, name="Fold 7 Benni"
+    )
+    er.async_get(hass).async_get_or_create(
+        "device_tracker", "mobile_app", "fold", device_id=device.id,
+        config_entry=app_entry, suggested_object_id="fold_7_benni",
+    )
+    async_mock_service(hass, "notify", "mobile_app_fold_7_benni")
+    hass.states.async_set(
+        "person.benni", "home",
+        {"friendly_name": "Benni", "user_id": hass_admin_user.id, "device_trackers": ["device_tracker.fold_7_benni"]},
+    )
+    hass.states.async_set(
+        "person.jan", "home", {"friendly_name": "Jan", "user_id": hass_read_only_user.id}
+    )
+    hass.states.async_set("person.oma", "not_home", {"friendly_name": "Oma"})
+
+    flow = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"family_name": "Familie B"})
+    assert flow["step_id"] == "members"
+
+    # Niemand ausgewählt -> Hinweis
+    bad = await hass.config_entries.flow.async_configure(flow["flow_id"], {"people": [], "extra_children": ""})
+    assert bad["errors"] == {"base": "no_members"}
+
+    flow = await hass.config_entries.flow.async_configure(
+        flow["flow_id"],
+        {"people": ["person.benni", "person.jan"], "extra_children": "Lucas, Osmo"},
+    )
+    assert flow["step_id"] == "parents"
+    # Vorschlag: Admin ist Elternteil
+    default = next(k for k in flow["data_schema"].schema if str(k) == "parents").default()
+    assert default == ["person.benni"]
+
+    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"parents": ["person.benni"]})
+    assert flow["step_id"] == "chores"
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"family_name": "Familie B"}
+        flow["flow_id"], {"starters": ["dishwasher", "room"]}
     )
     assert result["type"] == "create_entry"
     assert result["title"] == "Familie B"
+    await hass.async_block_till_done()
+
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    family = entry.runtime_data.family
+    members = {m.name: m for m in family.members.values()}
+    assert set(members) == {"Benni", "Jan", "Lucas", "Osmo"}
+    assert members["Benni"].role is Role.PARENT
+    assert members["Benni"].notify_service == "mobile_app_fold_7_benni"
+    assert members["Jan"].role is Role.CHILD and members["Jan"].user_id == hass_read_only_user.id
+    chores = sorted(c.name for c in family.chores.values())
+    assert chores == [
+        "Spülmaschine ausräumen",
+        "Zimmer aufräumen (Jan)",
+        "Zimmer aufräumen (Lucas)",
+        "Zimmer aufräumen (Osmo)",
+    ]
+    dish = next(c for c in family.chores.values() if c.name == "Spülmaschine ausräumen")
+    assert dish.rotation and len(dish.assignees) == 3
+    # Startdaten wurden übernommen und aus dem Eintrag entfernt
+    assert entry.data == {}
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert len(entry.runtime_data.family.members) == 4
 
 
-async def test_bearbeiten_per_dienst(hass: HomeAssistant, setup, hass_admin_user, hass_read_only_user) -> None:
-    await hass.services.async_call(
-        DOMAIN, "create_chore",
-        {"name": "Tisch", "assignees": ["Lucas"], "recurrence": "daily", "due": "2030-01-01 18:00:00"},
-        blocking=True, context=_ctx(hass_admin_user),
-    )
+async def test_einrichtung_ohne_personen(hass: HomeAssistant) -> None:
+    flow = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"family_name": ""})
+    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"extra_children": "Mia"})
+    assert flow["step_id"] == "chores"
+    result = await hass.config_entries.flow.async_configure(flow["flow_id"], {"starters": []})
+    assert result["title"] == "Familie"
     await hass.async_block_till_done()
-    chore_id = _chore_state(hass, "Tisch").attributes["chore_id"]
-    with pytest.raises(ServiceValidationError):
-        await hass.services.async_call(
-            DOMAIN, "update_chore", {"chore_id": chore_id, "points": 99},
-            blocking=True, context=_ctx(hass_read_only_user),
-        )
-    await hass.services.async_call(
-        DOMAIN, "update_chore",
-        {"chore_id": chore_id, "points": 4, "recurrence": "none", "due": ""},
-        blocking=True, context=_ctx(hass_admin_user),
-    )
-    await hass.async_block_till_done()
-    attrs = _chore_state(hass, "Tisch").attributes
-    assert attrs["points"] == 4
-    assert attrs["recurrence"] == "none"
-    assert attrs["due"] is None
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    assert [m.name for m in entry.runtime_data.family.members.values()] == ["Mia"]

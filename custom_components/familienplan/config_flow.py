@@ -49,10 +49,21 @@ from .const import (
     CONF_REMINDER_TIMES,
     DEFAULT_PARENT_SUMMARY_TIME,
     DEFAULT_REMINDER_TIMES,
+    DATA_INITIAL_FAMILY,
     DOMAIN,
 )
+from homeassistant.util import dt as dt_util
+
 from .core import SYSTEM, FamilyError, Role
 from .reminders import parse_times
+from .setup_helpers import (
+    DEFAULT_STARTERS,
+    STARTER_CHORES,
+    Person,
+    build_family,
+    find_people,
+    split_names,
+)
 
 CONF_FAMILY_NAME = "family_name"
 CONF_MEMBER_NAME = "name"
@@ -61,23 +72,135 @@ CONF_USER = "user"
 CONF_MEMBER = "member"
 CONF_NOTIFY = "notify_service"
 CONF_DEVICES = "devices"
+CONF_PEOPLE = "people"
+CONF_EXTRA_CHILDREN = "extra_children"
+CONF_PARENTS = "parents"
+CONF_STARTERS = "starters"
 NO_USER = "__none__"
 
 
 class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Einrichtung in vier kurzen Schritten.
+
+    1. Familienname  2. Wer gehört dazu (aus den HA-Personen, plus Kinder ohne
+    Konto)  3. Wer davon sind Eltern  4. Startaufgaben ankreuzen.
+    Handys für Push-Nachrichten werden automatisch zugeordnet.
+    """
+
     VERSION = 1
+
+    def __init__(self) -> None:
+        self._title = "Familie"
+        self._people: list[Person] = []
+        self._selected: list[str] = []
+        self._extra: list[str] = []
+        self._parents: list[str] = []
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(
-                title=user_input[CONF_FAMILY_NAME].strip() or "Familie", data={}
-            )
+            self._title = user_input[CONF_FAMILY_NAME].strip() or "Familie"
+            self._people = find_people(self.hass)
+            return await self.async_step_members()
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {vol.Required(CONF_FAMILY_NAME, default="Familie"): str}
+            ),
+        )
+
+    async def async_step_members(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._selected = user_input.get(CONF_PEOPLE, [])
+            self._extra = split_names(user_input.get(CONF_EXTRA_CHILDREN, ""))
+            if not self._selected and not self._extra:
+                errors["base"] = "no_members"
+            elif self._selected:
+                return await self.async_step_parents()
+            else:
+                return await self.async_step_chores()
+
+        schema: dict = {}
+        if self._people:
+            schema[vol.Optional(CONF_PEOPLE, default=[p.entity_id for p in self._people])] = (
+                SelectSelector(
+                    SelectSelectorConfig(
+                        options=[
+                            SelectOptionDict(value=p.entity_id, label=p.name) for p in self._people
+                        ],
+                        multiple=True,
+                        mode=SelectSelectorMode.LIST,
+                    )
+                )
+            )
+        schema[vol.Optional(CONF_EXTRA_CHILDREN, default="")] = str
+        return self.async_show_form(
+            step_id="members", errors=errors, data_schema=vol.Schema(schema)
+        )
+
+    async def async_step_parents(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if user_input is not None:
+            self._parents = user_input.get(CONF_PARENTS, [])
+            return await self.async_step_chores()
+
+        chosen = [p for p in self._people if p.entity_id in self._selected]
+        # Vorschlag: wer in HA Administrator ist, ist Elternteil.
+        suggested = []
+        for person in chosen:
+            user = await self.hass.auth.async_get_user(person.user_id) if person.user_id else None
+            if user and user.is_admin:
+                suggested.append(person.entity_id)
+        return self.async_show_form(
+            step_id="parents",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_PARENTS, default=suggested): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[SelectOptionDict(value=p.entity_id, label=p.name) for p in chosen],
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_chores(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        english = not (self.hass.config.language or "").startswith("de")
+        if user_input is not None:
+            people = [p for p in self._people if p.entity_id in self._selected]
+            family = build_family(
+                people,
+                self._parents,
+                self._extra,
+                user_input.get(CONF_STARTERS, []),
+                dt_util.utcnow(),
+                english=english,
+            )
+            return self.async_create_entry(
+                title=self._title, data={DATA_INITIAL_FAMILY: family.to_dict()}
+            )
+        return self.async_show_form(
+            step_id="chores",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_STARTERS, default=DEFAULT_STARTERS): SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(STARTER_CHORES),
+                            translation_key="starter",
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
             ),
         )
 
