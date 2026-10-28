@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.11.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.12.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
@@ -32,6 +32,18 @@ Stand: Version 0.11.0. Noch nicht für den Alltag gedacht.
 - **Datenschutz bei Fotos**: Die Familie wählt im Assistenten (später unter *Konfigurieren → Regeln*), ob Fotos sofort nach Bestätigen oder Ablehnen gelöscht werden (Standard) oder bis zu 7 Tage (einstellbar) bleiben. Nimmt ein Kind seine Meldung zurück, wird das Foto immer sofort gelöscht.
 - **Aufgaben übernehmen („wegmopsen“)**: Ab 16:30 können Kinder offene Aufgaben der Geschwister übernehmen und bekommen die Punkte, ab 19:00 doppelt. Höchstens 2 pro Tag. Bei Reihum-Aufgaben geht die Reihenfolge danach normal weiter. Zeiten und Anzahl unter *Konfigurieren → Regeln*.
 - Dienste: `familienplan.create_chore`, `update_chore`, `delete_chore`, `claim_chore`, `take_over_chore`, `announce`, `create_reward`, `update_reward`, `delete_reward`, `redeem_reward`, `approve_redemption`, `reject_redemption`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`, `set_devices`, `grant_pass`, `revoke_pass`
+
+## Kinder ohne eigenes Handy
+
+Ein gemeinsames Familientablet (z. B. in der Küche) bekommt ein eigenes
+HA-Konto. Das wählt man bei der Einrichtung oder später unter
+*Konfigurieren › Familientablet* aus. Am Tablet zeigt die Seitenleiste
+„Wer bist du?“ mit großen Namenskacheln. Das Kind tippt seinen Namen an und
+hakt ab. Nach einer Minute ohne Tippen geht es zurück zur Auswahl. Das
+Tablet darf pro Kind genau so viel wie das Kind selbst: nur eigene Aufgaben,
+Belohnungen einlösen, aber nichts freigeben. Auf Wunsch müssen Eltern alles
+bestätigen, was am Tablet abgehakt wurde. Eltern können zudem jederzeit in
+ihrer Ansicht für ein Kind abhaken.
 
 ## Kostenlos und Pro
 

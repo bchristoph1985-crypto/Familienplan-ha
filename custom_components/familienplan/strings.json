@@ -50,6 +50,14 @@
         "data": {
           "photo_privacy": "What happens to the photos?"
         }
+      },
+      "tablet": {
+        "title": "Family tablet",
+        "description": "Children without their own phone? Pick the HA account of the shared tablet (e.g. in the kitchen). Children tap their name there and tick off chores. Leave empty if you have no tablet. Parents can always tick off for a child too.",
+        "data": {
+          "tablet": "Family tablet account",
+          "tablet_approval": "Parents confirm what was ticked off on the tablet"
+        }
       }
     },
     "error": {
@@ -71,7 +79,8 @@
           "rules": "Taking over & photos (Pro)",
           "announcements": "Speaker announcements (Pro)",
           "ages": "Children's ages",
-          "pro": "Pro / license"
+          "pro": "Pro / license",
+          "tablet": "Family tablet"
         }
       },
       "add_member": {
@@ -161,6 +170,14 @@
         "data": {
           "license_key": "License key",
           "license_remove": "Release the key here (e.g. before moving to new hardware)"
+        }
+      },
+      "tablet": {
+        "title": "Family tablet",
+        "description": "Children without their own phone? Pick the HA account of the shared tablet (e.g. in the kitchen). Children tap their name there and tick off chores. Leave empty if you have no tablet. Parents can always tick off for a child too.",
+        "data": {
+          "tablet": "Family tablet account",
+          "tablet_approval": "Parents confirm what was ticked off on the tablet"
         }
       }
     },

@@ -50,6 +50,14 @@
         "data": {
           "photo_privacy": "Was passiert mit den Fotos?"
         }
+      },
+      "tablet": {
+        "title": "Familientablet",
+        "description": "Haben Kinder kein eigenes Handy? Dann wähle das HA-Konto des gemeinsamen Tablets (z. B. in der Küche). Dort tippen die Kinder ihren Namen an und haken ab. Ohne Tablet einfach leer lassen. Eltern können außerdem jederzeit für ein Kind abhaken.",
+        "data": {
+          "tablet": "Konto des Familientablets",
+          "tablet_approval": "Abgehaktes am Tablet von Eltern bestätigen lassen"
+        }
       }
     },
     "error": {
@@ -71,7 +79,8 @@
           "rules": "Übernehmen & Fotos (Pro)",
           "announcements": "Lautsprecher-Ansagen (Pro)",
           "ages": "Alter der Kinder",
-          "pro": "Pro / Lizenz"
+          "pro": "Pro / Lizenz",
+          "tablet": "Familientablet"
         }
       },
       "add_member": {
@@ -161,6 +170,14 @@
         "data": {
           "license_key": "Lizenzschlüssel",
           "license_remove": "Schlüssel hier freigeben (z. B. vor Umzug auf neue Hardware)"
+        }
+      },
+      "tablet": {
+        "title": "Familientablet",
+        "description": "Haben Kinder kein eigenes Handy? Dann wähle das HA-Konto des gemeinsamen Tablets (z. B. in der Küche). Dort tippen die Kinder ihren Namen an und haken ab. Ohne Tablet einfach leer lassen. Eltern können außerdem jederzeit für ein Kind abhaken.",
+        "data": {
+          "tablet": "Konto des Familientablets",
+          "tablet_approval": "Abgehaktes am Tablet von Eltern bestätigen lassen"
         }
       }
     },

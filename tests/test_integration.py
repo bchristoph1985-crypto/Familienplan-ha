@@ -164,6 +164,8 @@ async def test_einrichtungsassistent(
     assert default == ["person.benni"]
 
     flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"parents": ["person.benni"]})
+    assert flow["step_id"] == "tablet"
+    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {})
     assert flow["step_id"] == "ages"
     assert [str(k) for k in flow["data_schema"].schema] == ["Jan", "Lucas", "Osmo"]
     flow = await hass.config_entries.flow.async_configure(

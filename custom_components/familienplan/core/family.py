@@ -52,6 +52,10 @@ class Actor:
     member: Member | None = None
     is_admin: bool = False
     system: bool = False
+    # Gemeinsames Familientablet: Kinder ohne eigenes Handy tippen dort ihren
+    # Namen an. Das Tablet darf für jedes Kind handeln, aber nur so viel wie
+    # das Kind selbst.
+    tablet: bool = False
 
     @property
     def is_manager(self) -> bool:
@@ -81,6 +85,10 @@ class Family:
         # Fotonachweis gehört zu Pro. Ohne Pro gilt jede Aufgabe als ohne
         # Fotopflicht, die Einstellung an der Aufgabe bleibt aber erhalten.
         self.photo_proof = True
+        # HA-Konten der Familientablets und ob dort Abgehaktes von Eltern
+        # bestätigt werden muss.
+        self.tablet_users: list[str] = []
+        self.tablet_approval = False
 
     # -- Speichern -----------------------------------------------------------
 
@@ -91,6 +99,8 @@ class Family:
             "locked": {k: list(v) for k, v in self.locked.items()},
             "rewards": [r.to_dict() for r in self.rewards.values()],
             "redemptions": [r.to_dict() for r in self.redemptions],
+            "tablet_users": list(self.tablet_users),
+            "tablet_approval": self.tablet_approval,
         }
 
     @classmethod
@@ -102,6 +112,8 @@ class Family:
         family.locked = {k: list(v) for k, v in data.get("locked", {}).items()}
         family.rewards = {r["id"]: Reward.from_dict(r) for r in data.get("rewards", [])}
         family.redemptions = [Redemption.from_dict(r) for r in data.get("redemptions", [])]
+        family.tablet_users = list(data.get("tablet_users", []))
+        family.tablet_approval = bool(data.get("tablet_approval", False))
         return family
 
     # -- Hilfen --------------------------------------------------------------
@@ -112,7 +124,27 @@ class Family:
         member = next(
             (m for m in self.members.values() if m.user_id == user_id), None
         )
+        if member is None and user_id in self.tablet_users:
+            return Actor(is_admin=is_admin, tablet=True)
         return Actor(member=member, is_admin=is_admin)
+
+    def _as_child(self, actor: Actor, member_id: str | None) -> Actor:
+        """Am Familientablet handelt das Tablet als das gewählte Kind."""
+        if not actor.tablet or actor.is_manager:
+            return actor
+        member = self.member(member_id) if member_id else None
+        if member is None or member.role is not Role.CHILD:
+            raise PermissionDenied("Am Familientablet bitte ein Kind auswählen.")
+        return Actor(member=member, tablet=True)
+
+    def set_tablet(self, actor: Actor, user_ids: list[str], *, approval: bool) -> None:
+        """Familientablets festlegen. Konten von Familienmitgliedern gehen nicht."""
+        self._require_manager(actor)
+        taken = {m.user_id for m in self.members.values() if m.user_id}
+        if taken & set(user_ids):
+            raise FamilyError("Ein Familienmitglied kann nicht das Familientablet sein.")
+        self.tablet_users = list(dict.fromkeys(user_ids))
+        self.tablet_approval = approval
 
     def member(self, member_id: str) -> Member:
         try:
@@ -210,6 +242,9 @@ class Family:
             raise FamilyError("Name fehlt.")
         if user_id and any(m.user_id == user_id for m in self.members.values()):
             raise FamilyError("Dieses HA-Konto gehört schon zu einem Mitglied.")
+        if user_id in self.tablet_users:
+            # Wer Mitglied wird, ist nicht mehr das Familientablet.
+            self.tablet_users.remove(user_id)
         member = Member(uuid.uuid4().hex, name, role, user_id, notify_service)
         self.members[member.id] = member
         return member
@@ -461,6 +496,7 @@ class Family:
         """
         chore = self.chore(chore_id)
         self.member(member_id)
+        actor = self._as_child(actor, member_id)
         if not actor.is_manager:
             if actor.member is None or actor.member.id != member_id:
                 raise PermissionDenied("Du kannst nur für dich selbst melden.")
@@ -476,8 +512,7 @@ class Family:
     def needs_photo(self, chore: Chore) -> bool:
         return chore.requires_photo and self.photo_proof
 
-    @staticmethod
-    def _needs_check(actor: Actor, chore: Chore) -> bool:
+    def _needs_check(self, actor: Actor, chore: Chore) -> bool:
         """Eltern prüfen, wenn die Aufgabe Freigabe braucht oder ein Foto dabei ist.
 
         Ein Fotonachweis, den niemand ansieht, wäre sinnlos. Darum gehen
@@ -485,6 +520,8 @@ class Family:
         """
         if actor.is_manager:
             return False
+        if actor.tablet and self.tablet_approval:
+            return True
         return chore.requires_approval or (chore.requires_photo and chore.photo is not None)
 
     def take_over(
@@ -507,6 +544,7 @@ class Family:
         """
         chore = self.chore(chore_id)
         taker = self.member(member_id)
+        actor = self._as_child(actor, member_id)
         if not actor.is_manager and (actor.member is None or actor.member.id != member_id):
             raise PermissionDenied("Du kannst nur für dich selbst übernehmen.")
         if taker.role is not Role.CHILD:
@@ -556,6 +594,7 @@ class Family:
         chore = self.chore(chore_id)
         if chore.state is not ChoreState.CLAIMED:
             raise FamilyError("Es gibt keine offene Meldung.")
+        actor = self._as_child(actor, chore.claimed_by)
         if not actor.is_manager and (
             actor.member is None or actor.member.id != chore.claimed_by
         ):
@@ -674,6 +713,7 @@ class Family:
         """Kind löst ein. Die Punkte werden sofort abgezogen, Eltern bestätigen."""
         reward = self.reward(reward_id)
         member = self.member(member_id)
+        actor = self._as_child(actor, member_id)
         if not actor.is_manager and (actor.member is None or actor.member.id != member_id):
             raise PermissionDenied("Du kannst nur für dich selbst einlösen.")
         if member.role is not Role.CHILD or not reward.available_for(member_id):
@@ -708,6 +748,7 @@ class Family:
     def reject_redemption(self, actor: Actor, redemption_id: str, now: datetime) -> Redemption:
         """Ablehnen gibt die Punkte zurück. Das Kind kann auch selbst zurücknehmen."""
         redemption = self._redemption(redemption_id)
+        actor = self._as_child(actor, redemption.member_id)
         if not actor.is_manager and (
             actor.member is None or actor.member.id != redemption.member_id
         ):

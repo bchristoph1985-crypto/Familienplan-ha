@@ -40,6 +40,7 @@ def snapshot(
     return {
         "me": actor.member.id if actor.member else None,
         "is_manager": actor.is_manager,
+        "tablet": actor.tablet and not actor.is_manager,
         "pro": {
             k: v
             for k, v in entry.runtime_data.license.status(now).items()
@@ -103,7 +104,9 @@ def snapshot(
                 "requested_at": iso(r.requested_at),
             }
             for r in family.pending_redemptions()
-            if actor.is_manager or (actor.member and actor.member.id == r.member_id)
+            if actor.is_manager
+            or actor.tablet
+            or (actor.member and actor.member.id == r.member_id)
         ],
     }
 

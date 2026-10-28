@@ -129,6 +129,8 @@ def build_family(
     ages: dict[str, int] | None = None,
     rewards: list[str] | None = None,
     english: bool = False,
+    tablet_users: list[str] | None = None,
+    tablet_approval: bool = False,
 ) -> Family:
     """Familie aus den Antworten des Assistenten bauen.
 
@@ -144,6 +146,8 @@ def build_family(
         )
     for name in extra_children:
         family.add_member(SYSTEM, name, Role.CHILD)
+    if tablet_users:
+        family.set_tablet(SYSTEM, tablet_users, approval=tablet_approval)
 
     children = [m for m in family.members.values() if m.role is Role.CHILD]
     if children:

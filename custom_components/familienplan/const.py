@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 DOMAIN = "familienplan"
-VERSION = "0.11.0"
+VERSION = "0.12.0"
 CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"

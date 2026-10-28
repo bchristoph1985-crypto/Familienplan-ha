@@ -94,6 +94,8 @@ CONF_PARENTS = "parents"
 CONF_STARTERS = "starters"
 CONF_REWARDS = "rewards"
 CONF_PHOTO_PRIVACY = "photo_privacy"
+CONF_TABLET = "tablet"
+CONF_TABLET_APPROVAL = "tablet_approval"
 PHOTO_DELETE = "delete"
 PHOTO_KEEP = "keep"
 NO_USER = "__none__"
@@ -118,6 +120,8 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
         self._ages: dict[str, int] = {}
         self._starters: list[str] = []
         self._rewards: list[str] = []
+        self._tablet: list[str] = []
+        self._tablet_approval = False
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -145,7 +149,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
             elif self._selected:
                 return await self.async_step_parents()
             else:
-                return await self.async_step_ages()
+                return await self.async_step_tablet()
 
         schema: dict = {}
         if self._people:
@@ -170,7 +174,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         if user_input is not None:
             self._parents = user_input.get(CONF_PARENTS, [])
-            return await self.async_step_ages()
+            return await self.async_step_tablet()
 
         chosen = [p for p in self._people if p.entity_id in self._selected]
         # Vorschlag: wer in HA Administrator ist, ist Elternteil.
@@ -190,6 +194,46 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
                             mode=SelectSelectorMode.LIST,
                         )
                     )
+                }
+            ),
+        )
+
+    async def async_step_tablet(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Familientablet für Kinder ohne eigenes Handy. Freiwillig.
+
+        Zur Auswahl stehen HA-Konten, die nicht Eltern sind. War ein solches
+        Konto als Kind angehakt, ist es danach kein Familienmitglied mehr.
+        """
+        candidates = [
+            p for p in self._people if p.user_id and p.entity_id not in self._parents
+        ]
+        if not candidates:
+            return await self.async_step_ages()
+        if user_input is not None:
+            chosen = [p for p in candidates if p.entity_id in user_input.get(CONF_TABLET, [])]
+            self._tablet = [p.user_id for p in chosen]
+            self._tablet_approval = user_input.get(CONF_TABLET_APPROVAL, False)
+            self._selected = [
+                e for e in self._selected if e not in {p.entity_id for p in chosen}
+            ]
+            return await self.async_step_ages()
+        return self.async_show_form(
+            step_id="tablet",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_TABLET, default=[]): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=p.entity_id, label=p.name)
+                                for p in candidates
+                            ],
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    ),
+                    vol.Optional(CONF_TABLET_APPROVAL, default=False): BooleanSelector(),
                 }
             ),
         )
@@ -258,6 +302,8 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
                 ages=self._ages,
                 rewards=self._rewards,
                 english=english,
+                tablet_users=self._tablet,
+                tablet_approval=self._tablet_approval,
             )
             return self.async_create_entry(
                 title=self._title,
@@ -331,6 +377,7 @@ class MembersOptionsFlow(OptionsFlow):
             for m in self.config_entry.runtime_data.family.members.values()
         ):
             menu.append("ages")
+        menu.append("tablet")
         menu.append("reminders")
         menu.append("announcements")
         menu.append("consequences")
@@ -376,6 +423,48 @@ class MembersOptionsFlow(OptionsFlow):
             errors=errors,
             description_placeholders={"state": state},
             data_schema=vol.Schema(schema),
+        )
+
+    async def async_step_tablet(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Familientablet: HA-Konto, an dem Kinder ohne Handy abhaken."""
+        family = self.config_entry.runtime_data.family
+        if user_input is not None:
+            family.set_tablet(
+                SYSTEM,
+                user_input.get(CONF_TABLET, []),
+                approval=user_input.get(CONF_TABLET_APPROVAL, False),
+            )
+            return await self._async_finish()
+        taken = {m.user_id for m in family.members.values() if m.user_id}
+        users = [
+            u
+            for u in await self.hass.auth.async_get_users()
+            if not u.system_generated and u.is_active and u.id not in taken
+        ]
+        return self.async_show_form(
+            step_id="tablet",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_TABLET,
+                        default=[u for u in family.tablet_users if u in {x.id for x in users}],
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=u.id, label=u.name or u.id)
+                                for u in sorted(users, key=lambda u: (u.name or "").casefold())
+                            ],
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    ),
+                    vol.Optional(
+                        CONF_TABLET_APPROVAL, default=family.tablet_approval
+                    ): BooleanSelector(),
+                }
+            ),
         )
 
     async def async_step_add_member(

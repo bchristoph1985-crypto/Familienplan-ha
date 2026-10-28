@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.11.0";
+const VERSION = "0.12.0";
 
 const T = {
   de: {
@@ -96,6 +96,9 @@ const T = {
     proHint: "Pro freischalten: Einstellungen › Geräte & Dienste › Familienplan › Konfigurieren › Pro / Lizenz",
     proOnly: "Gehört zu Pro",
     awayPro: "Abwesenheit mit Vertretung gehört zu Pro.",
+    whoAreYou: "Wer bist du?",
+    openCount: "{n} offen",
+    finished: "Fertig",
     rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen" },
   },
   en: {
@@ -181,6 +184,9 @@ const T = {
     proHint: "Unlock Pro: Settings › Devices & services › Familienplan › Configure › Pro / license",
     proOnly: "Part of Pro",
     awayPro: "Absence with substitute is part of Pro.",
+    whoAreYou: "Who are you?",
+    openCount: "{n} open",
+    finished: "Done",
     rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks" },
   },
 };
@@ -199,6 +205,9 @@ class FamilienplanCard extends HTMLElement {
     this._awayForm = {};
     this._rewardForm = this._emptyReward();
     this._busy = false;
+    // Familientablet: welches Kind gerade dran ist
+    this._actingAs = null;
+    this._idleTimer = null;
     this.shadowRoot.addEventListener("click", (ev) => this._onClick(ev));
     this.shadowRoot.addEventListener("input", (ev) => this._onInput(ev));
     this.shadowRoot.addEventListener("change", (ev) => this._onInput(ev));
@@ -268,6 +277,22 @@ class FamilienplanCard extends HTMLElement {
 
   _member(id) {
     return this._data?.members.find((m) => m.id === id);
+  }
+
+  // Wer bedient gerade? Am Familientablet das ausgewählte Kind.
+  _me() {
+    return this._data?.tablet ? this._actingAs : this._data?.me;
+  }
+
+  // Am Familientablet nach einer Minute ohne Tippen zurück zur Namensauswahl,
+  // damit das nächste Kind nicht im falschen Namen abhakt.
+  _touchIdle() {
+    clearTimeout(this._idleTimer);
+    if (!this._actingAs) return;
+    this._idleTimer = setTimeout(() => {
+      this._actingAs = null;
+      this._render();
+    }, 60000);
   }
 
   _memberByConfig() {
@@ -347,7 +372,18 @@ class FamilienplanCard extends HTMLElement {
     const el = ev.target.closest("[data-action]");
     if (!el) return;
     const { action, id, member } = el.dataset;
+    this._touchIdle();
     switch (action) {
+      case "pick":
+        this._actingAs = id;
+        this._touchIdle();
+        this._render();
+        break;
+      case "unpick":
+        this._actingAs = null;
+        clearTimeout(this._idleTimer);
+        this._render();
+        break;
       case "tab":
         this._tab = id;
         this._render();
@@ -355,7 +391,7 @@ class FamilienplanCard extends HTMLElement {
       case "claim": {
         const chore = this._data.chores.find((c) => c.id === id);
         const data = { chore_id: id };
-        if (member && member !== this._data.me) data.member = member;
+        if (member && (member !== this._data.me || this._data.tablet)) data.member = member;
         if (this._photoNeeded(chore)) this._pickPhoto("claim", data);
         else this._call("claim_chore", data);
         break;
@@ -363,6 +399,7 @@ class FamilienplanCard extends HTMLElement {
       case "take": {
         const chore = this._data.chores.find((c) => c.id === id);
         const data = { chore_id: id };
+        if (this._data.tablet) data.member = this._actingAs;
         if (this._photoNeeded(chore)) this._pickPhoto("take_over", data);
         else this._call("take_over_chore", data);
         break;
@@ -406,7 +443,9 @@ class FamilienplanCard extends HTMLElement {
       case "redeem": {
         const reward = this._data.rewards.find((r) => r.id === id);
         if (reward && confirm(this._t("confirmRedeem", { name: reward.name, n: reward.cost }))) {
-          this._call("redeem_reward", { reward_id: id });
+          const data = { reward_id: id };
+          if (this._data.tablet) data.member = this._actingAs;
+          this._call("redeem_reward", data);
         }
         break;
       }
@@ -587,7 +626,7 @@ class FamilienplanCard extends HTMLElement {
     const ro = this._config.readonly;
     let action = "";
     if (chore.state === "claimed") {
-      const mine = chore.claimed_by === this._data.me;
+      const mine = chore.claimed_by === this._me();
       action = `<span class="chip wait">${this._t("waiting")}</span>`;
       if (!ro && (mine || this._data.is_manager)) {
         action += `<button class="link" data-action="undo" data-id="${esc(chore.id)}">${this._t("undo")}</button>`;
@@ -658,7 +697,7 @@ class FamilienplanCard extends HTMLElement {
 
   _renderTakeOver(member) {
     const t = this._data.takeover;
-    if (!t?.allowed || !this._pro() || this._config.readonly || member.id !== this._data.me) return "";
+    if (!t?.allowed || !this._pro() || this._config.readonly || member.id !== this._me()) return "";
     const chores = this._takeable(member.id);
     if (!chores.length) return "";
     const rows = chores
@@ -691,7 +730,7 @@ class FamilienplanCard extends HTMLElement {
     const rewards = (this._data.rewards || []).filter((r) => !r.members.length || r.members.includes(member.id));
     const pending = (this._data.redemptions || []).filter((r) => r.member_id === member.id);
     if (!rewards.length && !pending.length) return "";
-    const ro = this._config.readonly || member.id !== this._data.me;
+    const ro = this._config.readonly || member.id !== this._me();
     const waiting = pending
       .map(
         (r) => `
@@ -780,6 +819,26 @@ class FamilienplanCard extends HTMLElement {
     const end = new Date();
     end.setHours(23, 59, 59, 999);
     return new Date(chore.due) <= end;
+  }
+
+  _renderTablet() {
+    const kid = this._actingAs && this._member(this._actingAs);
+    if (kid) {
+      return `
+        <button class="link back" data-action="unpick">← ${this._t("finished")}</button>
+        ${this._renderChild(kid)}`;
+    }
+    const tiles = this._children()
+      .map((m) => {
+        const open = this._openFor(m.id).filter((c) => c.state !== "claimed").length;
+        return `
+          <button class="tile" data-action="pick" data-id="${esc(m.id)}">
+            <span class="tile-name">${esc(m.name)}</span>
+            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ${esc(this._t("points", { n: m.points }))}</span>
+          </button>`;
+      })
+      .join("");
+    return `<div class="hello">${this._t("whoAreYou")}</div><div class="tiles">${tiles}</div>`;
   }
 
   _renderChild(member) {
@@ -990,6 +1049,7 @@ class FamilienplanCard extends HTMLElement {
       const me = this._member(this._data.me);
       const mode = this._config.mode;
       if (forced) body = this._renderChild(forced);
+      else if (this._data.tablet && !this._data.is_manager) body = this._renderTablet();
       else if (mode === "eltern" || (mode === "auto" && this._data.is_manager && (!me || me.role === "parent")))
         body = this._renderParent();
       else if (me) body = this._renderChild(me);
@@ -1032,6 +1092,11 @@ const STYLE = `
   .thumb img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; display: block; }
   p.small { font-size: 0.85em; margin: 0 0 4px; }
   p.pro { margin-top: 12px; text-align: center; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
+  button.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 110px; border-radius: 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); }
+  .tile-name { font-size: 1.5em; font-weight: 500; }
+  .tile-sub { font-size: 0.9em; opacity: 0.9; }
+  button.back { margin: 0 0 4px -8px; }
   section.help { margin-top: 16px; padding-top: 8px; border-top: 2px solid var(--divider-color, #e0e0e0); }
   .bar { height: 6px; border-radius: 3px; background: var(--divider-color, #e0e0e0); margin-top: 6px; overflow: hidden; max-width: 220px; }
   .bar span { display: block; height: 100%; background: var(--success-color, #43a047); }
