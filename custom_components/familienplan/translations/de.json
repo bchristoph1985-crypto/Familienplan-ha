@@ -17,7 +17,8 @@
       "init": {
         "menu_options": {
           "add_member": "Familienmitglied hinzufügen",
-          "remove_member": "Familienmitglied entfernen"
+          "remove_member": "Familienmitglied entfernen",
+          "reminders": "Erinnerungen"
         }
       },
       "add_member": {
@@ -25,10 +26,12 @@
         "data": {
           "name": "Name",
           "role": "Rolle",
-          "user": "Home-Assistant-Konto"
+          "user": "Home-Assistant-Konto",
+          "notify_service": "Push-Benachrichtigung"
         },
         "data_description": {
-          "user": "Verknüpft das Mitglied mit einem Login. So wird beim Bedienen in der App geprüft, was es darf."
+          "user": "Verknüpft das Mitglied mit einem Login. So wird beim Bedienen in der App geprüft, was es darf.",
+          "notify_service": "Meist notify.mobile_app_<handy>."
         }
       },
       "remove_member": {
@@ -36,10 +39,22 @@
         "data": {
           "member": "Mitglied"
         }
+      },
+      "reminders": {
+        "title": "Erinnerungen",
+        "data": {
+          "reminder_times": "Uhrzeiten für Kinder",
+          "parent_summary_time": "Zusammenfassung für Eltern"
+        },
+        "data_description": {
+          "reminder_times": "Mit Komma getrennt, z. B. 15:00, 17:00, 18:30. Kommt nur, wenn noch etwas offen ist.",
+          "parent_summary_time": "Leer lassen zum Ausschalten."
+        }
       }
     },
     "error": {
-      "invalid_member": "Name fehlt oder dieses Konto gehört schon zu einem Mitglied."
+      "invalid_member": "Name fehlt oder dieses Konto gehört schon zu einem Mitglied.",
+      "invalid_time": "Bitte Uhrzeiten wie 17:00 eingeben."
     }
   },
   "selector": {
@@ -160,6 +175,38 @@
         "chore_id": {
           "name": "Aufgaben-ID",
           "description": "ID aus dem Attribut chore_id des Aufgaben-Sensors."
+        }
+      }
+    },
+    "set_absence": {
+      "name": "Abwesenheit eintragen",
+      "description": "Nur für Eltern. Aufgaben gehen an die Nächste in der Rotation oder an die Vertretung.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        },
+        "until": {
+          "name": "Bis",
+          "description": "Ende der Abwesenheit."
+        },
+        "start": {
+          "name": "Ab",
+          "description": "Beginn. Leer heißt ab sofort."
+        },
+        "substitute": {
+          "name": "Vertretung",
+          "description": "Wer Aufgaben ohne Rotation übernimmt."
+        }
+      }
+    },
+    "end_absence": {
+      "name": "Abwesenheit beenden",
+      "description": "Nur für Eltern.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
         }
       }
     }

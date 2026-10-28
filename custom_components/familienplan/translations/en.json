@@ -17,7 +17,8 @@
       "init": {
         "menu_options": {
           "add_member": "Add family member",
-          "remove_member": "Remove family member"
+          "remove_member": "Remove family member",
+          "reminders": "Reminders"
         }
       },
       "add_member": {
@@ -25,10 +26,12 @@
         "data": {
           "name": "Name",
           "role": "Role",
-          "user": "Home Assistant user"
+          "user": "Home Assistant user",
+          "notify_service": "Push notifications"
         },
         "data_description": {
-          "user": "Links this member to a login, so permissions are checked when they use the app."
+          "user": "Links this member to a login, so permissions are checked when they use the app.",
+          "notify_service": "Usually notify.mobile_app_<phone>."
         }
       },
       "remove_member": {
@@ -36,10 +39,22 @@
         "data": {
           "member": "Member"
         }
+      },
+      "reminders": {
+        "title": "Reminders",
+        "data": {
+          "reminder_times": "Reminder times for children",
+          "parent_summary_time": "Summary for parents"
+        },
+        "data_description": {
+          "reminder_times": "Comma separated, e.g. 15:00, 17:00, 18:30. Only sent if something is still open.",
+          "parent_summary_time": "Leave empty to turn off."
+        }
       }
     },
     "error": {
-      "invalid_member": "Name missing or this user is already linked to a member."
+      "invalid_member": "Name missing or this user is already linked to a member.",
+      "invalid_time": "Please use times like 17:00."
     }
   },
   "selector": {
@@ -160,6 +175,38 @@
         "chore_id": {
           "name": "Chore ID",
           "description": "ID from the chore sensor's chore_id attribute."
+        }
+      }
+    },
+    "set_absence": {
+      "name": "Set absence",
+      "description": "Parents only. Chores go to the next in rotation or the substitute.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        },
+        "until": {
+          "name": "Until",
+          "description": "End of absence."
+        },
+        "start": {
+          "name": "From",
+          "description": "Start. Empty means now."
+        },
+        "substitute": {
+          "name": "Substitute",
+          "description": "Who takes over chores that don't rotate."
+        }
+      }
+    },
+    "end_absence": {
+      "name": "End absence",
+      "description": "Parents only.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
         }
       }
     }

@@ -20,14 +20,22 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
 )
 
-from .const import DOMAIN
+from .const import (
+    CONF_PARENT_SUMMARY_TIME,
+    CONF_REMINDER_TIMES,
+    DEFAULT_PARENT_SUMMARY_TIME,
+    DEFAULT_REMINDER_TIMES,
+    DOMAIN,
+)
 from .core import SYSTEM, FamilyError, Role
+from .reminders import parse_times
 
 CONF_FAMILY_NAME = "family_name"
 CONF_MEMBER_NAME = "name"
 CONF_ROLE = "role"
 CONF_USER = "user"
 CONF_MEMBER = "member"
+CONF_NOTIFY = "notify_service"
 NO_USER = "__none__"
 
 
@@ -67,6 +75,7 @@ class MembersOptionsFlow(OptionsFlow):
         menu = ["add_member"]
         if self.config_entry.runtime_data.family.members:
             menu.append("remove_member")
+        menu.append("reminders")
         return self.async_show_menu(step_id="init", menu_options=menu)
 
     async def async_step_add_member(
@@ -76,12 +85,14 @@ class MembersOptionsFlow(OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             user_id = user_input.get(CONF_USER)
+            notify = user_input.get(CONF_NOTIFY)
             try:
                 data.family.add_member(
                     SYSTEM,
                     user_input[CONF_MEMBER_NAME],
                     Role(user_input[CONF_ROLE]),
                     user_id=None if user_id in (None, NO_USER) else user_id,
+                    notify_service=None if notify in (None, NO_USER) else notify,
                 )
             except FamilyError:
                 errors["base"] = "invalid_member"
@@ -93,6 +104,11 @@ class MembersOptionsFlow(OptionsFlow):
             SelectOptionDict(value=u.id, label=u.name or u.id)
             for u in await self.hass.auth.async_get_users()
             if not u.system_generated and u.is_active and u.id not in taken
+        ]
+        notify_services = [
+            SelectOptionDict(value=name, label=f"notify.{name}")
+            for name in sorted(self.hass.services.async_services_for_domain("notify"))
+            if name not in ("send_message", "persistent_notification")
         ]
         return self.async_show_form(
             step_id="add_member",
@@ -110,6 +126,15 @@ class MembersOptionsFlow(OptionsFlow):
                     vol.Optional(CONF_USER, default=NO_USER): SelectSelector(
                         SelectSelectorConfig(
                             options=[SelectOptionDict(value=NO_USER, label="—"), *users],
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
+                    vol.Optional(CONF_NOTIFY, default=NO_USER): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=NO_USER, label="—"),
+                                *notify_services,
+                            ],
                             mode=SelectSelectorMode.DROPDOWN,
                         )
                     ),
@@ -140,8 +165,46 @@ class MembersOptionsFlow(OptionsFlow):
             ),
         )
 
-    async def _async_finish(self) -> ConfigFlowResult:
+    async def async_step_reminders(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        options = self.config_entry.options
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                parse_times(user_input[CONF_REMINDER_TIMES])
+                parse_times(user_input.get(CONF_PARENT_SUMMARY_TIME, ""))
+            except ValueError:
+                errors["base"] = "invalid_time"
+            else:
+                return await self._async_finish(
+                    {**options, **user_input, CONF_PARENT_SUMMARY_TIME: user_input.get(CONF_PARENT_SUMMARY_TIME, "")}
+                )
+        return self.async_show_form(
+            step_id="reminders",
+            errors=errors,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_REMINDER_TIMES,
+                        default=options.get(CONF_REMINDER_TIMES, DEFAULT_REMINDER_TIMES),
+                    ): str,
+                    vol.Optional(
+                        CONF_PARENT_SUMMARY_TIME,
+                        default=options.get(
+                            CONF_PARENT_SUMMARY_TIME, DEFAULT_PARENT_SUMMARY_TIME
+                        ),
+                    ): str,
+                }
+            ),
+        )
+
+    async def _async_finish(
+        self, options: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         await self.config_entry.runtime_data.async_save()
-        # Neu laden, damit Sensoren für neue Mitglieder entstehen.
+        # Neu laden, damit Sensoren und Zeitpläne zum neuen Stand passen.
         self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
-        return self.async_create_entry(data={})
+        return self.async_create_entry(
+            data=options if options is not None else dict(self.config_entry.options)
+        )

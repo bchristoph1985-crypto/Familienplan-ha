@@ -17,6 +17,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, SIGNAL_UPDATED, STORAGE_VERSION
 from .core import Family
+from .reminders import async_setup_reminders
 from .services import async_register_services
 
 PLATFORMS = [Platform.SENSOR]
@@ -55,6 +56,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry)
     entry.async_on_unload(
         async_track_time_interval(hass, data.async_tick, timedelta(minutes=1))
     )
+    for unsub in async_setup_reminders(hass, entry):
+        entry.async_on_unload(unsub)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

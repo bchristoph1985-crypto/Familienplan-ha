@@ -39,6 +39,14 @@ class Member:
     user_id: str | None = None
     notify_service: str | None = None
     points: int = 0
+    away_from: datetime | None = None
+    away_until: datetime | None = None
+    substitute_id: str | None = None
+
+    def is_away(self, now: datetime) -> bool:
+        if self.away_until is None or now >= self.away_until:
+            return False
+        return self.away_from is None or now >= self.away_from
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -48,6 +56,9 @@ class Member:
             "user_id": self.user_id,
             "notify_service": self.notify_service,
             "points": self.points,
+            "away_from": self.away_from.isoformat() if self.away_from else None,
+            "away_until": self.away_until.isoformat() if self.away_until else None,
+            "substitute_id": self.substitute_id,
         }
 
     @classmethod
@@ -59,6 +70,9 @@ class Member:
             user_id=data.get("user_id"),
             notify_service=data.get("notify_service"),
             points=int(data.get("points", 0)),
+            away_from=_parse_dt(data.get("away_from")),
+            away_until=_parse_dt(data.get("away_until")),
+            substitute_id=data.get("substitute_id"),
         )
 
 

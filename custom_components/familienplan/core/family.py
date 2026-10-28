@@ -101,17 +101,55 @@ class Family:
         except KeyError:
             raise FamilyError(f"Unbekannte Aufgabe: {chore_id}") from None
 
-    @staticmethod
-    def responsible(chore: Chore) -> list[str]:
-        """Wer gerade dran ist. Bei Rotation genau eine Person."""
+    def _available(self, member_id: str, now: datetime) -> bool:
+        member = self.members.get(member_id)
+        return member is not None and not member.is_away(now)
+
+    def _substitute(self, member_id: str, now: datetime) -> str | None:
+        member = self.members.get(member_id)
+        if member is None or member.substitute_id is None:
+            return None
+        return member.substitute_id if self._available(member.substitute_id, now) else None
+
+    def responsible(self, chore: Chore, now: datetime) -> list[str]:
+        """Wer gerade dran ist, mit Abwesenheit und Vertretung.
+
+        Rotation: Wer abwesend ist, wird übersprungen. Sind alle weg, übernimmt
+        die Vertretung der Person, die eigentlich dran wäre.
+        Ohne Rotation: Abwesende werden durch ihre Vertretung ersetzt.
+        Leere Liste heißt: niemand da, die Aufgabe ruht.
+        """
         if not chore.assignees:
             return []
         if chore.rotation:
-            return [chore.assignees[chore.rotation_index % len(chore.assignees)]]
-        return list(chore.assignees)
+            count = len(chore.assignees)
+            for step in range(count):
+                member_id = chore.assignees[(chore.rotation_index + step) % count]
+                if self._available(member_id, now):
+                    return [member_id]
+            sub = self._substitute(chore.assignees[chore.rotation_index % count], now)
+            return [sub] if sub else []
+        result = []
+        for member_id in chore.assignees:
+            if self._available(member_id, now):
+                result.append(member_id)
+            elif sub := self._substitute(member_id, now):
+                result.append(sub)
+        return list(dict.fromkeys(result))
 
-    def chores_for(self, member_id: str) -> list[Chore]:
-        return [c for c in self.chores.values() if member_id in self.responsible(c)]
+    def chores_for(self, member_id: str, now: datetime) -> list[Chore]:
+        return [
+            c for c in self.chores.values() if member_id in self.responsible(c, now)
+        ]
+
+    def open_until(self, member_id: str, now: datetime, until: datetime) -> list[Chore]:
+        """Offene oder überfällige Aufgaben, die bis `until` fällig sind (für Erinnerungen)."""
+        return [
+            c
+            for c in self.chores_for(member_id, now)
+            if c.state in (ChoreState.OPEN, ChoreState.OVERDUE)
+            and (c.due is None or c.due <= until)
+        ]
 
     @staticmethod
     def _require_manager(actor: Actor) -> None:
@@ -142,6 +180,9 @@ class Family:
         self._require_manager(actor)
         self.member(member_id)
         del self.members[member_id]
+        for other in self.members.values():
+            if other.substitute_id == member_id:
+                other.substitute_id = None
         for chore in self.chores.values():
             if member_id in chore.assignees:
                 chore.assignees.remove(member_id)
@@ -152,6 +193,35 @@ class Family:
             if chore.claimed_by == member_id:
                 chore.claimed_by = None
                 chore.state = ChoreState.OPEN
+
+    def set_absence(
+        self,
+        actor: Actor,
+        member_id: str,
+        until: datetime,
+        *,
+        start: datetime | None = None,
+        substitute_id: str | None = None,
+    ) -> Member:
+        """Abwesenheit eintragen, z. B. Klassenfahrt oder krank."""
+        self._require_manager(actor)
+        member = self.member(member_id)
+        if start is not None and until <= start:
+            raise FamilyError("Das Ende muss nach dem Beginn liegen.")
+        if substitute_id is not None:
+            self.member(substitute_id)
+            if substitute_id == member_id:
+                raise FamilyError("Niemand kann sich selbst vertreten.")
+        member.away_from = start
+        member.away_until = until
+        member.substitute_id = substitute_id
+        return member
+
+    def end_absence(self, actor: Actor, member_id: str) -> Member:
+        self._require_manager(actor)
+        member = self.member(member_id)
+        member.away_from = member.away_until = member.substitute_id = None
+        return member
 
     # -- Aufgaben verwalten --------------------------------------------------
 
@@ -208,7 +278,7 @@ class Family:
         if not actor.is_manager:
             if actor.member is None or actor.member.id != member_id:
                 raise PermissionDenied("Du kannst nur für dich selbst melden.")
-            if member_id not in self.responsible(chore):
+            if member_id not in self.responsible(chore, now):
                 raise PermissionDenied("Diese Aufgabe ist gerade nicht deine.")
         if chore.state is ChoreState.DONE:
             raise FamilyError("Die Aufgabe ist schon erledigt.")
@@ -255,13 +325,27 @@ class Family:
         )
         return chore
 
-    def refresh(self, now: datetime) -> list[Chore]:
-        """Markiert offene Aufgaben mit abgelaufener Frist als überfällig."""
-        changed = []
+    def refresh(self, now: datetime) -> bool:
+        """Fristen und Abwesenheiten nachführen. True, wenn sich etwas geändert hat.
+
+        Offene Aufgaben mit abgelaufener Frist werden überfällig, außer niemand
+        ist da (alle abwesend ohne Vertretung). Abgelaufene Abwesenheiten
+        werden gelöscht.
+        """
+        changed = False
+        for member in self.members.values():
+            if member.away_until is not None and now >= member.away_until:
+                member.away_from = member.away_until = member.substitute_id = None
+                changed = True
         for chore in self.chores.values():
-            if chore.state is ChoreState.OPEN and chore.due and chore.due < now:
+            if (
+                chore.state is ChoreState.OPEN
+                and chore.due
+                and chore.due < now
+                and self.responsible(chore, now)
+            ):
                 chore.state = ChoreState.OVERDUE
-                changed.append(chore)
+                changed = True
         return changed
 
     # -- intern --------------------------------------------------------------
@@ -278,7 +362,14 @@ class Family:
             return
         chore.due = _next_due(chore.due, chore.recurrence, now)
         if chore.rotation and chore.assignees:
-            chore.rotation_index = (chore.rotation_index + 1) % len(chore.assignees)
+            # Nach der Person weiter, die es erledigt hat. So zählt auch ein
+            # Einspringen bei Abwesenheit als Runde.
+            start = (
+                chore.assignees.index(member_id)
+                if member_id in chore.assignees
+                else chore.rotation_index
+            )
+            chore.rotation_index = (start + 1) % len(chore.assignees)
         chore.state = ChoreState.OPEN
 
     @staticmethod
