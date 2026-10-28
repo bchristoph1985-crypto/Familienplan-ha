@@ -5,6 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 
+from pathlib import Path
+
+from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL, add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -15,10 +19,11 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, SIGNAL_UPDATED, STORAGE_VERSION
+from .const import CARD_URL, DOMAIN, SIGNAL_UPDATED, STORAGE_VERSION, VERSION
 from .core import Family
 from .reminders import async_setup_reminders
 from .services import async_register_services
+from .websocket_api import async_register_websocket
 
 PLATFORMS = [Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -44,7 +49,26 @@ class FamilienplanData:
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async_register_services(hass)
+    async_register_websocket(hass)
+    await _async_register_card(hass)
     return True
+
+
+async def _async_register_card(hass: HomeAssistant) -> None:
+    """Die Dashboard-Karte mitliefern, ohne dass man eine Ressource anlegen muss."""
+    if hass.http is None:
+        return
+    await hass.http.async_register_static_paths(
+        [
+            StaticPathConfig(
+                CARD_URL,
+                str(Path(__file__).parent / "frontend" / "familienplan-card.js"),
+                cache_headers=False,
+            )
+        ]
+    )
+    if DATA_EXTRA_MODULE_URL in hass.data:
+        add_extra_js_url(hass, f"{CARD_URL}?v={VERSION}")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
