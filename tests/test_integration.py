@@ -7,6 +7,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.util import dt as dt_util
 
 from custom_components.familienplan.const import DOMAIN
 from custom_components.familienplan.core import SYSTEM, Role
@@ -163,6 +164,11 @@ async def test_einrichtungsassistent(
     assert default == ["person.benni"]
 
     flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"parents": ["person.benni"]})
+    assert flow["step_id"] == "ages"
+    assert [str(k) for k in flow["data_schema"].schema] == ["Jan", "Lucas", "Osmo"]
+    flow = await hass.config_entries.flow.async_configure(
+        flow["flow_id"], {"Jan": 15, "Lucas": 12, "Osmo": 6}
+    )
     assert flow["step_id"] == "chores"
     result = await hass.config_entries.flow.async_configure(
         flow["flow_id"], {"starters": ["dishwasher", "room"]}
@@ -187,6 +193,15 @@ async def test_einrichtungsassistent(
     ]
     dish = next(c for c in family.chores.values() if c.name == "Spülmaschine ausräumen")
     assert dish.rotation and len(dish.assignees) == 3
+    assert dish.min_age == 7
+    now = dt_util.utcnow()
+    assert members["Osmo"].age(now) == 6
+    # Osmo (6) ist für die Spülmaschine noch zu jung und wird übersprungen.
+    seen = set()
+    for _ in range(3):
+        seen.update(family.responsible(dish, now))
+        dish.rotation_index += 1
+    assert members["Osmo"].id not in seen
     # Startdaten wurden übernommen und aus dem Eintrag entfernt
     assert entry.data == {}
     await hass.config_entries.async_reload(entry.entry_id)
@@ -198,7 +213,12 @@ async def test_einrichtung_ohne_personen(hass: HomeAssistant) -> None:
     flow = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"family_name": ""})
     flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"extra_children": "Mia"})
+    assert flow["step_id"] == "ages"
+    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"Mia": 5})
     assert flow["step_id"] == "chores"
+    # Nur Startaufgaben, die zu einer Fünfjährigen passen
+    options = next(iter(flow["data_schema"].schema.values())).config["options"]
+    assert options == ["table", "room"]
     result = await hass.config_entries.flow.async_configure(flow["flow_id"], {"starters": []})
     assert result["title"] == "Familie"
     await hass.async_block_till_done()

@@ -52,14 +52,15 @@ def find_people(hass: HomeAssistant) -> list[Person]:
     return people
 
 
-# Startaufgaben: Schlüssel -> (Name, Wiederholung, Punkte, je Kind einzeln)
-STARTER_CHORES: dict[str, tuple[str, Recurrence, int, bool]] = {
-    "table": ("Tisch decken", Recurrence.DAILY, 1, False),
-    "dishwasher": ("Spülmaschine ausräumen", Recurrence.DAILY, 2, False),
-    "trash": ("Müll rausbringen", Recurrence.DAILY, 1, False),
-    "room": ("Zimmer aufräumen", Recurrence.WEEKLY, 3, True),
-    "bathroom": ("Bad putzen", Recurrence.WEEKLY, 5, False),
-    "vacuum": ("Staubsaugen", Recurrence.WEEKLY, 3, False),
+# Startaufgaben: Schlüssel -> (Name, Wiederholung, Punkte, je Kind einzeln, ab Alter)
+# Die Altersgrenzen sind Richtwerte, Eltern können sie je Aufgabe ändern.
+STARTER_CHORES: dict[str, tuple[str, Recurrence, int, bool, int]] = {
+    "table": ("Tisch decken", Recurrence.DAILY, 1, False, 4),
+    "dishwasher": ("Spülmaschine ausräumen", Recurrence.DAILY, 2, False, 7),
+    "trash": ("Müll rausbringen", Recurrence.DAILY, 1, False, 8),
+    "room": ("Zimmer aufräumen", Recurrence.WEEKLY, 3, True, 4),
+    "bathroom": ("Bad putzen", Recurrence.WEEKLY, 5, False, 10),
+    "vacuum": ("Staubsaugen", Recurrence.WEEKLY, 3, False, 8),
 }
 DEFAULT_STARTERS = ["dishwasher", "trash", "room"]
 STARTER_NAMES_EN = {
@@ -87,6 +88,15 @@ def _first_due(recurrence: Recurrence, now: datetime) -> datetime:
     return dt_util.as_utc(due)
 
 
+def suitable_starters(ages: list[int | None]) -> list[str]:
+    """Startaufgaben, für die mindestens ein Kind alt genug ist."""
+    known = [a for a in ages if a is not None]
+    if not known or len(known) < len(ages):
+        return list(STARTER_CHORES)
+    oldest = max(known)
+    return [key for key, spec in STARTER_CHORES.items() if oldest >= spec[4]]
+
+
 def build_family(
     people: list[Person],
     parent_ids: list[str],
@@ -94,9 +104,15 @@ def build_family(
     starters: list[str],
     now: datetime,
     *,
+    ages: dict[str, int] | None = None,
     english: bool = False,
 ) -> Family:
-    """Familie aus den Antworten des Assistenten bauen."""
+    """Familie aus den Antworten des Assistenten bauen.
+
+    `ages` ordnet Kindernamen ihr Alter zu. Startaufgaben bekommen ein
+    Mindestalter und gehen nur an Kinder, die alt genug sind.
+    """
+    ages = ages or {}
     family = Family()
     for person in people:
         role = Role.PARENT if person.entity_id in parent_ids else Role.CHILD
@@ -107,25 +123,32 @@ def build_family(
         family.add_member(SYSTEM, name, Role.CHILD)
 
     children = [m for m in family.members.values() if m.role is Role.CHILD]
-    if not children:
-        return family
+    for child in children:
+        if child.name in ages:
+            family.set_age(SYSTEM, child.id, ages[child.name], now)
     for key in starters:
         if key not in STARTER_CHORES:
             continue
-        name, recurrence, points, per_child = STARTER_CHORES[key]
+        name, recurrence, points, per_child, min_age = STARTER_CHORES[key]
         if english:
             name = STARTER_NAMES_EN[key]
+        fitting = [c for c in children if c.old_enough(min_age, now)]
+        if not fitting:
+            continue
         due = _first_due(recurrence, now)
         if per_child:
-            for child in children:
+            for child in fitting:
                 family.create_chore(
                     SYSTEM, f"{name} ({child.name})", [child.id],
-                    points=points, recurrence=recurrence, due=due,
+                    points=points, recurrence=recurrence, due=due, min_age=min_age,
                 )
         else:
+            # Alle Kinder eintragen: Wer zu jung ist, wird übersprungen und
+            # rückt automatisch nach, sobald das Alter erreicht ist.
             family.create_chore(
                 SYSTEM, name, [c.id for c in children],
-                points=points, recurrence=recurrence, due=due, rotation=len(children) > 1,
+                points=points, recurrence=recurrence, due=due,
+                rotation=len(children) > 1, min_age=min_age,
             )
     return family
 

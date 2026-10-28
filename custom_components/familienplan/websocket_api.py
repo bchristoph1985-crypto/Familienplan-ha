@@ -54,6 +54,7 @@ def snapshot(
                 "has_devices": bool(m.devices),
                 "locked": bool(family.locked.get(m.id)),
                 "pass_until": iso(m.pass_until) if m.has_pass(now) else None,
+                "age": m.age(now),
             }
             for m in family.members.values()
         ],
@@ -68,6 +69,7 @@ def snapshot(
                 "rotation": c.rotation,
                 "requires_approval": c.requires_approval,
                 "requires_photo": c.requires_photo,
+                "min_age": c.min_age,
                 "claim_multiplier": c.claim_multiplier,
                 "claim_taken_from": c.claim_taken_from,
                 # Fotos sehen nur Eltern, über einen kurz gültigen Link.

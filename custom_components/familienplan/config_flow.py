@@ -63,7 +63,16 @@ from .setup_helpers import (
     build_family,
     find_people,
     split_names,
+    suitable_starters,
 )
+
+
+def _age_selector() -> NumberSelector:
+    return NumberSelector(
+        NumberSelectorConfig(
+            min=0, max=18, step=1, mode=NumberSelectorMode.BOX
+        )
+    )
 
 CONF_FAMILY_NAME = "family_name"
 CONF_MEMBER_NAME = "name"
@@ -95,6 +104,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
         self._selected: list[str] = []
         self._extra: list[str] = []
         self._parents: list[str] = []
+        self._ages: dict[str, int] = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -122,7 +132,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
             elif self._selected:
                 return await self.async_step_parents()
             else:
-                return await self.async_step_chores()
+                return await self.async_step_ages()
 
         schema: dict = {}
         if self._people:
@@ -147,7 +157,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         if user_input is not None:
             self._parents = user_input.get(CONF_PARENTS, [])
-            return await self.async_step_chores()
+            return await self.async_step_ages()
 
         chosen = [p for p in self._people if p.entity_id in self._selected]
         # Vorschlag: wer in HA Administrator ist, ist Elternteil.
@@ -171,6 +181,31 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
         )
 
+    def _child_names(self) -> list[str]:
+        people = [
+            p.name
+            for p in self._people
+            if p.entity_id in self._selected and p.entity_id not in self._parents
+        ]
+        return list(dict.fromkeys([*people, *self._extra]))
+
+    async def async_step_ages(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Alter der Kinder. Freiwillig, hilft bei passenden Aufgaben."""
+        names = self._child_names()
+        if not names:
+            return await self.async_step_chores()
+        if user_input is not None:
+            self._ages = {
+                name: int(value) for name, value in user_input.items() if value not in (None, "")
+            }
+            return await self.async_step_chores()
+        return self.async_show_form(
+            step_id="ages",
+            data_schema=vol.Schema({vol.Optional(name): _age_selector() for name in names}),
+        )
+
     async def async_step_chores(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -183,18 +218,23 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._extra,
                 user_input.get(CONF_STARTERS, []),
                 dt_util.utcnow(),
+                ages=self._ages,
                 english=english,
             )
             return self.async_create_entry(
                 title=self._title, data={DATA_INITIAL_FAMILY: family.to_dict()}
             )
+        names = self._child_names()
+        fitting = suitable_starters([self._ages.get(n) for n in names])
         return self.async_show_form(
             step_id="chores",
             data_schema=vol.Schema(
                 {
-                    vol.Optional(CONF_STARTERS, default=DEFAULT_STARTERS): SelectSelector(
+                    vol.Optional(
+                        CONF_STARTERS, default=[k for k in DEFAULT_STARTERS if k in fitting]
+                    ): SelectSelector(
                         SelectSelectorConfig(
-                            options=list(STARTER_CHORES),
+                            options=fitting,
                             translation_key="starter",
                             multiple=True,
                             mode=SelectSelectorMode.LIST,
@@ -223,6 +263,11 @@ class MembersOptionsFlow(OptionsFlow):
         menu = ["add_member"]
         if self.config_entry.runtime_data.family.members:
             menu.append("remove_member")
+        if any(
+            m.role is Role.CHILD
+            for m in self.config_entry.runtime_data.family.members.values()
+        ):
+            menu.append("ages")
         menu.append("reminders")
         menu.append("announcements")
         menu.append("consequences")
@@ -320,6 +365,29 @@ class MembersOptionsFlow(OptionsFlow):
                 }
             ),
         )
+
+    async def async_step_ages(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Alter der Kinder ändern. Leer lassen heißt: unbekannt."""
+        family = self.config_entry.runtime_data.family
+        now = dt_util.utcnow()
+        children = [m for m in family.members.values() if m.role is Role.CHILD]
+        if user_input is not None:
+            for child in children:
+                value = user_input.get(child.name)
+                family.set_age(SYSTEM, child.id, None if value in (None, "") else int(value), now)
+            return await self._async_finish()
+        schema = {}
+        for child in children:
+            age = child.age(now)
+            key = (
+                vol.Optional(child.name, description={"suggested_value": age})
+                if age is not None
+                else vol.Optional(child.name)
+            )
+            schema[key] = _age_selector()
+        return self.async_show_form(step_id="ages", data_schema=vol.Schema(schema))
 
     async def async_step_reminders(
         self, user_input: dict[str, Any] | None = None

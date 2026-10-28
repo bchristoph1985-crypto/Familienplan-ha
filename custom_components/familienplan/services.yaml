@@ -1,5 +1,11 @@
 create_chore:
   fields:
+    min_age:
+      selector:
+        number:
+          min: 0
+          max: 18
+          mode: box
     name:
       required: true
       selector:
@@ -83,6 +89,12 @@ end_absence:
         text:
 update_chore:
   fields:
+    min_age:
+      selector:
+        number:
+          min: 0
+          max: 18
+          mode: box
     chore_id:
       required: true
       selector:
@@ -159,3 +171,16 @@ announce:
       selector:
         text:
           multiline: true
+set_age:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    age:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 120
+          mode: box

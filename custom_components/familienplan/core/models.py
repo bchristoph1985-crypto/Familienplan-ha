@@ -44,6 +44,16 @@ class Member:
     substitute_id: str | None = None
     devices: list[str] = field(default_factory=list)
     pass_until: datetime | None = None
+    birth_year: int | None = None
+
+    def age(self, now: datetime) -> int | None:
+        """Alter in Jahren, auf das Jahr genau. None, wenn nicht bekannt."""
+        return None if self.birth_year is None else now.year - self.birth_year
+
+    def old_enough(self, min_age: int, now: datetime) -> bool:
+        """Unbekanntes Alter zählt als alt genug, damit nichts unbemerkt ruht."""
+        age = self.age(now)
+        return min_age <= 0 or age is None or age >= min_age
 
     def has_pass(self, now: datetime) -> bool:
         return self.pass_until is not None and now < self.pass_until
@@ -66,6 +76,7 @@ class Member:
             "substitute_id": self.substitute_id,
             "devices": list(self.devices),
             "pass_until": self.pass_until.isoformat() if self.pass_until else None,
+            "birth_year": self.birth_year,
         }
 
     @classmethod
@@ -82,6 +93,7 @@ class Member:
             substitute_id=data.get("substitute_id"),
             devices=list(data.get("devices", [])),
             pass_until=_parse_dt(data.get("pass_until")),
+            birth_year=data.get("birth_year"),
         )
 
 
@@ -97,6 +109,7 @@ class Chore:
     rotation_index: int = 0
     requires_approval: bool = False
     requires_photo: bool = False
+    min_age: int = 0  # 0 = für alle
     state: ChoreState = ChoreState.OPEN
     claimed_by: str | None = None
     # Bei Übernahme durch Geschwister: Punkte-Faktor und von wem übernommen
@@ -119,6 +132,7 @@ class Chore:
             "rotation_index": self.rotation_index,
             "requires_approval": self.requires_approval,
             "requires_photo": self.requires_photo,
+            "min_age": self.min_age,
             "claim_multiplier": self.claim_multiplier,
             "claim_taken_from": self.claim_taken_from,
             "photo": self.photo,
@@ -144,6 +158,7 @@ class Chore:
             rotation_index=int(data.get("rotation_index", 0)),
             requires_approval=bool(data.get("requires_approval", False)),
             requires_photo=bool(data.get("requires_photo", False)),
+            min_age=int(data.get("min_age", 0)),
             claim_multiplier=int(data.get("claim_multiplier", 1)),
             claim_taken_from=data.get("claim_taken_from"),
             photo=data.get("photo"),

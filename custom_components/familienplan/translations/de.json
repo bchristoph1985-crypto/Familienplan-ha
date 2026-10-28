@@ -28,10 +28,14 @@
       },
       "chores": {
         "title": "Womit wollt ihr starten?",
-        "description": "Diese Aufgaben werden gleich angelegt. Gemeinsame Aufgaben wechseln reihum zwischen den Kindern. Alles lässt sich später ändern.",
+        "description": "Vorschläge passend zum Alter der Kinder. Gemeinsame Aufgaben wechseln reihum, zu junge Kinder werden übersprungen. Eure eigenen Aufgaben legt ihr danach in der Seitenleiste unter Familienplan → Aufgaben an.",
         "data": {
           "starters": "Startaufgaben"
         }
+      },
+      "ages": {
+        "title": "Wie alt sind die Kinder?",
+        "description": "Alter in Jahren. Damit bekommt jedes Kind nur Aufgaben, die zu seinem Alter passen, und rückt automatisch in neue Aufgaben nach, wenn es älter wird. Leer lassen geht auch."
       }
     },
     "error": {
@@ -51,7 +55,8 @@
           "consequences": "Internetsperre",
           "devices": "Geräte je Kind",
           "rules": "Übernehmen und Fotos",
-          "announcements": "Ansagen über Lautsprecher"
+          "announcements": "Ansagen über Lautsprecher",
+          "ages": "Alter der Kinder"
         }
       },
       "add_member": {
@@ -129,6 +134,10 @@
           "announce_times": "Mit Komma getrennt, z. B. 17:00, 18:30. Leer lassen schaltet Ansagen aus.",
           "announce_notify": "Zum Beispiel notify.alexa_media_kueche."
         }
+      },
+      "ages": {
+        "title": "Wie alt sind die Kinder?",
+        "description": "Alter in Jahren. Damit bekommt jedes Kind nur Aufgaben, die zu seinem Alter passen, und rückt automatisch in neue Aufgaben nach, wenn es älter wird. Leer lassen geht auch."
       }
     },
     "error": {
@@ -154,12 +163,12 @@
     },
     "starter": {
       "options": {
-        "table": "Tisch decken (täglich, reihum)",
-        "dishwasher": "Spülmaschine ausräumen (täglich, reihum)",
-        "trash": "Müll rausbringen (täglich, reihum)",
-        "room": "Zimmer aufräumen (wöchentlich, jedes Kind)",
-        "bathroom": "Bad putzen (wöchentlich, reihum)",
-        "vacuum": "Staubsaugen (wöchentlich, reihum)"
+        "table": "Tisch decken (täglich, reihum, ab 4)",
+        "dishwasher": "Spülmaschine ausräumen (täglich, reihum, ab 7)",
+        "trash": "Müll rausbringen (täglich, reihum, ab 8)",
+        "room": "Zimmer aufräumen (wöchentlich, jedes Kind, ab 4)",
+        "bathroom": "Bad putzen (wöchentlich, reihum, ab 10)",
+        "vacuum": "Staubsaugen (wöchentlich, reihum, ab 8)"
       }
     }
   },
@@ -215,6 +224,10 @@
         "requires_photo": {
           "name": "Fotonachweis",
           "description": "Kinder müssen zum Melden ein Foto machen."
+        },
+        "min_age": {
+          "name": "Ab Alter",
+          "description": "Nur Kinder ab diesem Alter sind dran. 0 = alle."
         }
       }
     },
@@ -257,6 +270,10 @@
         "requires_photo": {
           "name": "Fotonachweis",
           "description": "Kinder müssen zum Melden ein Foto machen."
+        },
+        "min_age": {
+          "name": "Ab Alter",
+          "description": "Nur Kinder ab diesem Alter sind dran. 0 = alle."
         }
       }
     },
@@ -405,6 +422,20 @@
         "message": {
           "name": "Text",
           "description": "Leer lassen: offene Aufgaben ansagen."
+        }
+      }
+    },
+    "set_age": {
+      "name": "Alter setzen",
+      "description": "Alter eines Kindes in Jahren. Aufgaben mit Mindestalter gehen nur an Kinder, die alt genug sind.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        },
+        "age": {
+          "name": "Alter",
+          "description": "In Jahren."
         }
       }
     }
