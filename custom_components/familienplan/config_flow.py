@@ -14,6 +14,9 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
+    BooleanSelector,
+    EntitySelector,
+    EntitySelectorConfig,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -21,7 +24,12 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
+    CONF_CONSEQUENCES,
+    CONF_LOCK_TIME,
     CONF_PARENT_SUMMARY_TIME,
+    CONF_RELEASE_TIME,
+    DEFAULT_LOCK_TIME,
+    DEFAULT_RELEASE_TIME,
     CONF_REMINDER_TIMES,
     DEFAULT_PARENT_SUMMARY_TIME,
     DEFAULT_REMINDER_TIMES,
@@ -36,6 +44,7 @@ CONF_ROLE = "role"
 CONF_USER = "user"
 CONF_MEMBER = "member"
 CONF_NOTIFY = "notify_service"
+CONF_DEVICES = "devices"
 NO_USER = "__none__"
 
 
@@ -76,6 +85,12 @@ class MembersOptionsFlow(OptionsFlow):
         if self.config_entry.runtime_data.family.members:
             menu.append("remove_member")
         menu.append("reminders")
+        menu.append("consequences")
+        if any(
+            m.role is Role.CHILD
+            for m in self.config_entry.runtime_data.family.members.values()
+        ):
+            menu.append("devices")
         return self.async_show_menu(step_id="init", menu_options=menu)
 
     async def async_step_add_member(
@@ -195,6 +210,79 @@ class MembersOptionsFlow(OptionsFlow):
                             CONF_PARENT_SUMMARY_TIME, DEFAULT_PARENT_SUMMARY_TIME
                         ),
                     ): str,
+                }
+            ),
+        )
+
+    async def async_step_consequences(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        options = self.config_entry.options
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                parse_times(user_input[CONF_LOCK_TIME])
+                parse_times(user_input[CONF_RELEASE_TIME])
+            except ValueError:
+                errors["base"] = "invalid_time"
+            else:
+                return await self._async_finish({**options, **user_input})
+        return self.async_show_form(
+            step_id="consequences",
+            errors=errors,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_CONSEQUENCES, default=options.get(CONF_CONSEQUENCES, False)
+                    ): BooleanSelector(),
+                    vol.Required(
+                        CONF_LOCK_TIME, default=options.get(CONF_LOCK_TIME, DEFAULT_LOCK_TIME)
+                    ): str,
+                    vol.Required(
+                        CONF_RELEASE_TIME,
+                        default=options.get(CONF_RELEASE_TIME, DEFAULT_RELEASE_TIME),
+                    ): str,
+                }
+            ),
+        )
+
+    async def async_step_devices(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        family = self.config_entry.runtime_data.family
+        if user_input is not None:
+            self._member_id = user_input[CONF_MEMBER]
+            return await self.async_step_devices_select()
+        children = [m for m in family.members.values() if m.role is Role.CHILD]
+        return self.async_show_form(
+            step_id="devices",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_MEMBER): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[SelectOptionDict(value=m.id, label=m.name) for m in children]
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_devices_select(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        family = self.config_entry.runtime_data.family
+        member = family.members[self._member_id]
+        if user_input is not None:
+            family.set_devices(SYSTEM, member.id, user_input.get(CONF_DEVICES, []))
+            return await self._async_finish()
+        return self.async_show_form(
+            step_id="devices_select",
+            description_placeholders={"member": member.name},
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_DEVICES, default=member.devices): EntitySelector(
+                        EntitySelectorConfig(domain="switch", multiple=True)
+                    )
                 }
             ),
         )

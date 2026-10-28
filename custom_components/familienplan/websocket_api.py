@@ -40,6 +40,9 @@ def snapshot(family: Family, now: datetime, user_id: str | None, is_admin: bool)
                 "away_from": iso(m.away_from),
                 "away_until": iso(m.away_until),
                 "substitute": m.substitute_id,
+                "has_devices": bool(m.devices),
+                "locked": bool(family.locked.get(m.id)),
+                "pass_until": iso(m.pass_until) if m.has_pass(now) else None,
             }
             for m in family.members.values()
         ],

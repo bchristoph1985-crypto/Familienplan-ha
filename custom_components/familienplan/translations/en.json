@@ -18,7 +18,9 @@
         "menu_options": {
           "add_member": "Add family member",
           "remove_member": "Remove family member",
-          "reminders": "Reminders"
+          "reminders": "Reminders",
+          "consequences": "Internet lock",
+          "devices": "Devices per child"
         }
       },
       "add_member": {
@@ -49,6 +51,28 @@
         "data_description": {
           "reminder_times": "Comma separated, e.g. 15:00, 17:00, 18:30. Only sent if something is still open.",
           "parent_summary_time": "Leave empty to turn off."
+        }
+      },
+      "consequences": {
+        "title": "Internet lock",
+        "description": "When a child still has overdue chores during the lock window, the internet of their chosen devices is switched off. It comes back as soon as everything is done, or at the end of the window. Do not add phones.",
+        "data": {
+          "consequences": "Turn on internet lock",
+          "lock_time": "Lock from",
+          "release_time": "Release at"
+        }
+      },
+      "devices": {
+        "title": "Devices per child",
+        "data": {
+          "member": "Child"
+        }
+      },
+      "devices_select": {
+        "title": "Devices for {member}",
+        "description": "Choose the internet switches of leisure devices, e.g. from the FRITZ!Box integration (Internet access).",
+        "data": {
+          "devices": "Devices"
         }
       }
     },
@@ -240,6 +264,44 @@
     },
     "end_absence": {
       "name": "End absence",
+      "description": "Parents only.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        }
+      }
+    },
+    "set_devices": {
+      "name": "Set devices",
+      "description": "Parents only. Internet switches that are locked for overdue chores.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        },
+        "devices": {
+          "name": "Devices",
+          "description": "Switch entities."
+        }
+      }
+    },
+    "grant_pass": {
+      "name": "Grant free pass",
+      "description": "Parents only. No lock until the given time.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        },
+        "until": {
+          "name": "Until",
+          "description": "Default: end of tonight's lock window."
+        }
+      }
+    },
+    "revoke_pass": {
+      "name": "Revoke free pass",
       "description": "Parents only.",
       "fields": {
         "member": {

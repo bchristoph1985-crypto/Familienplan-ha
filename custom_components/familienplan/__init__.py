@@ -20,6 +20,7 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
 from .const import CARD_URL, DOMAIN, SIGNAL_UPDATED, STORAGE_VERSION, VERSION
+from .consequences import async_apply
 from .core import Family
 from .reminders import async_setup_reminders
 from .services import async_register_services
@@ -34,17 +35,23 @@ type FamilienplanConfigEntry = ConfigEntry[FamilienplanData]
 @dataclass
 class FamilienplanData:
     hass: HomeAssistant
+    entry: ConfigEntry
     store: Store
     family: Family
 
     async def async_save(self) -> None:
-        """Speichern und alle Entitäten informieren. Nach jeder Änderung aufrufen."""
+        """Sperren anpassen, speichern, Entitäten informieren. Nach jeder Änderung aufrufen."""
+        await async_apply(self.hass, self.entry)
+        await self._async_store()
+
+    async def _async_store(self) -> None:
         await self.store.async_save(self.family.to_dict())
         async_dispatcher_send(self.hass, SIGNAL_UPDATED)
 
     async def async_tick(self, _now=None) -> None:
-        if self.family.refresh(dt_util.utcnow()):
-            await self.async_save()
+        changed = self.family.refresh(dt_util.utcnow())
+        if await async_apply(self.hass, self.entry) or changed:
+            await self._async_store()
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -73,7 +80,7 @@ async def _async_register_card(hass: HomeAssistant) -> None:
 
 async def async_setup_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
     store: Store = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
-    data = FamilienplanData(hass, store, Family.from_dict(await store.async_load()))
+    data = FamilienplanData(hass, entry, store, Family.from_dict(await store.async_load()))
     entry.runtime_data = data
 
     await data.async_tick()
