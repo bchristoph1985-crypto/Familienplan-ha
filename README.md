@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.2.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.3.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
@@ -28,7 +28,7 @@ title: Familienplan
 ```
 
 - **Kinder** sehen ihre Aufgaben für heute, Punkte und einen Erledigt-Knopf.
-- **Eltern** sehen Reiter für Heute (alle Kinder, für ein Kind abhaken), Freigaben, Aufgaben (anlegen, löschen) und Abwesend (eintragen, beenden).
+- **Eltern** sehen Reiter für Heute (alle Kinder, für ein Kind abhaken), Freigaben, Aufgaben (anlegen, bearbeiten, löschen) und Abwesend (eintragen, beenden).
 
 ## Rechte (serverseitig geprüft)
 
@@ -59,5 +59,5 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Name und Lizenz (siehe Phase-0-Dokument)
 - Erinnerung nur, wenn das Kind zu Hause ist; Ansagen über Lautsprecher
-- Karten-Editor in der Oberfläche, Aufgaben bearbeiten statt nur löschen
+- Karten-Editor in der Oberfläche
 - Pro-Funktionen und Lizenzschlüssel (Phase 3)

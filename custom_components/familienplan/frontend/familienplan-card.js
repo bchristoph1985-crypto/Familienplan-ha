@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.2.0";
+const VERSION = "0.3.0";
 
 const T = {
   de: {
@@ -40,6 +40,10 @@ const T = {
     rotation: "Reihum",
     approval: "Freigabe nötig",
     create: "Anlegen",
+    save: "Speichern",
+    cancel: "Abbrechen",
+    edit: "Bearbeiten",
+    editChore: "Aufgabe bearbeiten",
     delete: "Löschen",
     confirmDelete: "„{name}“ wirklich löschen?",
     away: "abwesend bis {date}",
@@ -83,6 +87,10 @@ const T = {
     rotation: "Take turns",
     approval: "Needs approval",
     create: "Create",
+    save: "Save",
+    cancel: "Cancel",
+    edit: "Edit",
+    editChore: "Edit chore",
     delete: "Delete",
     confirmDelete: "Really delete “{name}”?",
     away: "away until {date}",
@@ -111,7 +119,7 @@ class FamilienplanCard extends HTMLElement {
     this._data = null;
     this._error = null;
     this._tab = "today";
-    this._form = { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false };
+    this._form = this._emptyForm();
     this._awayForm = {};
     this._busy = false;
     this.shadowRoot.addEventListener("click", (ev) => this._onClick(ev));
@@ -240,6 +248,13 @@ class FamilienplanCard extends HTMLElement {
       case "create":
         this._createChore();
         break;
+      case "edit":
+        this._startEdit(id);
+        break;
+      case "cancel-edit":
+        this._resetForm();
+        this._render();
+        break;
       case "set-away": {
         const form = this._awayForm[id] || {};
         if (!form.until) return;
@@ -276,9 +291,56 @@ class FamilienplanCard extends HTMLElement {
     }
   }
 
+  _emptyForm() {
+    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, editId: null };
+  }
+
+  _resetForm() {
+    this._form = this._emptyForm();
+  }
+
+  _toLocalInput(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  _startEdit(id) {
+    const c = this._data.chores.find((x) => x.id === id);
+    if (!c) return;
+    this._form = {
+      name: c.name,
+      assignees: [...c.assignees],
+      recurrence: c.recurrence,
+      due: this._toLocalInput(c.due),
+      points: c.points,
+      rotation: c.rotation,
+      approval: c.requires_approval,
+      editId: c.id,
+    };
+    this._render();
+    this.shadowRoot.querySelector("details.form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async _createChore() {
     const f = this._form;
     if (!f.name.trim() || !f.assignees.length) return;
+    if (f.editId) {
+      await this._call("update_chore", {
+        chore_id: f.editId,
+        name: f.name.trim(),
+        assignees: f.assignees,
+        points: Number(f.points) || 0,
+        recurrence: f.recurrence,
+        due: f.due || "",
+        rotation: f.rotation,
+        requires_approval: f.approval,
+      });
+      this._resetForm();
+      this._render();
+      return;
+    }
     const data = {
       name: f.name.trim(),
       assignees: f.assignees,
@@ -435,14 +497,17 @@ class FamilienplanCard extends HTMLElement {
               c.requires_approval ? " · " + this._t("approval") : ""
             }${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
-          <div class="actions"><button class="link bad" data-action="delete" data-id="${esc(c.id)}">${this._t("delete")}</button></div>
+          <div class="actions">
+            <button class="link" data-action="edit" data-id="${esc(c.id)}">${this._t("edit")}</button>
+            <button class="link bad" data-action="delete" data-id="${esc(c.id)}">${this._t("delete")}</button>
+          </div>
         </li>`,
       )
       .join("");
     const rec = this._t("rec");
     return `
-      <details class="form" ${this._data.chores.length ? "" : "open"}>
-        <summary>+ ${this._t("newChore")}</summary>
+      <details class="form" ${this._data.chores.length && !f.editId ? "" : "open"}>
+        <summary>${f.editId ? this._t("editChore") : "+ " + this._t("newChore")}</summary>
         <label>${this._t("name")}<input data-field="name" value="${esc(f.name)}" maxlength="60"></label>
         <fieldset><legend>${this._t("assignees")}</legend>
           ${this._data.members
@@ -461,7 +526,8 @@ class FamilienplanCard extends HTMLElement {
         </div>
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
-        <button class="primary" data-action="create">${this._t("create")}</button>
+        <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
+        ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
       </details>
       <ul>${rows}</ul>`;
   }

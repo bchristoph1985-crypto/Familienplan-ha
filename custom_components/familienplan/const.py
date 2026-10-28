@@ -1,7 +1,7 @@
 """Konstanten für Familienplan."""
 
 DOMAIN = "familienplan"
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -26,6 +26,7 @@ DEFAULT_PARENT_SUMMARY_TIME = "19:00"
 
 SERVICE_CREATE_CHORE = "create_chore"
 SERVICE_DELETE_CHORE = "delete_chore"
+SERVICE_UPDATE_CHORE = "update_chore"
 SERVICE_CLAIM_CHORE = "claim_chore"
 SERVICE_UNDO_CLAIM = "undo_claim"
 SERVICE_APPROVE_CHORE = "approve_chore"

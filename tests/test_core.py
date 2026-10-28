@@ -248,3 +248,60 @@ def test_offen_bis_fuer_erinnerungen(family: Family) -> None:
     ohne = family.create_chore(SYSTEM, "Ohne Frist", [lucas.id])
     ids = {c.id for c in family.open_until(lucas.id, NOW, NOW + timedelta(hours=6))}
     assert ids == {heute.id, ohne.id}
+
+
+# -- Bearbeiten -------------------------------------------------------------
+
+
+def test_bearbeiten_aendert_nur_angegebenes(family: Family) -> None:
+    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    chore = family.create_chore(
+        SYSTEM, "Müll", [lucas.id], points=1, recurrence=Recurrence.DAILY, due=NOW
+    )
+    family.update_chore(SYSTEM, chore.id, NOW, name="Müll + Gelber Sack", points=3)
+    assert chore.name == "Müll + Gelber Sack"
+    assert chore.points == 3
+    assert chore.assignees == [lucas.id]
+    assert chore.due == NOW
+    family.update_chore(SYSTEM, chore.id, NOW, assignees=[osmo.id, lucas.id], rotation=True)
+    assert family.responsible(chore, NOW) == [osmo.id]
+
+
+def test_kind_darf_nicht_bearbeiten(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    chore = family.create_chore(SYSTEM, "Müll", [lucas.id], points=1)
+    with pytest.raises(PermissionDenied):
+        family.update_chore(actor(family, "Lucas"), chore.id, NOW, points=50)
+    assert chore.points == 1
+
+
+def test_bearbeiten_regeln(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    chore = family.create_chore(SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=NOW)
+    with pytest.raises(FamilyError):
+        family.update_chore(SYSTEM, chore.id, NOW, clear_due=True)
+    with pytest.raises(FamilyError):
+        family.update_chore(SYSTEM, chore.id, NOW, assignees=[])
+    with pytest.raises(FamilyError):
+        family.update_chore(SYSTEM, chore.id, NOW, name="  ")
+    assert chore.name == "Müll" and chore.due == NOW
+
+
+def test_neue_frist_hebt_ueberfaellig_auf(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    chore = family.create_chore(
+        SYSTEM, "Zimmer", [lucas.id], recurrence=Recurrence.WEEKLY, due=NOW - timedelta(hours=2)
+    )
+    family.refresh(NOW)
+    assert chore.state is ChoreState.OVERDUE
+    family.update_chore(SYSTEM, chore.id, NOW, due=NOW + timedelta(days=1))
+    assert chore.state is ChoreState.OPEN
+
+
+def test_freigabe_abschalten_bucht_offene_meldung(family: Family) -> None:
+    lucas = by_name(family, "Lucas")
+    chore = family.create_chore(SYSTEM, "Bad", [lucas.id], points=5, requires_approval=True)
+    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW)
+    family.update_chore(SYSTEM, chore.id, NOW, requires_approval=False)
+    assert chore.state is ChoreState.DONE
+    assert lucas.points == 5

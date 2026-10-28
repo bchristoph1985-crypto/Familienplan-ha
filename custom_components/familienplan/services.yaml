@@ -77,3 +77,36 @@ end_absence:
       required: true
       selector:
         text:
+update_chore:
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    name:
+      selector:
+        text:
+    assignees:
+      selector:
+        text:
+          multiple: true
+    points:
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: box
+    recurrence:
+      selector:
+        select:
+          translation_key: recurrence
+          options: [none, daily, weekly, biweekly]
+    due:
+      selector:
+        datetime:
+    rotation:
+      selector:
+        boolean:
+    requires_approval:
+      selector:
+        boolean:
