@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Phase 1, Grundgerüst (Version 0.1.0). Noch nicht für den Alltag gedacht.
+Stand: Version 0.3.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
@@ -14,6 +14,21 @@ Stand: Phase 1, Grundgerüst (Version 0.1.0). Noch nicht für den Alltag gedacht
 - Erinnerungen per HA-Push an Kinder zu einstellbaren Uhrzeiten (Standard 15:00, 17:00, 18:30), nur wenn noch etwas offen ist; Sammelnachricht an Eltern (Standard 19:00)
 - Sensoren: Punkte je Mitglied, Status je Aufgabe
 - Dienste: `familienplan.create_chore`, `delete_chore`, `claim_chore`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`
+
+## Dashboard-Karte
+
+Die Karte wird von der Integration mitgeliefert, eine Ressource muss man nicht anlegen.
+
+```yaml
+type: custom:familienplan-card
+mode: auto        # auto | kind | eltern
+member: Lucas     # optional: immer dieses Kind zeigen
+readonly: false   # true: nur anzeigen, z. B. Küchen-Tablet
+title: Familienplan
+```
+
+- **Kinder** sehen ihre Aufgaben für heute, Punkte und einen Erledigt-Knopf.
+- **Eltern** sehen Reiter für Heute (alle Kinder, für ein Kind abhaken), Freigaben, Aufgaben (anlegen, bearbeiten, löschen) und Abwesend (eintragen, beenden).
 
 ## Rechte (serverseitig geprüft)
 
@@ -44,5 +59,5 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Name und Lizenz (siehe Phase-0-Dokument)
 - Erinnerung nur, wenn das Kind zu Hause ist; Ansagen über Lautsprecher
-- Karten fürs Dashboard (Phase 2)
+- Karten-Editor in der Oberfläche
 - Pro-Funktionen und Lizenzschlüssel (Phase 3)

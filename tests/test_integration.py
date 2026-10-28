@@ -126,3 +126,28 @@ async def test_config_flow(hass: HomeAssistant) -> None:
     )
     assert result["type"] == "create_entry"
     assert result["title"] == "Familie B"
+
+
+async def test_bearbeiten_per_dienst(hass: HomeAssistant, setup, hass_admin_user, hass_read_only_user) -> None:
+    await hass.services.async_call(
+        DOMAIN, "create_chore",
+        {"name": "Tisch", "assignees": ["Lucas"], "recurrence": "daily", "due": "2030-01-01 18:00:00"},
+        blocking=True, context=_ctx(hass_admin_user),
+    )
+    await hass.async_block_till_done()
+    chore_id = _chore_state(hass, "Tisch").attributes["chore_id"]
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            DOMAIN, "update_chore", {"chore_id": chore_id, "points": 99},
+            blocking=True, context=_ctx(hass_read_only_user),
+        )
+    await hass.services.async_call(
+        DOMAIN, "update_chore",
+        {"chore_id": chore_id, "points": 4, "recurrence": "none", "due": ""},
+        blocking=True, context=_ctx(hass_admin_user),
+    )
+    await hass.async_block_till_done()
+    attrs = _chore_state(hass, "Tisch").attributes
+    assert attrs["points"] == 4
+    assert attrs["recurrence"] == "none"
+    assert attrs["due"] is None

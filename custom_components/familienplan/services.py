@@ -34,6 +34,7 @@ from .const import (
     SERVICE_REJECT_CHORE,
     SERVICE_SET_ABSENCE,
     SERVICE_UNDO_CLAIM,
+    SERVICE_UPDATE_CHORE,
 )
 from .core import Actor, FamilyError, Recurrence
 
@@ -53,6 +54,19 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_DUE): cv.datetime,
         vol.Optional(ATTR_ROTATION, default=False): cv.boolean,
         vol.Optional(ATTR_REQUIRES_APPROVAL, default=False): cv.boolean,
+    }
+)
+
+UPDATE_SCHEMA = CHORE_SCHEMA.extend(
+    {
+        vol.Optional(ATTR_NAME): cv.string,
+        vol.Optional(ATTR_ASSIGNEES): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional(ATTR_POINTS): vol.All(vol.Coerce(int), vol.Range(min=0)),
+        vol.Optional(ATTR_RECURRENCE): vol.In([r.value for r in Recurrence]),
+        # Leerer Text oder null löscht die Frist.
+        vol.Optional(ATTR_DUE): vol.Any(None, vol.All(cv.string, vol.Length(max=0)), cv.datetime),
+        vol.Optional(ATTR_ROTATION): cv.boolean,
+        vol.Optional(ATTR_REQUIRES_APPROVAL): cv.boolean,
     }
 )
 
@@ -135,6 +149,26 @@ async def _create(hass, call, data, actor) -> None:
     )
 
 
+async def _update(hass, call, data, actor) -> None:
+    d = call.data
+    due = d.get(ATTR_DUE)
+    data.family.update_chore(
+        actor,
+        d[ATTR_CHORE_ID],
+        dt_util.utcnow(),
+        name=d.get(ATTR_NAME),
+        assignees=(
+            [_member_id(data, a) for a in d[ATTR_ASSIGNEES]] if ATTR_ASSIGNEES in d else None
+        ),
+        points=d.get(ATTR_POINTS),
+        recurrence=Recurrence(d[ATTR_RECURRENCE]) if ATTR_RECURRENCE in d else None,
+        due=_utc(due) if due else None,
+        clear_due=ATTR_DUE in d and not due,
+        rotation=d.get(ATTR_ROTATION),
+        requires_approval=d.get(ATTR_REQUIRES_APPROVAL),
+    )
+
+
 async def _delete(hass, call, data, actor) -> None:
     data.family.delete_chore(actor, call.data[ATTR_CHORE_ID])
 
@@ -180,6 +214,7 @@ async def _end_absence(hass, call, data, actor) -> None:
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
+        (SERVICE_UPDATE_CHORE, _update, UPDATE_SCHEMA),
         (SERVICE_DELETE_CHORE, _delete, CHORE_SCHEMA),
         (SERVICE_CLAIM_CHORE, _claim, CLAIM_SCHEMA),
         (SERVICE_UNDO_CLAIM, _undo, CHORE_SCHEMA),

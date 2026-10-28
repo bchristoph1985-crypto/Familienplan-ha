@@ -124,6 +124,44 @@
         }
       }
     },
+    "update_chore": {
+      "name": "Aufgabe bearbeiten",
+      "description": "Nur für Eltern. Nur angegebene Felder werden geändert.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID aus dem Attribut chore_id des Aufgaben-Sensors."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Was zu tun ist."
+        },
+        "assignees": {
+          "name": "Zuständig",
+          "description": "Namen oder IDs der Mitglieder."
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Punkte für die Erledigung."
+        },
+        "recurrence": {
+          "name": "Wiederholung",
+          "description": "Wie oft die Aufgabe wiederkommt."
+        },
+        "due": {
+          "name": "Frist",
+          "description": "Leer lassen löscht die Frist."
+        },
+        "rotation": {
+          "name": "Reihum",
+          "description": "Nach jeder Erledigung ist die nächste Person dran."
+        },
+        "requires_approval": {
+          "name": "Freigabe nötig",
+          "description": "Ein Elternteil muss bestätigen."
+        }
+      }
+    },
     "delete_chore": {
       "name": "Aufgabe löschen",
       "description": "Nur für Eltern.",

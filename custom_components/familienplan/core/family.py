@@ -262,6 +262,66 @@ class Family:
         self.chores[chore.id] = chore
         return chore
 
+    def update_chore(
+        self,
+        actor: Actor,
+        chore_id: str,
+        now: datetime,
+        *,
+        name: str | None = None,
+        assignees: list[str] | None = None,
+        points: int | None = None,
+        recurrence: Recurrence | None = None,
+        due: datetime | None = None,
+        clear_due: bool = False,
+        rotation: bool | None = None,
+        requires_approval: bool | None = None,
+    ) -> Chore:
+        """Nur übergebene Felder ändern. Punkte und Verlauf bleiben erhalten."""
+        self._require_manager(actor)
+        chore = self.chore(chore_id)
+        if name is not None:
+            name = name.strip()
+            if not name:
+                raise FamilyError("Name fehlt.")
+        if assignees is not None:
+            if not assignees:
+                raise FamilyError("Mindestens eine Person muss zugeordnet sein.")
+            for member_id in assignees:
+                self.member(member_id)
+        if points is not None and points < 0:
+            raise FamilyError("Punkte dürfen nicht negativ sein.")
+        new_due = None if clear_due else (due if due is not None else chore.due)
+        new_recurrence = recurrence if recurrence is not None else chore.recurrence
+        if new_recurrence is not Recurrence.NONE and new_due is None:
+            raise FamilyError("Wiederkehrende Aufgaben brauchen eine Frist.")
+
+        if name is not None:
+            chore.name = name
+        if assignees is not None:
+            chore.assignees = list(dict.fromkeys(assignees))
+            chore.rotation_index %= len(chore.assignees)
+        if points is not None:
+            chore.points = points
+        if rotation is not None:
+            chore.rotation = rotation
+        if requires_approval is not None:
+            chore.requires_approval = requires_approval
+        chore.recurrence = new_recurrence
+        chore.due = new_due
+        if chore.state is ChoreState.OVERDUE and (chore.due is None or chore.due > now):
+            chore.state = ChoreState.OPEN
+        if chore.state is ChoreState.DONE and chore.recurrence is not Recurrence.NONE:
+            chore.state = ChoreState.OPEN
+        if (
+            not chore.requires_approval
+            and chore.state is ChoreState.CLAIMED
+            and chore.claimed_by is not None
+        ):
+            # Wer schon gemeldet hat, soll durch die Änderung nichts verlieren.
+            self._complete(chore, chore.claimed_by, now)
+        return chore
+
     def delete_chore(self, actor: Actor, chore_id: str) -> None:
         self._require_manager(actor)
         self.chore(chore_id)

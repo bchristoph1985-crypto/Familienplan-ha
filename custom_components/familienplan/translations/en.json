@@ -124,6 +124,44 @@
         }
       }
     },
+    "update_chore": {
+      "name": "Edit chore",
+      "description": "Parents only. Only given fields change.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID from the chore sensor's chore_id attribute."
+        },
+        "name": {
+          "name": "Name",
+          "description": "What needs doing."
+        },
+        "assignees": {
+          "name": "Assignees",
+          "description": "Member names or IDs."
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points awarded when done."
+        },
+        "recurrence": {
+          "name": "Repeat",
+          "description": "How often the chore comes back."
+        },
+        "due": {
+          "name": "Due",
+          "description": "Empty clears the due date."
+        },
+        "rotation": {
+          "name": "Rotate",
+          "description": "Assignees take turns after each completion."
+        },
+        "requires_approval": {
+          "name": "Needs approval",
+          "description": "A parent must confirm."
+        }
+      }
+    },
     "delete_chore": {
       "name": "Delete chore",
       "description": "Parents only.",
