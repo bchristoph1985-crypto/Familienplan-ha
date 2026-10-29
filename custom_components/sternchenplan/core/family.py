@@ -731,6 +731,10 @@ class Family:
             chore.state = ChoreState.CLAIMED
             chore.claimed_by = member_id
             self._log(chore, "claimed", member_id, now)
+            self.events.append(
+                {"type": "needs_approval", "member": member_id, "chore": chore.id,
+                 "name": chore.name}
+            )
         else:
             self._complete(chore, member_id, now)
 
@@ -887,6 +891,10 @@ class Family:
         )
         self.redemptions.append(redemption)
         self._trim_redemptions()
+        self.events.append(
+            {"type": "redeemed", "member": member_id, "redemption": redemption.id,
+             "reward": reward.name}
+        )
         return redemption
 
     def _redemption(self, redemption_id: str) -> Redemption:

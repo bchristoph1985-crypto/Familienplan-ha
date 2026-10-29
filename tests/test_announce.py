@@ -162,7 +162,7 @@ async def test_einloesen_schickt_push_an_eltern(
     )
     await hass.async_block_till_done()
     assert lucas.points == 5
-    assert calls[0].data["message"] == "Lucas möchte eine Belohnung einlösen: Eis"
+    assert calls[0].data["message"] == "Lucas möchte „Eis“ einlösen."
     redemption = family.pending_redemptions()[0]
 
     # Kind kann sich nicht selbst bestätigen

@@ -143,6 +143,12 @@ In der Elternansicht hat jedes Kind unter „Heute“ den Knopf „± Sterne“.
 
 Ein Abzug geht nie unter null und kostet kein Level: Was ein Kind erreicht hat, bleibt. Bonus-Sterne zählen dagegen fürs Level und fürs Familienziel. Für Automationen gibt es den Dienst `sternchenplan.give_stars` und das Ereignis `sternchenplan_stars`.
 
+## Freigeben direkt aus der Push-Nachricht
+
+Meldet ein Kind eine Aufgabe, die eine Freigabe braucht, oder will es eine Belohnung einlösen, bekommen die Eltern eine Push-Nachricht mit zwei Knöpfen: „✓ Freigeben“ und „Ablehnen“. Ist ein Fotonachweis dabei, ist das Foto gleich in der Nachricht. Ein Tipp reicht, die App muss nicht geöffnet werden. Sobald ein Elternteil entschieden hat, verschwindet die Frage auch vom Handy des anderen.
+
+Das klappt mit der Home-Assistant-App (Push-Dienst `notify.mobile_app_…`). Geprüft wird serverseitig wie überall: Nur ein Elternkonto kann freigeben. Andere Push-Dienste bekommen die Nachricht ohne Knöpfe.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
