@@ -23,6 +23,7 @@ from .const import (
     DEFAULT_PARENT_SUMMARY_TIME,
     DEFAULT_REMINDER_TIMES,
 )
+from .actions import async_ask_parents
 from .core import ChoreState, Family, Role
 
 if TYPE_CHECKING:
@@ -41,7 +42,6 @@ _TEXT = {
         "say_child": "{name}, bei dir ist noch offen: {list}.",
         "say_and": "und",
         "say_done": "Alle Aufgaben für heute sind erledigt.",
-        "redeemed": "{name} möchte eine Belohnung einlösen: {reward}",
         "level_up": "🎉 Level {level} geschafft! Du bist jetzt {title}.",
         "badge": "{emoji} Neues Abzeichen: {badge}",
         "goal_ready": "🎯 Du hast genug Sterne für „{reward}“. Jetzt einlösen?",
@@ -64,7 +64,6 @@ _TEXT = {
         "say_child": "{name}, you still have to do: {list}.",
         "say_and": "and",
         "say_done": "All chores for today are done.",
-        "redeemed": "{name} wants to redeem a reward: {reward}",
         "level_up": "🎉 Level {level} reached! You are now {title}.",
         "badge": "{emoji} New badge: {badge}",
         "goal_ready": "🎯 You have enough stars for “{reward}”. Redeem it now?",
@@ -120,6 +119,9 @@ async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict
     """Neue Level und Abzeichen: Ereignis für eigene Automationen und Push ans Kind."""
     text = _text(hass)
     for event in events:
+        if event["type"] in ("needs_approval", "redeemed"):
+            await async_ask_parents(hass, family, event)
+            continue
         if event["type"] == "family_goal":
             hass.bus.async_fire("sternchenplan_family_goal", {"name": event["name"]})
             message = text["family_goal"].format(name=event["name"])
@@ -278,15 +280,6 @@ async def async_announce(hass: HomeAssistant, entry: SternchenplanConfigEntry, m
         if service.startswith("alexa_media"):
             payload["data"] = {"type": "announce"}
         await hass.services.async_call("notify", service, payload, blocking=False)
-
-
-async def notify_parents(hass: HomeAssistant, family: Family, key: str, **values: str) -> None:
-    """Kurze Push-Nachricht an alle Eltern mit Push-Dienst."""
-    text = _text(hass)
-    message = text[key].format(**values)
-    for member in family.members.values():
-        if member.role is Role.PARENT and member.notify_service:
-            await _notify(hass, member.notify_service, text["title"], message)
 
 
 async def _notify(hass: HomeAssistant, service: str, title: str, message: str) -> None:

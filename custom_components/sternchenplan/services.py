@@ -426,13 +426,8 @@ async def _delete_reward(hass, call, data, actor) -> None:
 
 
 async def _redeem(hass, call, data, actor) -> None:
-    from .reminders import notify_parents  # noqa: PLC0415
-
-    redemption = data.family.redeem(
-        actor, call.data[ATTR_REWARD_ID], _who(data, call, actor), dt_util.utcnow()
-    )
-    member = data.family.members[redemption.member_id]
-    await notify_parents(hass, data.family, "redeemed", name=member.name, reward=redemption.reward_name)
+    # Die Eltern fragt async_celebrate per Push mit Knöpfen.
+    data.family.redeem(actor, call.data[ATTR_REWARD_ID], _who(data, call, actor), dt_util.utcnow())
 
 
 async def _approve_redemption(hass, call, data, actor) -> None:

@@ -235,6 +235,14 @@
           "overdue": "Überfällig"
         }
       }
+    },
+    "calendar": {
+      "family_calendar": {
+        "name": "Aufgaben"
+      },
+      "child_calendar": {
+        "name": "Aufgaben {member}"
+      }
     }
   },
   "services": {

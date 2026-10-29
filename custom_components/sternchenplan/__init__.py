@@ -29,6 +29,7 @@ from .const import (
     STORAGE_VERSION,
     VERSION,
 )
+from .actions import async_setup_actions
 from .consequences import async_apply
 from .core import Family
 from .photos import PhotoUploadView, PhotoView, cleanup, forget_missing
@@ -36,7 +37,7 @@ from .reminders import async_celebrate, async_setup_reminders, weather_is_bad
 from .services import async_register_services
 from .websocket_api import async_register_websocket
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.CALENDAR, Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type SternchenplanConfigEntry = ConfigEntry[SternchenplanData]
@@ -123,6 +124,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SternchenplanConfigEntry
     )
     for unsub in async_setup_reminders(hass, entry):
         entry.async_on_unload(unsub)
+    entry.async_on_unload(async_setup_actions(hass, entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

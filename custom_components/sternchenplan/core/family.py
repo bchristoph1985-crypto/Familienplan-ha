@@ -731,6 +731,10 @@ class Family:
             chore.state = ChoreState.CLAIMED
             chore.claimed_by = member_id
             self._log(chore, "claimed", member_id, now)
+            self.events.append(
+                {"type": "needs_approval", "member": member_id, "chore": chore.id,
+                 "name": chore.name}
+            )
         else:
             self._complete(chore, member_id, now)
 
@@ -887,6 +891,10 @@ class Family:
         )
         self.redemptions.append(redemption)
         self._trim_redemptions()
+        self.events.append(
+            {"type": "redeemed", "member": member_id, "redemption": redemption.id,
+             "reward": reward.name}
+        )
         return redemption
 
     def _redemption(self, redemption_id: str) -> Redemption:
@@ -1182,6 +1190,53 @@ class Family:
         self.presets = [p for p in self.presets if p["id"] != preset_id]
         if len(self.presets) == before:
             raise FamilyError("Diesen Vorschlag gibt es nicht.")
+
+    # -- Kalender -------------------------------------------------------------
+
+    def occurrences(
+        self, start: datetime, end: datetime, member_id: str | None = None, limit: int = 500
+    ) -> list[tuple[datetime, Chore, list[str]]]:
+        """Fristen im Zeitraum, mit Wiederholungen vorausberechnet.
+
+        Rotation wird reihum fortgeschrieben, Abwesenheiten in der Zukunft
+        kennen wir nicht. Ferien-Pause und erledigte Einmal-Aufgaben fallen weg.
+        """
+        result: list[tuple[datetime, Chore, list[str]]] = []
+        for chore in self.chores.values():
+            if chore.due is None or chore.state is ChoreState.DONE or not chore.assignees:
+                continue
+            due, k = chore.due, 0
+            step = _INTERVALS.get(chore.recurrence)
+            while due < end and len(result) < limit:
+                if due >= start and not self.is_paused(due) and (
+                    not chore.weekdays
+                    or chore.recurrence is not Recurrence.DAILY
+                    or due.astimezone(self.tz).weekday() in chore.weekdays
+                ):
+                    who = self._who_at(chore, k, due)
+                    if who and (member_id is None or member_id in who):
+                        result.append((due, chore, who))
+                if step is None:
+                    break
+                due += step
+                k += 1
+        result.sort(key=lambda r: r[0])
+        return result
+
+    def _who_at(self, chore: Chore, k: int, when: datetime) -> list[str]:
+        if k == 0:
+            return self.responsible(chore, when) or (
+                [chore.claimed_by] if chore.claimed_by else []
+            )
+        age = chore.min_age
+        if chore.rotation:
+            member_id = chore.assignees[(chore.rotation_index + k) % len(chore.assignees)]
+            member = self.members.get(member_id)
+            return [member_id] if member and member.old_enough(age, when) else []
+        return [
+            m for m in chore.assignees
+            if (member := self.members.get(m)) and member.old_enough(age, when)
+        ]
 
     def set_picture_mode(self, actor: Actor, member_id: str, enabled: bool) -> Member:
         self._require_manager(actor)

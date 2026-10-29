@@ -235,6 +235,14 @@
           "overdue": "Overdue"
         }
       }
+    },
+    "calendar": {
+      "family_calendar": {
+        "name": "Chores"
+      },
+      "child_calendar": {
+        "name": "Chores {member}"
+      }
     }
   },
   "services": {
