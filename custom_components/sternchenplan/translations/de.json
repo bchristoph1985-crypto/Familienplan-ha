@@ -603,6 +603,80 @@
     "clear_family_goal": {
       "name": "Familienziel entfernen",
       "description": "Entfernt das aktuelle Familienziel."
+    },
+    "set_money": {
+      "name": "Taschengeld einstellen",
+      "description": "Tauschkurs für Sterne und Zahltag fürs Wochengeld.",
+      "fields": {
+        "rate": {
+          "name": "Sterne pro Euro",
+          "description": "Wie viele Sterne ein Kind für 1 € tauscht. 0 schaltet das Tauschen aus."
+        },
+        "payday": {
+          "name": "Zahltag",
+          "description": "Wochentag fürs Wochengeld: 0 = Montag … 6 = Sonntag."
+        }
+      }
+    },
+    "set_allowance": {
+      "name": "Wochengeld festlegen",
+      "description": "Fester Betrag, den ein Kind jede Woche am Zahltag bekommt.",
+      "fields": {
+        "member": {
+          "name": "Kind",
+          "description": "Name oder ID."
+        },
+        "amount": {
+          "name": "Betrag",
+          "description": "Euro pro Woche. 0 schaltet es aus."
+        }
+      }
+    },
+    "exchange_stars": {
+      "name": "Sterne tauschen",
+      "description": "Ein Kind tauscht Sterne zum Familienkurs in Taschengeld.",
+      "fields": {
+        "euros": {
+          "name": "Euro",
+          "description": "Wie viele ganze Euro."
+        },
+        "member": {
+          "name": "Kind",
+          "description": "Für wen. Standard: wer aufruft."
+        }
+      }
+    },
+    "payout": {
+      "name": "Auszahlen",
+      "description": "Eltern geben das Geld. Der Kontostand sinkt.",
+      "fields": {
+        "member": {
+          "name": "Kind",
+          "description": "Name oder ID."
+        },
+        "amount": {
+          "name": "Betrag",
+          "description": "Euro. Leer zahlt alles aus."
+        }
+      }
+    },
+    "adjust_money": {
+      "name": "Geld buchen",
+      "description": "Einen Betrag dazu- oder abbuchen, z. B. einen Bonus.",
+      "fields": {
+        "member": {
+          "name": "Kind",
+          "description": "Name oder ID."
+        },
+        "amount": {
+          "name": "Betrag",
+          "description": "Euro, negativ bucht ab."
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Steht im Verlauf."
+        }
+      }
     }
   }
 }

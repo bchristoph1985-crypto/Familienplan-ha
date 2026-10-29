@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.17.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.18.0. Noch nicht für den Alltag gedacht.
 
 ## Umstieg vom Arbeitstitel „Familienplan“
 
@@ -99,6 +99,21 @@ Dienste: `sternchenplan.set_goal`, `sternchenplan.set_family_goal`,
 `sternchenplan.clear_family_goal`. Ereignisse: `sternchenplan_goal_ready`,
 `sternchenplan_family_goal`.
 
+## Taschengeld
+
+Im Eltern-Reiter **Geld** führt Sternchenplan für jedes Kind ein
+Taschengeld-Konto. Das Geld selbst liegt nicht in Sternchenplan: Ihr zahlt bar
+oder per Überweisung aus und tippt dann auf „Auszahlen“.
+
+- **Sterne tauschen:** Mit einem Kurs, z. B. 10 Sterne = 1 €, tauschen Kinder
+  Sterne selbst in Taschengeld. Kurs 0 schaltet das aus.
+- **Wochengeld:** Ein fester Betrag pro Kind, gutgeschrieben am Zahltag
+  (Standard Sonntag). Das Kind bekommt eine Push-Nachricht.
+- **Buchen:** Bonus von Oma oder Abzug für Kaputtes, mit Notiz im Verlauf.
+
+Dienste: `set_money`, `set_allowance`, `exchange_stars`, `payout`,
+`adjust_money`.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
@@ -150,4 +165,4 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
-- Weitere Funktionen: Taschengeld, Routinen, Vorlagen nach Alter
+- Weitere Funktionen: Routinen, Vorlagen nach Alter

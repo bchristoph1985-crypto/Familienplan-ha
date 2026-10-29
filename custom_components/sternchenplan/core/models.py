@@ -7,7 +7,7 @@ Logik ohne HA testen und später wiederverwenden.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -51,6 +51,10 @@ class Member:
     # Sparziel: Belohnung, auf die das Kind hinspart. Gemeldet, sobald es reicht.
     goal_reward_id: str | None = None
     goal_ready_told: bool = False
+    # Taschengeld in Cent: Kontostand, fester Betrag pro Woche, letzte Gutschrift
+    money: int = 0
+    allowance: int = 0
+    allowance_paid: date | None = None
 
     def age(self, now: datetime) -> int | None:
         """Alter in Jahren, auf das Jahr genau. None, wenn nicht bekannt."""
@@ -86,6 +90,9 @@ class Member:
             "progress": self.progress.to_dict(),
             "goal_reward_id": self.goal_reward_id,
             "goal_ready_told": self.goal_ready_told,
+            "money": self.money,
+            "allowance": self.allowance,
+            "allowance_paid": self.allowance_paid.isoformat() if self.allowance_paid else None,
         }
 
     @classmethod
@@ -106,6 +113,11 @@ class Member:
             progress=Progress.from_dict(data.get("progress") or {}),
             goal_reward_id=data.get("goal_reward_id"),
             goal_ready_told=bool(data.get("goal_ready_told", False)),
+            money=int(data.get("money", 0)),
+            allowance=int(data.get("allowance", 0)),
+            allowance_paid=(
+                date.fromisoformat(data["allowance_paid"]) if data.get("allowance_paid") else None
+            ),
         )
 
 

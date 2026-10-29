@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.17.0";
+const VERSION = "0.18.0";
 
 const T = {
   de: {
@@ -142,6 +142,25 @@ const T = {
     fgClear: "Familienziel beenden",
     fgHint: "Alle Kinder sammeln gemeinsam. Niemandem wird etwas abgezogen.",
     fgConfirm: "Familienziel „{name}“ beenden?",
+    tabMoney: "Geld",
+    money: "Taschengeld",
+    weekly: "{amount} Wochengeld, jeden {day}",
+    exchange: "{stars} ⭐ → 1 € tauschen",
+    confirmExchange: "{stars} Sterne gegen 1 € tauschen?",
+    rate: "Sterne pro Euro",
+    rateHint: "0 = Sterne lassen sich nicht in Geld tauschen",
+    payday: "Zahltag fürs Wochengeld",
+    perWeek: "€ pro Woche",
+    payout: "Auszahlen",
+    confirmPayout: "{amount} an {name} auszahlen? Gib das Geld bar oder überweise es.",
+    book: "Buchen",
+    bookPrompt: "Betrag in Euro (minus zieht ab), z. B. 2,50",
+    notePrompt: "Wofür? (optional)",
+    history: "Verlauf",
+    noHistory: "Noch keine Buchungen.",
+    kinds: { allowance: "Wochengeld", exchange: "Sterne getauscht", payout: "ausgezahlt", adjust: "gebucht" },
+    days: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+    moneyHint: "Das Geld liegt nicht wirklich hier. Sternchenplan führt nur das Konto. Auszahlen tut ihr selbst, bar oder per Überweisung.",
   },
   en: {
     hello: "Hi {name}",
@@ -272,6 +291,25 @@ const T = {
     fgClear: "End family goal",
     fgHint: "All children collect together. Nothing is deducted from anyone.",
     fgConfirm: "End family goal “{name}”?",
+    tabMoney: "Money",
+    money: "Pocket money",
+    weekly: "{amount} allowance, every {day}",
+    exchange: "Exchange {stars} ⭐ → 1 €",
+    confirmExchange: "Exchange {stars} stars for 1 €?",
+    rate: "Stars per euro",
+    rateHint: "0 = stars can't be exchanged for money",
+    payday: "Payday for the allowance",
+    perWeek: "€ per week",
+    payout: "Pay out",
+    confirmPayout: "Pay {amount} to {name}? Hand over cash or transfer it.",
+    book: "Book",
+    bookPrompt: "Amount in euros (minus subtracts), e.g. 2.50",
+    notePrompt: "What for? (optional)",
+    history: "History",
+    noHistory: "No entries yet.",
+    kinds: { allowance: "Allowance", exchange: "Stars exchanged", payout: "paid out", adjust: "booked" },
+    days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    moneyHint: "The money isn't really kept here. Sternchenplan only keeps the account. You pay out yourselves, in cash or by transfer.",
   },
 };
 
@@ -538,6 +576,28 @@ class SternchenplanCard extends HTMLElement {
         }
         break;
       }
+      case "exchange": {
+        const rate = this._data.money?.rate;
+        if (rate && confirm(this._t("confirmExchange", { stars: rate }))) {
+          const data = { euros: 1 };
+          if (this._data.tablet) data.member = this._actingAs;
+          this._call("exchange_stars", data);
+        }
+        break;
+      }
+      case "payout": {
+        const k = this._member(id);
+        if (k && confirm(this._t("confirmPayout", { amount: this._euro(k.money), name: k.name }))) {
+          this._call("payout", { member: id });
+        }
+        break;
+      }
+      case "book": {
+        const raw = prompt(this._t("bookPrompt"));
+        const amount = parseFloat(String(raw || "").replace(",", "."));
+        if (amount) this._call("adjust_money", { member: id, amount, note: prompt(this._t("notePrompt")) || "" });
+        break;
+      }
       case "goal": {
         const data = { reward_id: id || null };
         if (this._data.tablet) data.member = this._actingAs;
@@ -604,6 +664,22 @@ class SternchenplanCard extends HTMLElement {
     if (field.startsWith("away.")) {
       const [, memberId, key] = field.split(".");
       this._awayForm[memberId] = { ...(this._awayForm[memberId] || {}), [key]: el.value };
+      return;
+    }
+    if (field.startsWith("money.") || field.startsWith("allow.")) {
+      if (ev.type !== "change") return;
+      // Einstellungen nicht über _call: der sperrt bei schnellen Folgeänderungen.
+      const send = (service, data) =>
+        this._hass.callService("sternchenplan", service, data).catch((err) => this._notify(err.message));
+      if (el.value === "") return;
+      if (field.startsWith("allow.")) {
+        const amount = Math.max(0, parseFloat(String(el.value).replace(",", ".")) || 0);
+        send("set_allowance", { member: field.slice(6), amount });
+      } else {
+        const m = { ...(this._data.money || { rate: 0, payday: 6 }) };
+        m[field.slice(6)] = parseInt(el.value, 10) || 0;
+        send("set_money", { rate: m.rate, payday: m.payday });
+      }
       return;
     }
     if (field.startsWith("fg.")) {
@@ -1076,6 +1152,7 @@ class SternchenplanCard extends HTMLElement {
         ${list}
         ${this._renderTakeOver(member)}
         ${this._renderChildRewards(member)}
+        ${this._renderMoney(member)}
         ${this._renderBadges(member)}
       </div>`;
   }
@@ -1097,6 +1174,74 @@ class SternchenplanCard extends HTMLElement {
         </div>
         ${ready && !ro ? `<button class="primary" data-action="redeem" data-id="${esc(reward.id)}">${this._t("redeem")}</button>` : ""}
       </div>`;
+  }
+
+  _euro(cents) {
+    return new Intl.NumberFormat(this._locale(), { style: "currency", currency: "EUR" }).format(cents / 100);
+  }
+
+  _moneyLog(member) {
+    const log = member.money_log || [];
+    if (!log.length) return `<p class="muted small">${this._t("noHistory")}</p>`;
+    const kinds = this._t("kinds");
+    return `<ul class="ledger">${log
+      .slice(0, 10)
+      .map(
+        (e) => `<li><span>${esc(e.note || kinds[e.kind] || e.kind)}${e.stars ? ` · ${e.stars} ⭐` : ""}<span class="muted small"> · ${new Date(e.at).toLocaleDateString(this._locale())}</span></span>
+          <b class="${e.cents < 0 ? "minus" : "plus"}">${e.cents > 0 ? "+" : ""}${esc(this._euro(e.cents))}</b></li>`,
+      )
+      .join("")}</ul>`;
+  }
+
+  _renderMoney(member) {
+    const m = this._data.money || {};
+    if (!m.rate && !member.allowance && !member.money) return "";
+    const ro = this._config.readonly || member.id !== this._me();
+    const can = m.rate && member.points >= m.rate;
+    return `
+      <section class="money">
+        <div class="section-title">💶 ${this._t("money")}</div>
+        <div class="wallet">
+          <div class="wallet-sum">${esc(this._euro(member.money || 0))}</div>
+          ${member.allowance ? `<div class="muted small">${esc(this._t("weekly", { amount: this._euro(member.allowance), day: this._t("days")[m.payday ?? 6] }))}</div>` : ""}
+          ${m.rate && !ro ? `<button class="primary" data-action="exchange" ${can ? "" : "disabled"}>${esc(this._t("exchange", { stars: m.rate }))}</button>` : ""}
+        </div>
+        <details class="ledger-box"><summary class="muted small">${this._t("history")}</summary>${this._moneyLog(member)}</details>
+      </section>`;
+  }
+
+  _renderMoneyAdmin() {
+    const m = this._data.money || { rate: 0, payday: 6 };
+    const days = this._t("days");
+    const rows = this._children()
+      .map(
+        (k) => `
+        <section class="kidcard money-kid" style="--kid:${this._color(k.id)}">
+          <div class="kidcard-head">
+            ${this._avatar(k, 40)}
+            <div class="kidcard-name"><strong>${esc(k.name)}</strong><span class="muted small">⭐ ${k.points}</span></div>
+            <div class="wallet-sum small-sum">${esc(this._euro(k.money || 0))}</div>
+          </div>
+          <div class="money-row">
+            <label>${this._t("perWeek")}<input type="number" min="0" step="0.5" data-field="allow.${esc(k.id)}" value="${(k.allowance || 0) / 100}"></label>
+            <button class="link" data-action="book" data-id="${esc(k.id)}">± ${this._t("book")}</button>
+            <button class="primary" data-action="payout" data-id="${esc(k.id)}" ${k.money > 0 ? "" : "disabled"}>${this._t("payout")}</button>
+          </div>
+          <details class="ledger-box"><summary class="muted small">${this._t("history")}</summary>${this._moneyLog(k)}</details>
+        </section>`,
+      )
+      .join("");
+    return `
+      <div class="form money-settings">
+        <div class="grid">
+          <label>${this._t("rate")}<input type="number" min="0" data-field="money.rate" value="${m.rate}"><span class="muted small">${this._t("rateHint")}</span></label>
+          <label>${this._t("payday")}<select data-field="money.payday">${days
+            .map((d, i) => `<option value="${i}" ${i === m.payday ? "selected" : ""}>${esc(d)}</option>`)
+            .join("")}</select></label>
+        </div>
+      </div>
+      <div class="kidgrid">${rows}</div>
+      <p class="muted small">${this._t("moneyHint")}</p>`;
   }
 
   _renderFamilyGoal() {
@@ -1210,12 +1355,14 @@ class SternchenplanCard extends HTMLElement {
       ["approve", `${this._t("tabApprove")}${open ? ` <span class="count">${open}</span>` : ""}`],
       ["chores", this._t("tabChores")],
       ["rewards", this._t("tabRewards")],
+      ["money", this._t("tabMoney")],
       ["away", this._t("tabAway")],
     ];
     let body = "";
     if (this._tab === "approve") body = this._renderApprovals(waiting);
     else if (this._tab === "chores") body = this._renderChores();
     else if (this._tab === "rewards") body = this._renderRewardAdmin();
+    else if (this._tab === "money") body = this._renderMoneyAdmin();
     else if (this._tab === "away") body = this._renderAway();
     else body = this._renderToday();
     return `
@@ -1606,6 +1753,21 @@ const STYLE = `
   .reward.is-goal { box-shadow: inset 0 0 0 2px #e5a100; }
   button.goal-btn { min-height: 28px; font-size: 0.8em; }
   button.goal-btn.on { color: #e5a100; font-weight: 600; }
+  .wallet { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; border-radius: 16px;
+            background: linear-gradient(135deg, color-mix(in srgb, #22a565 18%, var(--card-background-color)), var(--secondary-background-color)); }
+  .wallet-sum { font-size: 2em; font-weight: 800; letter-spacing: -.5px; }
+  .wallet-sum.small-sum { font-size: 1.3em; }
+  .wallet button.primary { background: #22a565; }
+  .wallet button[disabled], .money-row button[disabled] { opacity: .45; cursor: default; }
+  .ledger-box summary { cursor: pointer; padding: 6px 0 2px; }
+  ul.ledger li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); font-size: 0.9em; }
+  ul.ledger li:last-child { border-bottom: none; }
+  .ledger .plus { color: var(--success-color, #22a565); }
+  .ledger .minus { color: var(--secondary-text-color); }
+  .money-row { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .money-row label { display: flex; flex-direction: column; gap: 2px; font-size: 0.8em; width: 110px; }
+  .money-row .primary { margin-left: auto; }
+  .money-settings label span { font-size: 0.8em; }
   .party { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
            background: rgba(0,0,0,.45); animation: fade .25s ease-out; cursor: pointer; }
   .party-card { text-align: center; padding: 26px 34px; border-radius: 24px; background: var(--card-background-color);

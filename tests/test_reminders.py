@@ -165,3 +165,26 @@ async def test_familienziel_per_dienst(hass: HomeAssistant, entry) -> None:
     assert any("Familienziel geschafft: Zoo" in c.data["message"] for c in papa_calls)
     await hass.services.async_call(DOMAIN, "clear_family_goal", {}, blocking=True)
     assert family.goal is None
+
+
+async def test_taschengeld_per_dienst(hass: HomeAssistant, entry, freezer) -> None:
+    lucas_calls = async_mock_service(hass, "notify", "lucas_handy")
+    await hass.services.async_call(DOMAIN, "set_money", {"rate": 10, "payday": 0}, blocking=True)
+    await hass.services.async_call(
+        DOMAIN, "set_allowance", {"member": "Lucas", "amount": 2.5}, blocking=True
+    )
+    family = entry.runtime_data.family
+    lucas = next(m for m in family.members.values() if m.name == "Lucas")
+    lucas.points = 30
+    await hass.services.async_call(
+        DOMAIN, "exchange_stars", {"member": "Lucas", "euros": 3}, blocking=True
+    )
+    assert lucas.money == 300 and lucas.points == 0
+    # nächster Montag: Wochengeld per Takt
+    freezer.move_to("2026-11-09 00:01:00+00:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert lucas.money == 550
+    assert any("2,50 € Taschengeld" in c.data["message"] for c in lucas_calls)
+    await hass.services.async_call(DOMAIN, "payout", {"member": "Lucas"}, blocking=True)
+    assert lucas.money == 0

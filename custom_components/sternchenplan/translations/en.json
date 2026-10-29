@@ -603,6 +603,80 @@
     "clear_family_goal": {
       "name": "Remove family goal",
       "description": "Removes the current family goal."
+    },
+    "set_money": {
+      "name": "Pocket money settings",
+      "description": "Exchange rate for stars and the weekly payday.",
+      "fields": {
+        "rate": {
+          "name": "Stars per euro",
+          "description": "How many stars a child exchanges for 1 €. 0 turns exchanging off."
+        },
+        "payday": {
+          "name": "Payday",
+          "description": "Weekday for the weekly allowance: 0 = Monday … 6 = Sunday."
+        }
+      }
+    },
+    "set_allowance": {
+      "name": "Set weekly allowance",
+      "description": "Fixed amount a child gets every week on payday.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Euros per week. 0 turns it off."
+        }
+      }
+    },
+    "exchange_stars": {
+      "name": "Exchange stars",
+      "description": "A child exchanges stars for pocket money at the family's rate.",
+      "fields": {
+        "euros": {
+          "name": "Euros",
+          "description": "How many whole euros."
+        },
+        "member": {
+          "name": "Child",
+          "description": "For whom. Default: the caller."
+        }
+      }
+    },
+    "payout": {
+      "name": "Pay out",
+      "description": "Parents hand over the money. The balance goes down.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Euros. Empty pays out everything."
+        }
+      }
+    },
+    "adjust_money": {
+      "name": "Book money",
+      "description": "Add or subtract an amount, e.g. a bonus.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Euros, negative subtracts."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Shown in the history."
+        }
+      }
     }
   }
 }

@@ -60,6 +60,7 @@ def snapshot(
         "donate_url": DONATE_URL if actor.is_manager else None,
         "takeover": {"allowed": allowed, "multiplier": multiplier},
         "family_goal": family.goal.to_dict() if family.goal else None,
+        "money": {"rate": family.money_rate, "payday": family.payday},
         "members": [
             {
                 "id": m.id,
@@ -76,6 +77,14 @@ def snapshot(
                 "age": m.age(now),
                 "progress": _progress(m, now.astimezone(family.tz).date()),
                 "goal": m.goal_reward_id if m.goal_reward_id in family.rewards else None,
+                "money": m.money,
+                "allowance": m.allowance,
+                # Kontoauszug sehen Eltern und das Kind selbst
+                "money_log": (
+                    family.money_history(m.id)
+                    if actor.is_manager or actor.tablet or (actor.member and actor.member.id == m.id)
+                    else []
+                ),
             }
             for m in family.members.values()
         ],

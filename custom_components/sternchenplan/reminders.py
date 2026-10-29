@@ -45,6 +45,7 @@ _TEXT = {
         "badge": "{emoji} Neues Abzeichen: {badge}",
         "goal_ready": "🎯 Du hast genug Sterne für „{reward}“. Jetzt einlösen?",
         "family_goal": "🎉 Familienziel geschafft: {name}! Danke an alle.",
+        "allowance": "💶 {amount} Taschengeld sind da!",
     },
     "en": {
         "title": "Sternchenplan",
@@ -61,6 +62,7 @@ _TEXT = {
         "badge": "{emoji} New badge: {badge}",
         "goal_ready": "🎯 You have enough stars for “{reward}”. Redeem it now?",
         "family_goal": "🎉 Family goal reached: {name}! Thanks, everyone.",
+        "allowance": "💶 {amount} pocket money has arrived!",
     },
 }
 
@@ -123,6 +125,11 @@ async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict
                 {"member": member.name, "member_id": member.id,
                  "level": event["level"], "title": title},
             )
+        elif event["type"] == "allowance":
+            amount = f"{event['cents'] / 100:.2f} €"
+            if _lang(hass) == "de":
+                amount = amount.replace(".", ",")
+            message = text["allowance"].format(amount=amount)
         elif event["type"] == "goal_ready":
             message = text["goal_ready"].format(reward=event["reward"])
             hass.bus.async_fire(

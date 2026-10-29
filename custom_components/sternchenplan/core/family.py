@@ -26,6 +26,7 @@ from .models import (
 from .progress import EARLY_HOUR, level_for, new_badges
 
 HISTORY_LIMIT = 50
+MONEY_LOG_LIMIT = 200
 REDEMPTION_LIMIT = 100
 
 _INTERVALS = {
@@ -97,6 +98,10 @@ class Family:
         # gespeichert. Home Assistant feiert damit (Push, Ereignis).
         self.events: list[dict[str, Any]] = []
         self.goal: FamilyGoal | None = None
+        # Taschengeld: Sterne pro Euro (0 = kein Tausch), Zahltag (0 = Montag)
+        self.money_rate = 0
+        self.payday = 6
+        self.money_log: list[dict[str, Any]] = []
 
     # -- Speichern -----------------------------------------------------------
 
@@ -110,6 +115,9 @@ class Family:
             "tablet_users": list(self.tablet_users),
             "tablet_approval": self.tablet_approval,
             "goal": self.goal.to_dict() if self.goal else None,
+            "money_rate": self.money_rate,
+            "payday": self.payday,
+            "money_log": list(self.money_log),
         }
 
     @classmethod
@@ -125,6 +133,9 @@ class Family:
         family.tablet_approval = bool(data.get("tablet_approval", False))
         if data.get("goal"):
             family.goal = FamilyGoal.from_dict(data["goal"])
+        family.money_rate = int(data.get("money_rate", 0))
+        family.payday = int(data.get("payday", 6))
+        family.money_log = list(data.get("money_log", []))
         for raw in data.get("members", []):
             if "progress" not in raw:
                 family._estimate_progress(family.members[raw["id"]])
@@ -690,6 +701,8 @@ class Family:
             ):
                 chore.state = ChoreState.OVERDUE
                 changed = True
+        if self.pay_allowances(now):
+            changed = True
         return changed
 
     # -- Belohnungen -----------------------------------------------------------
@@ -907,6 +920,104 @@ class Family:
     def clear_family_goal(self, actor: Actor) -> None:
         self._require_manager(actor)
         self.goal = None
+
+    # -- Taschengeld -------------------------------------------------------
+
+    def set_money(self, actor: Actor, rate: int, payday: int) -> None:
+        """Tauschkurs (Sterne pro Euro, 0 = aus) und Zahltag (0 = Montag)."""
+        self._require_manager(actor)
+        if rate < 0 or not 0 <= payday <= 6:
+            raise FamilyError("Ungültige Einstellung.")
+        self.money_rate = rate
+        self.payday = payday
+
+    def set_allowance(self, actor: Actor, member_id: str, cents: int, now: datetime) -> Member:
+        """Fester Betrag pro Woche. Der erste kommt am nächsten Zahltag."""
+        self._require_manager(actor)
+        member = self._child(member_id)
+        if cents < 0:
+            raise FamilyError("Der Betrag darf nicht negativ sein.")
+        if not member.allowance:
+            # Nicht rückwirkend für diese Woche auszahlen, wenn der Zahltag schon war.
+            member.allowance_paid = now.astimezone(self.tz).date()
+        member.allowance = cents
+        return member
+
+    def exchange(self, actor: Actor, member_id: str, euros: int, now: datetime) -> Member:
+        """Kind tauscht Sterne in Taschengeld, sofort und in ganzen Euro."""
+        member = self._child(member_id)
+        actor = self._as_child(actor, member_id)
+        if not actor.is_manager and (actor.member is None or actor.member.id != member_id):
+            raise PermissionDenied("Du kannst nur deine eigenen Sterne tauschen.")
+        if not self.money_rate:
+            raise FamilyError("Sterne tauschen ist nicht eingeschaltet.")
+        if euros < 1:
+            raise FamilyError("Mindestens 1 Euro.")
+        stars = euros * self.money_rate
+        if member.points < stars:
+            raise FamilyError(f"Dafür brauchst du {stars} Sterne, du hast {member.points}.")
+        member.points -= stars
+        self._book(member, euros * 100, "exchange", now, stars=stars)
+        return member
+
+    def payout(self, actor: Actor, member_id: str, cents: int | None, now: datetime) -> Member:
+        """Eltern zahlen aus (bar oder überwiesen). Ohne Betrag alles."""
+        self._require_manager(actor)
+        member = self._child(member_id)
+        cents = member.money if cents is None else cents
+        if cents <= 0 or cents > member.money:
+            raise FamilyError("So viel ist nicht auf dem Konto.")
+        self._book(member, -cents, "payout", now)
+        return member
+
+    def adjust_money(
+        self, actor: Actor, member_id: str, cents: int, note: str, now: datetime
+    ) -> Member:
+        """Eltern buchen etwas dazu oder ab, z. B. Bonus oder Ersatz für Kaputtes."""
+        self._require_manager(actor)
+        member = self._child(member_id)
+        if not cents:
+            raise FamilyError("Betrag fehlt.")
+        if member.money + cents < 0:
+            raise FamilyError("Das Konto darf nicht ins Minus.")
+        self._book(member, cents, "adjust", now, note=note.strip()[:80])
+        return member
+
+    def pay_allowances(self, now: datetime) -> bool:
+        """Am Zahltag das Wochengeld gutschreiben, einmal pro Woche."""
+        today = now.astimezone(self.tz).date()
+        if today.weekday() != self.payday:
+            return False
+        changed = False
+        for member in self.members.values():
+            if member.role is not Role.CHILD or not member.allowance:
+                continue
+            if member.allowance_paid and (today - member.allowance_paid).days < 7:
+                continue
+            member.allowance_paid = today
+            self._book(member, member.allowance, "allowance", now)
+            self.events.append(
+                {"type": "allowance", "member": member.id, "cents": member.allowance}
+            )
+            changed = True
+        return changed
+
+    def money_history(self, member_id: str, limit: int = 20) -> list[dict[str, Any]]:
+        return [e for e in reversed(self.money_log) if e["member"] == member_id][:limit]
+
+    def _child(self, member_id: str) -> Member:
+        member = self.member(member_id)
+        if member.role is not Role.CHILD:
+            raise FamilyError("Taschengeld gibt es nur für Kinder.")
+        return member
+
+    def _book(self, member: Member, cents: int, kind: str, now: datetime, **extra: Any) -> None:
+        member.money += cents
+        self.money_log.append(
+            {"member": member.id, "cents": cents, "kind": kind, "at": now.isoformat(),
+             "balance": member.money, **extra}
+        )
+        del self.money_log[:-MONEY_LOG_LIMIT]
 
     def _celebrate(self, member: Member, now: datetime, *, level_before: int | None = None) -> None:
         progress = member.progress

@@ -60,6 +60,16 @@ from .const import (
     SERVICE_SET_FAMILY_GOAL,
     SERVICE_SET_GOAL,
     ATTR_TARGET,
+    ATTR_AMOUNT,
+    ATTR_EUROS,
+    ATTR_NOTE,
+    ATTR_PAYDAY,
+    ATTR_RATE,
+    SERVICE_ADJUST_MONEY,
+    SERVICE_EXCHANGE_STARS,
+    SERVICE_PAYOUT,
+    SERVICE_SET_ALLOWANCE,
+    SERVICE_SET_MONEY,
 )
 from .consequences import next_release
 from .takeover import takeover_terms
@@ -162,6 +172,31 @@ FAMILY_GOAL_SCHEMA = vol.Schema(
     {vol.Required(ATTR_NAME): cv.string, vol.Required(ATTR_TARGET): _COST}
 )
 EMPTY_SCHEMA = vol.Schema({})
+_EURO = vol.All(vol.Coerce(float), vol.Range(min=-10000, max=10000))
+MONEY_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_RATE): vol.All(vol.Coerce(int), vol.Range(min=0, max=10000)),
+        vol.Optional(ATTR_PAYDAY, default=6): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
+    }
+)
+ALLOWANCE_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_AMOUNT): vol.All(_EURO, vol.Range(min=0))}
+)
+EXCHANGE_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_EUROS): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)),
+     vol.Optional(ATTR_MEMBER): cv.string}
+)
+PAYOUT_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_AMOUNT): vol.All(_EURO, vol.Range(min=0.01))}
+)
+ADJUST_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_AMOUNT): _EURO,
+     vol.Optional(ATTR_NOTE, default=""): cv.string}
+)
+
+
+def _cents(euros: float) -> int:
+    return round(euros * 100)
 
 
 def _runtime(hass: HomeAssistant) -> SternchenplanData:
@@ -430,6 +465,35 @@ async def _clear_family_goal(hass, call, data, actor) -> None:
     data.family.clear_family_goal(actor)
 
 
+async def _set_money(hass, call, data, actor) -> None:
+    data.family.set_money(actor, call.data[ATTR_RATE], call.data[ATTR_PAYDAY])
+
+
+async def _set_allowance(hass, call, data, actor) -> None:
+    data.family.set_allowance(
+        actor, _member_id(data, call.data[ATTR_MEMBER]), _cents(call.data[ATTR_AMOUNT]), dt_util.utcnow()
+    )
+
+
+async def _exchange(hass, call, data, actor) -> None:
+    data.family.exchange(actor, _who(data, call, actor), call.data[ATTR_EUROS], dt_util.utcnow())
+
+
+async def _payout(hass, call, data, actor) -> None:
+    amount = call.data.get(ATTR_AMOUNT)
+    data.family.payout(
+        actor, _member_id(data, call.data[ATTR_MEMBER]),
+        None if amount is None else _cents(amount), dt_util.utcnow(),
+    )
+
+
+async def _adjust_money(hass, call, data, actor) -> None:
+    data.family.adjust_money(
+        actor, _member_id(data, call.data[ATTR_MEMBER]), _cents(call.data[ATTR_AMOUNT]),
+        call.data[ATTR_NOTE], dt_util.utcnow(),
+    )
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -456,5 +520,10 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_SET_GOAL, _set_goal, GOAL_SCHEMA),
         (SERVICE_SET_FAMILY_GOAL, _set_family_goal, FAMILY_GOAL_SCHEMA),
         (SERVICE_CLEAR_FAMILY_GOAL, _clear_family_goal, EMPTY_SCHEMA),
+        (SERVICE_SET_MONEY, _set_money, MONEY_SCHEMA),
+        (SERVICE_SET_ALLOWANCE, _set_allowance, ALLOWANCE_SCHEMA),
+        (SERVICE_EXCHANGE_STARS, _exchange, EXCHANGE_SCHEMA),
+        (SERVICE_PAYOUT, _payout, PAYOUT_SCHEMA),
+        (SERVICE_ADJUST_MONEY, _adjust_money, ADJUST_SCHEMA),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)
