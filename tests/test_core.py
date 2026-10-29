@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from custom_components.familienplan.core import (
+from custom_components.sternchenplan.core import (
     SYSTEM,
     Actor,
     ChoreState,

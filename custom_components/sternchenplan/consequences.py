@@ -3,7 +3,7 @@
 Gesteuert werden nur die Schalter, die Eltern je Kind ausgewählt haben, z. B.
 die „Internetzugang“-Schalter der FRITZ!Box-Integration. Gesperrt wird nur im
 Sperrfenster (Standard 20:00 bis 05:00). Freigegeben werden nur Geräte, die
-Familienplan selbst gesperrt hat.
+Sternchenplan selbst gesperrt hat.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from .const import (
 from .core import Role
 
 if TYPE_CHECKING:
-    from . import FamilienplanConfigEntry
+    from . import SternchenplanConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ def in_window(local_time: time, start: time, end: time) -> bool:
     return local_time >= start or local_time < end
 
 
-def _times(entry: FamilienplanConfigEntry) -> tuple[time, time]:
+def _times(entry: SternchenplanConfigEntry) -> tuple[time, time]:
     options = entry.options
     try:
         return (
@@ -52,7 +52,7 @@ def _times(entry: FamilienplanConfigEntry) -> tuple[time, time]:
         return time.fromisoformat(DEFAULT_LOCK_TIME), time.fromisoformat(DEFAULT_RELEASE_TIME)
 
 
-def next_release(entry: FamilienplanConfigEntry, now: datetime) -> datetime:
+def next_release(entry: SternchenplanConfigEntry, now: datetime) -> datetime:
     """Nächstes Ende des Sperrfensters, z. B. morgen 05:00. Standard für Freikarten."""
     _, end = _times(entry)
     local = dt_util.as_local(now)
@@ -73,7 +73,7 @@ async def _switch(hass: HomeAssistant, entity_ids: list[str], on: bool, context:
         )
 
 
-async def async_apply(hass: HomeAssistant, entry: FamilienplanConfigEntry, now: datetime | None = None) -> bool:
+async def async_apply(hass: HomeAssistant, entry: SternchenplanConfigEntry, now: datetime | None = None) -> bool:
     """Sperren und Freigaben an den aktuellen Stand anpassen.
 
     Läuft jede Minute und nach jeder Änderung. Gibt True zurück, wenn sich der

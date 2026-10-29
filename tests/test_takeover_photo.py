@@ -15,10 +15,10 @@ from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
-from custom_components.familienplan.const import DOMAIN
-from custom_components.familienplan.core import SYSTEM, ChoreState, Role
-from custom_components.familienplan.photos import cleanup, forget_missing, photo_dir
-from custom_components.familienplan.websocket_api import snapshot
+from custom_components.sternchenplan.const import DOMAIN
+from custom_components.sternchenplan.core import SYSTEM, ChoreState, Role
+from custom_components.sternchenplan.photos import cleanup, forget_missing, photo_dir
+from custom_components.sternchenplan.websocket_api import snapshot
 
 
 @pytest.fixture(autouse=True)
@@ -82,7 +82,7 @@ async def _upload(client, chore_id: str, data: bytes = b"\xff\xd8fakejpeg", ctyp
     form.add_field("chore_id", chore_id)
     form.add_field("mode", mode)
     form.add_field("file", data, filename="x.jpg", content_type=ctype)
-    return await client.post("/api/familienplan/photo", data=form)
+    return await client.post("/api/sternchenplan/photo", data=form)
 
 
 async def test_foto_hochladen_und_nur_eltern_sehen_es(
@@ -117,7 +117,7 @@ async def test_foto_hochladen_und_nur_eltern_sehen_es(
     # Signierter Link funktioniert ohne Anmeldung, ohne Signatur nicht
     anon = await aiohttp_client(hass.http.app)
     assert (await anon.get(url)).status == 200
-    assert (await anon.get(f"/api/familienplan/photo/{chore.photo}")).status == 401
+    assert (await anon.get(f"/api/sternchenplan/photo/{chore.photo}")).status == 401
 
     # Zweiter Upload auf gemeldete Aufgabe wird abgelehnt und nichts gespeichert
     files_before = set(os.listdir(photo_dir(hass)))

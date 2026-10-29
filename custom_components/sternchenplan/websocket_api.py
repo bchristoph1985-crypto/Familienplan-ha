@@ -1,6 +1,6 @@
 """Websocket-Schnittstelle für die Dashboard-Karte.
 
-Die Karte abonniert `familienplan/subscribe` und bekommt bei jeder Änderung
+Die Karte abonniert `sternchenplan/subscribe` und bekommt bei jeder Änderung
 den kompletten Stand. Ändern läuft weiter über die Dienste, damit die
 Rechteprüfung an einer Stelle bleibt.
 """
@@ -123,7 +123,7 @@ async def ws_subscribe(
 ) -> None:
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     if not entries:
-        connection.send_error(msg["id"], "not_loaded", "Familienplan ist nicht eingerichtet.")
+        connection.send_error(msg["id"], "not_loaded", "Sternchenplan ist nicht eingerichtet.")
         return
     entry = entries[0]
     user = connection.user
