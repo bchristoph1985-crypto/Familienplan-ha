@@ -51,6 +51,8 @@ _TEXT = {
         "week_row": "{name}: {done} erledigt, {missed} verpasst, ⭐ {stars}",
         "week_best": "🏆 Am fleißigsten: {name}",
         "week_empty": "Diese Woche wurde nichts erledigt.",
+        "bonus": "⭐ +{stars} Bonus: {reason}",
+        "penalty": "⚠️ {stars} Sterne: {reason}",
     },
     "en": {
         "title": "Sternchenplan",
@@ -72,6 +74,8 @@ _TEXT = {
         "week_row": "{name}: {done} done, {missed} missed, ⭐ {stars}",
         "week_best": "🏆 Hardest worker: {name}",
         "week_empty": "Nothing was done this week.",
+        "bonus": "⭐ +{stars} bonus: {reason}",
+        "penalty": "⚠️ {stars} stars: {reason}",
     },
 }
 
@@ -139,6 +143,14 @@ async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict
             if _lang(hass) == "de":
                 amount = amount.replace(".", ",")
             message = text["allowance"].format(amount=amount)
+        elif event["type"] == "stars":
+            key = "bonus" if event["stars"] > 0 else "penalty"
+            message = text[key].format(stars=event["stars"], reason=event["reason"] or "–")
+            hass.bus.async_fire(
+                "sternchenplan_stars",
+                {"member": member.name, "member_id": member.id,
+                 "stars": event["stars"], "reason": event["reason"]},
+            )
         elif event["type"] == "goal_ready":
             message = text["goal_ready"].format(reward=event["reward"])
             hass.bus.async_fire(

@@ -791,6 +791,48 @@
     "send_report": {
       "name": "Wochenbericht jetzt senden",
       "description": "Schickt den Bericht der letzten 7 Tage an die Eltern."
+    },
+    "give_stars": {
+      "name": "Bonus oder Abzug",
+      "description": "Extra-Sterne geben oder welche abziehen. Ein Abzug geht nie unter null und senkt kein Level.",
+      "fields": {
+        "member": {
+          "name": "Kind",
+          "description": "Name oder ID."
+        },
+        "stars": {
+          "name": "Sterne",
+          "description": "Plus = Bonus, Minus = Abzug."
+        },
+        "reason": {
+          "name": "Grund",
+          "description": "Sieht das Kind, z. B. „Beim Einkaufen geholfen“."
+        }
+      }
+    },
+    "add_preset": {
+      "name": "Schnellknopf anlegen",
+      "description": "Fertiger Bonus oder Abzug für die Elternansicht.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Zum Beispiel „Streit“."
+        },
+        "stars": {
+          "name": "Sterne",
+          "description": "Mit Minus für einen Abzug."
+        }
+      }
+    },
+    "delete_preset": {
+      "name": "Schnellknopf löschen",
+      "description": "Schnellknopf löschen",
+      "fields": {
+        "preset_id": {
+          "name": "ID",
+          "description": "Aus der Karte."
+        }
+      }
     }
   }
 }

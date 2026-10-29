@@ -73,6 +73,7 @@ def snapshot(
         ),
         "report": {"day": family.report_day, "hour": family.report_hour},
         "week": family.week_report(now) if actor.is_manager else [],
+        "presets": [dict(p) for p in family.presets] if actor.is_manager else [],
         "members": [
             {
                 "id": m.id,
@@ -91,6 +92,12 @@ def snapshot(
                 "goal": m.goal_reward_id if m.goal_reward_id in family.rewards else None,
                 "money": m.money,
                 "picture_mode": m.picture_mode,
+                # Bonus und Abzug sehen Eltern und das Kind selbst
+                "star_log": (
+                    family.star_history(m.id, 10)
+                    if actor.is_manager or actor.tablet or (actor.member and actor.member.id == m.id)
+                    else []
+                ),
                 "allowance": m.allowance,
                 # Kontoauszug sehen Eltern und das Kind selbst
                 "money_log": (

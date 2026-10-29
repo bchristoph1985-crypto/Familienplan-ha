@@ -29,6 +29,15 @@ HISTORY_LIMIT = 50
 MONEY_LOG_LIMIT = 200
 MAX_STEPS = 12
 REDEMPTION_LIMIT = 100
+STAR_LOG_LIMIT = 200
+MAX_PRESETS = 12
+# Vorschläge für Bonus und Abzug, Eltern können sie ändern
+DEFAULT_PRESETS = (
+    ("Extra geholfen", 3),
+    ("Besonders lieb", 2),
+    ("Nicht gehört", -1),
+    ("Streit", -2),
+)
 
 _INTERVALS = {
     Recurrence.DAILY: timedelta(days=1),
@@ -113,6 +122,11 @@ class Family:
         # Wochenbericht an die Eltern: Wochentag (0 = Montag, -1 = aus) und Stunde
         self.report_day = 6
         self.report_hour = 18
+        # Bonus und Abzug: Verlauf und Vorschläge
+        self.star_log: list[dict[str, Any]] = []
+        self.presets: list[dict[str, Any]] = [
+            {"id": uuid.uuid4().hex[:8], "name": n, "stars": s} for n, s in DEFAULT_PRESETS
+        ]
 
     # -- Speichern -----------------------------------------------------------
 
@@ -134,6 +148,8 @@ class Family:
             "weather_entity": self.weather_entity,
             "report_day": self.report_day,
             "report_hour": self.report_hour,
+            "star_log": list(self.star_log),
+            "presets": [dict(p) for p in self.presets],
         }
 
     @classmethod
@@ -158,6 +174,9 @@ class Family:
         family.weather_entity = data.get("weather_entity")
         family.report_day = int(data.get("report_day", 6))
         family.report_hour = int(data.get("report_hour", 18))
+        family.star_log = list(data.get("star_log", []))
+        if "presets" in data:
+            family.presets = [dict(p) for p in data["presets"]]
         for raw in data.get("members", []):
             if "progress" not in raw:
                 family._estimate_progress(family.members[raw["id"]])
@@ -1106,6 +1125,63 @@ class Family:
                 elif entry["event"] == "missed":
                     row["missed"] += 1
         return list(rows.values())
+
+    # -- Bonus und Abzug ------------------------------------------------------
+
+    def give_stars(
+        self, actor: Actor, member_id: str, stars: int, reason: str, now: datetime
+    ) -> int:
+        """Eltern geben Bonus-Sterne oder ziehen welche ab. Gibt die echte Änderung zurück.
+
+        Ein Abzug geht nie unter null und senkt kein Level: Erreichtes bleibt.
+        """
+        self._require_manager(actor)
+        member = self._child(member_id)
+        if not stars or abs(stars) > 100:
+            raise FamilyError("Zwischen 1 und 100 Sterne.")
+        reason = reason.strip()[:60]
+        if stars > 0:
+            member.points += stars
+            before = level_for(member.progress.earned)
+            member.progress.earned += stars
+            self._goal_step(member, stars, now)
+            self._celebrate(member, now, level_before=before)
+            delta = stars
+        else:
+            delta = -min(member.points, -stars) if member.points > 0 else 0
+            member.points += delta
+            self._goal_step(member, 0, now)
+        self.star_log.append(
+            {"member": member_id, "stars": delta, "asked": stars, "reason": reason,
+             "at": now.isoformat()}
+        )
+        del self.star_log[:-STAR_LOG_LIMIT]
+        if delta:
+            self.events.append(
+                {"type": "stars", "member": member_id, "stars": delta, "reason": reason}
+            )
+        return delta
+
+    def star_history(self, member_id: str, limit: int = 20) -> list[dict[str, Any]]:
+        return [e for e in reversed(self.star_log) if e["member"] == member_id][:limit]
+
+    def add_preset(self, actor: Actor, name: str, stars: int) -> dict[str, Any]:
+        self._require_manager(actor)
+        name = name.strip()[:40]
+        if not name or not stars or abs(stars) > 100:
+            raise FamilyError("Name und 1 bis 100 Sterne (mit Minus für Abzug).")
+        if len(self.presets) >= MAX_PRESETS:
+            raise FamilyError(f"Höchstens {MAX_PRESETS} Vorschläge.")
+        preset = {"id": uuid.uuid4().hex[:8], "name": name, "stars": stars}
+        self.presets.append(preset)
+        return preset
+
+    def delete_preset(self, actor: Actor, preset_id: str) -> None:
+        self._require_manager(actor)
+        before = len(self.presets)
+        self.presets = [p for p in self.presets if p["id"] != preset_id]
+        if len(self.presets) == before:
+            raise FamilyError("Diesen Vorschlag gibt es nicht.")
 
     def set_picture_mode(self, actor: Actor, member_id: str, enabled: bool) -> Member:
         self._require_manager(actor)

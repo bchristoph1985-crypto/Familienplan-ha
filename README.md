@@ -134,8 +134,14 @@ Dienste: `set_money`, `set_allowance`, `exchange_stars`, `payout`,
 
 ## Wetter und Wochenbericht
 
-- **Draußen-Aufgaben:** Hak bei einer Aufgabe „Draußen“ an (z. B. Rasen mähen, Laub rechen). Regnet es zur Frist, wird sie nicht überfällig und sperrt nichts, sondern rückt einen Tag weiter. Der Wochentakt bleibt dabei gleich. Welche Wetter-Entität zählt, stellst du im Reiter „Aufgaben“ unter „Wetter und Wochenbericht“ ein (oder per `sternchenplan.set_weather`). Als nass gilt: Regen, Schauer, Schnee, Gewitter, Hagel.
+- **Draußen-Aufgaben:** Hak bei einer Aufgabe „Draußen“ an (z. B. Rasen mähen, Laub rechen). Regnet es zur Frist, wird sie nicht überfällig und sperrt nichts, sondern rückt einen Tag weiter. Der Wochentakt bleibt dabei gleich. Welche Wetter-Entität zählt, stellst du im Reiter „Aufgaben“ unter „Einstellungen“ ein (oder per `sternchenplan.set_weather`). Als nass gilt: Regen, Schauer, Schnee, Gewitter, Hagel.
 - **Wochenbericht:** Eltern sehen unter „Heute“, wie die Woche lief: erledigt, verpasst, verdiente Sterne und wer am fleißigsten war. Einmal pro Woche (Standard: Sonntag 18 Uhr) kommt das als Push. Tag und Uhrzeit stellst du an derselben Stelle ein, `-1` schaltet ihn ab. Für eigene Automationen gibt es das Ereignis `sternchenplan_week_report` und den Dienst `sternchenplan.send_report`.
+
+## Bonus und Abzug
+
+In der Elternansicht hat jedes Kind unter „Heute“ den Knopf „± Sterne“. Damit gibst du Extra-Sterne („Oma beim Tragen geholfen“) oder ziehst welche ab („Streit“). Fertige Schnellknöpfe legst du im Reiter „Aufgaben“ unter „Einstellungen“ an. Das Kind bekommt eine Push-Nachricht mit dem Grund und sieht den Verlauf in seiner Ansicht.
+
+Ein Abzug geht nie unter null und kostet kein Level: Was ein Kind erreicht hat, bleibt. Bonus-Sterne zählen dagegen fürs Level und fürs Familienziel. Für Automationen gibt es den Dienst `sternchenplan.give_stars` und das Ereignis `sternchenplan_stars`.
 
 ## Trinkgeld
 
@@ -188,4 +194,4 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
-- Weitere Funktionen: Strafpunkte, weitere Sprachen
+- Weitere Funktionen: weitere Sprachen

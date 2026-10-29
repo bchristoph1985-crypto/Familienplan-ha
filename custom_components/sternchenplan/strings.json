@@ -791,6 +791,48 @@
     "send_report": {
       "name": "Send weekly report now",
       "description": "Sends the report of the last 7 days to the parents."
+    },
+    "give_stars": {
+      "name": "Bonus or deduction",
+      "description": "Give extra stars or take some away. A deduction never goes below zero and never lowers a level.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "stars": {
+          "name": "Stars",
+          "description": "Positive = bonus, negative = deduction."
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Shown to the child, e.g. “Helped with shopping”."
+        }
+      }
+    },
+    "add_preset": {
+      "name": "Add quick button",
+      "description": "A ready-made bonus or deduction for the parent view.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "For example “Argued”."
+        },
+        "stars": {
+          "name": "Stars",
+          "description": "Negative for a deduction."
+        }
+      }
+    },
+    "delete_preset": {
+      "name": "Remove quick button",
+      "description": "Remove quick button",
+      "fields": {
+        "preset_id": {
+          "name": "ID",
+          "description": "From the card."
+        }
+      }
     }
   }
 }

@@ -81,6 +81,12 @@ from .const import (
     SERVICE_SET_WEATHER,
     SERVICE_SET_REPORT,
     SERVICE_SEND_REPORT,
+    SERVICE_GIVE_STARS,
+    SERVICE_ADD_PRESET,
+    SERVICE_DELETE_PRESET,
+    ATTR_STARS,
+    ATTR_REASON,
+    ATTR_PRESET_ID,
     ATTR_WEEKDAYS,
     SERVICE_ADJUST_MONEY,
     SERVICE_EXCHANGE_STARS,
@@ -210,6 +216,16 @@ REPORT_SCHEMA = vol.Schema(
         vol.Optional(ATTR_HOUR, default=18): vol.All(vol.Coerce(int), vol.Range(min=0, max=23)),
     }
 )
+_STARS = vol.All(vol.Coerce(int), vol.Range(min=-100, max=100))
+GIVE_STARS_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEMBER): cv.string,
+        vol.Required(ATTR_STARS): _STARS,
+        vol.Optional(ATTR_REASON, default=""): cv.string,
+    }
+)
+ADD_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, vol.Required(ATTR_STARS): _STARS})
+DELETE_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_PRESET_ID): cv.string})
 PICTURE_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_ENABLED): cv.boolean})
 _EURO = vol.All(vol.Coerce(float), vol.Range(min=-10000, max=10000))
 MONEY_SCHEMA = vol.Schema(
@@ -576,6 +592,21 @@ async def _send_report(hass, call, data, actor) -> None:
     await async_send_week_report(hass, data.family, dt_util.utcnow())
 
 
+async def _give_stars(hass, call, data, actor) -> None:
+    d = call.data
+    data.family.give_stars(
+        actor, _member_id(data, d[ATTR_MEMBER]), d[ATTR_STARS], d[ATTR_REASON], dt_util.utcnow()
+    )
+
+
+async def _add_preset(hass, call, data, actor) -> None:
+    data.family.add_preset(actor, call.data[ATTR_NAME], call.data[ATTR_STARS])
+
+
+async def _delete_preset(hass, call, data, actor) -> None:
+    data.family.delete_preset(actor, call.data[ATTR_PRESET_ID])
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -610,6 +641,9 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_SET_WEATHER, _set_weather, WEATHER_SCHEMA),
         (SERVICE_SET_REPORT, _set_report, REPORT_SCHEMA),
         (SERVICE_SEND_REPORT, _send_report, EMPTY_SCHEMA),
+        (SERVICE_GIVE_STARS, _give_stars, GIVE_STARS_SCHEMA),
+        (SERVICE_ADD_PRESET, _add_preset, ADD_PRESET_SCHEMA),
+        (SERVICE_DELETE_PRESET, _delete_preset, DELETE_PRESET_SCHEMA),
         (SERVICE_SET_ALLOWANCE, _set_allowance, ALLOWANCE_SCHEMA),
         (SERVICE_EXCHANGE_STARS, _exchange, EXCHANGE_SCHEMA),
         (SERVICE_PAYOUT, _payout, PAYOUT_SCHEMA),

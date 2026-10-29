@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.21.0";
+const VERSION = "0.22.0";
 
 const T = {
   de: {
@@ -60,6 +60,16 @@ const T = {
     locked: "🔒 Internet gesperrt",
     pass: "Freikarte bis {time}",
     givePass: "Freikarte",
+    starsBtn: "± Sterne",
+    starsTitle: "Bonus oder Abzug für {name}",
+    starsCustom: "Eigener Grund",
+    starsAmount: "Sterne",
+    starsGive: "Buchen",
+    starsLog: "Bonus und Abzug",
+    starsHint: "Abzug geht nie unter null und kostet kein Level.",
+    presets: "Schnellknöpfe für Bonus und Abzug",
+    presetAdd: "Hinzufügen",
+    presetName: "Name",
     takePass: "Freikarte weg",
     pointsLabel: "Sterne",
     photo: "Fotonachweis (Foto sehen nur Eltern)",
@@ -190,7 +200,7 @@ const T = {
     weekBest: "Am fleißigsten",
     weekEmpty: "Diese Woche ist noch nichts passiert.",
     sendReport: "Bericht jetzt aufs Handy",
-    settings: "⚙️ Wetter und Wochenbericht",
+    settings: "⚙️ Einstellungen: Wetter, Wochenbericht, Schnellknöpfe",
     weatherEntity: "Wetter für Draußen-Aufgaben",
     weatherNone: "aus",
     weatherNow: "gerade: {state}",
@@ -247,6 +257,16 @@ const T = {
     locked: "🔒 Internet locked",
     pass: "Free pass until {time}",
     givePass: "Free pass",
+    starsBtn: "± Stars",
+    starsTitle: "Bonus or deduction for {name}",
+    starsCustom: "Own reason",
+    starsAmount: "Stars",
+    starsGive: "Book",
+    starsLog: "Bonus and deductions",
+    starsHint: "A deduction never goes below zero and never costs a level.",
+    presets: "Quick buttons for bonus and deduction",
+    presetAdd: "Add",
+    presetName: "Name",
     takePass: "Remove pass",
     pointsLabel: "Stars",
     photo: "Photo proof (only parents see it)",
@@ -377,7 +397,7 @@ const T = {
     weekBest: "Hardest worker",
     weekEmpty: "Nothing has happened this week yet.",
     sendReport: "Send report to my phone",
-    settings: "⚙️ Weather and weekly report",
+    settings: "⚙️ Settings: weather, weekly report, quick buttons",
     weatherEntity: "Weather for outdoor chores",
     weatherNone: "off",
     weatherNow: "now: {state}",
@@ -405,6 +425,9 @@ class SternchenplanCard extends HTMLElement {
     this._fgForm = { name: "", target: 300 };
     this._tplAge = 0;
     this._pauseForm = { from: "", until: "" };
+    this._starsOpen = null;
+    this._starsForm = { stars: "", reason: "" };
+    this._presetForm = { name: "", stars: "" };
     this._busy = false;
     // Familientablet: welches Kind gerade dran ist
     this._actingAs = null;
@@ -684,10 +707,38 @@ class SternchenplanCard extends HTMLElement {
         if (f.from) data.start = new Date(`${f.from}T00:00`).toISOString();
         this._call("set_pause", data);
         this._pauseForm = { from: "", until: "" };
+    this._starsOpen = null;
+    this._starsForm = { stars: "", reason: "" };
+    this._presetForm = { name: "", stars: "" };
         break;
       }
       case "pause-end":
         this._call("end_pause", {});
+        break;
+      case "stars-open":
+        this._starsOpen = this._starsOpen === id ? null : id;
+        this._starsForm = { stars: "", reason: "" };
+        this._render();
+        break;
+      case "stars-give": {
+        const stars = el.dataset.stars ? Number(el.dataset.stars) : parseInt(this._starsForm.stars, 10);
+        const reason = el.dataset.stars ? el.dataset.reason : this._starsForm.reason.trim();
+        if (!stars) break;
+        this._starsForm = { stars: "", reason: "" };
+        this._call("give_stars", { member: id, stars, reason });
+        if (stars > 0) this._celebrate(el);
+        break;
+      }
+      case "preset-add": {
+        const stars = parseInt(this._presetForm.stars, 10);
+        const name = this._presetForm.name.trim();
+        if (!stars || !name) break;
+        this._presetForm = { name: "", stars: "" };
+        this._call("add_preset", { name, stars });
+        break;
+      }
+      case "preset-del":
+        this._call("delete_preset", { preset_id: id });
         break;
       case "send-report":
         this._call("send_report", {});
@@ -793,6 +844,14 @@ class SternchenplanCard extends HTMLElement {
     if (field.startsWith("away.")) {
       const [, memberId, key] = field.split(".");
       this._awayForm[memberId] = { ...(this._awayForm[memberId] || {}), [key]: el.value };
+      return;
+    }
+    if (field.startsWith("stars.")) {
+      this._starsForm[field.slice(6)] = el.value;
+      return;
+    }
+    if (field.startsWith("preset.")) {
+      this._presetForm[field.slice(7)] = el.value;
       return;
     }
     if (field.startsWith("set.")) {
@@ -940,6 +999,66 @@ class SternchenplanCard extends HTMLElement {
     return state;
   }
 
+  // Bonus oder Abzug: Schnellknöpfe plus eigener Grund.
+  _renderStarsPanel(m) {
+    const f = this._starsForm;
+    const chips = (this._data.presets || [])
+      .map(
+        (p) => `<button class="star-chip ${p.stars > 0 ? "plus" : "minus"}" data-action="stars-give" data-id="${esc(m.id)}" data-stars="${p.stars}" data-reason="${esc(p.name)}">
+          ${p.stars > 0 ? "+" : "−"}${Math.abs(p.stars)} ⭐ ${esc(p.name)}</button>`,
+      )
+      .join("");
+    return `
+      <div class="stars-panel">
+        <div class="small"><strong>${esc(this._t("starsTitle", { name: m.name }))}</strong></div>
+        <div class="star-chips">${chips}</div>
+        <div class="stars-custom">
+          <input type="number" min="-100" max="100" step="1" placeholder="±" aria-label="${this._t("starsAmount")}" data-field="stars.stars" value="${esc(f.stars)}">
+          <input placeholder="${this._t("starsCustom")}" maxlength="60" aria-label="${this._t("starsCustom")}" data-field="stars.reason" value="${esc(f.reason)}">
+          <button class="primary" data-action="stars-give" data-id="${esc(m.id)}">${this._t("starsGive")}</button>
+        </div>
+        <p class="muted small">${this._t("starsHint")}</p>
+        ${this._starLog(m, 3)}
+      </div>`;
+  }
+
+  _starLog(member, limit = 5) {
+    const log = (member.star_log || []).slice(0, limit);
+    if (!log.length) return "";
+    return `<ul class="ledger">${log
+      .map(
+        (e) => `<li><span>${esc(e.reason || (e.stars > 0 ? "Bonus" : "−"))}<span class="muted small"> · ${new Date(e.at).toLocaleDateString(this._locale())}</span></span>
+          <b class="${e.stars < 0 ? "minus" : "plus"}">${e.stars > 0 ? "+" : ""}${e.stars} ⭐</b></li>`,
+      )
+      .join("")}</ul>`;
+  }
+
+  _renderChildStarLog(member) {
+    const list = this._starLog(member, 5);
+    if (!list) return "";
+    return `<section class="star-log"><div class="section-title">⭐ ${this._t("starsLog")}</div>${list}</section>`;
+  }
+
+  _renderPresetAdmin() {
+    const f = this._presetForm;
+    const list = (this._data.presets || [])
+      .map(
+        (p) => `<span class="star-chip ${p.stars > 0 ? "plus" : "minus"}">${p.stars > 0 ? "+" : "−"}${Math.abs(p.stars)} ${esc(p.name)}
+          <button class="x" data-action="preset-del" data-id="${esc(p.id)}" aria-label="${this._t("delete")}">×</button></span>`,
+      )
+      .join("");
+    return `
+      <div class="preset-admin">
+        <div class="small"><strong>${this._t("presets")}</strong></div>
+        <div class="star-chips">${list}</div>
+        <div class="stars-custom">
+          <input type="number" min="-100" max="100" placeholder="±" aria-label="${this._t("starsAmount")}" data-field="preset.stars" value="${esc(f.stars)}">
+          <input placeholder="${this._t("presetName")}" maxlength="40" aria-label="${this._t("presetName")}" data-field="preset.name" value="${esc(f.name)}">
+          <button class="link" data-action="preset-add">+ ${this._t("presetAdd")}</button>
+        </div>
+      </div>`;
+  }
+
   _rainBanner() {
     const w = this._data.weather;
     if (!w?.bad || !this._data.chores.some((c) => c.outdoor)) return "";
@@ -1004,6 +1123,7 @@ class SternchenplanCard extends HTMLElement {
             ${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${h === r.hour ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`).join("")}
           </select></label>
         </div>
+        ${this._renderPresetAdmin()}
       </details>`;
   }
 
@@ -1080,6 +1200,7 @@ class SternchenplanCard extends HTMLElement {
         ${chores.length ? `<div class="pic-grid">${tiles}</div>` : `<div class="done-big">🎉</div>`}
         ${this._renderChildRewards(member)}
         ${this._renderBadges(member)}
+        ${this._renderChildStarLog(member)}
       </div>`;
   }
 
@@ -1580,6 +1701,7 @@ class SternchenplanCard extends HTMLElement {
         ${this._renderChildRewards(member)}
         ${this._renderMoney(member)}
         ${this._renderBadges(member)}
+        ${this._renderChildStarLog(member)}
       </div>`;
   }
 
@@ -1823,6 +1945,9 @@ class SternchenplanCard extends HTMLElement {
             m.picture_mode ? this._t("pictureOff") : this._t("pictureOn")
           }</button>`;
         }
+        if (!this._config.readonly) {
+          passBtn += `<button class="link" data-action="stars-open" data-id="${esc(m.id)}">${this._t("starsBtn")}</button>`;
+        }
         if (m.has_devices && !this._config.readonly) {
           passBtn += m.pass_until
             ? `<button class="link" data-action="revoke-pass" data-id="${esc(m.id)}">${this._t("takePass")}</button>`
@@ -1842,6 +1967,7 @@ class SternchenplanCard extends HTMLElement {
               ${this._ring(done, total || open, this._color(m.id), 44)}
             </div>
             ${status || passBtn ? `<div class="kidcard-status">${status}${passBtn}</div>` : ""}
+            ${this._starsOpen === m.id ? this._renderStarsPanel(m) : ""}
             ${list}
           </section>`;
       })
@@ -2313,6 +2439,20 @@ const STYLE = `
   .week-bar.nil { background: var(--divider-color, #e0e0e0); }
   .week-bar span { display: block; height: 100%; border-radius: 99px; background: var(--kid); }
   .settings-box { margin-bottom: 12px; }
+  .stars-panel { margin: 8px 0 4px; padding: 12px; border-radius: 14px; background: var(--card-background-color, #fff);
+    border: 1px solid var(--divider-color, #e0e0e0); display: grid; gap: 8px; }
+  .star-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .star-chip { display: inline-flex; align-items: center; gap: 4px; border: none; border-radius: 99px; padding: 6px 12px;
+    font: inherit; font-size: 0.9em; cursor: pointer; color: var(--primary-text-color); }
+  span.star-chip { cursor: default; padding-right: 6px; }
+  .star-chip.plus { background: color-mix(in srgb, var(--success-color, #22a565) 18%, transparent); }
+  .star-chip.minus { background: color-mix(in srgb, var(--error-color, #db4437) 14%, transparent); }
+  .star-chip .x { border: none; background: none; cursor: pointer; font-size: 1.1em; padding: 0 4px; color: var(--secondary-text-color); }
+  .stars-custom { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .stars-custom input[type="number"] { width: 72px; }
+  .stars-custom input:not([type]) { flex: 1; min-width: 120px; }
+  .preset-admin { display: grid; gap: 8px; margin-top: 12px; }
+  section.star-log { margin-top: 12px; }
   .pause-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
   .pause-box .pause-banner { flex: 1; margin: 0; }
   label.check.day { margin-right: 6px; }

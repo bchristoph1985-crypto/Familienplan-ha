@@ -461,3 +461,36 @@ set_report:
           min: 0
           max: 23
 send_report:
+give_stars:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    stars:
+      required: true
+      selector:
+        number:
+          min: -100
+          max: 100
+    reason:
+      selector:
+        text:
+add_preset:
+  fields:
+    name:
+      required: true
+      selector:
+        text:
+    stars:
+      required: true
+      selector:
+        number:
+          min: -100
+          max: 100
+delete_preset:
+  fields:
+    preset_id:
+      required: true
+      selector:
+        text:
