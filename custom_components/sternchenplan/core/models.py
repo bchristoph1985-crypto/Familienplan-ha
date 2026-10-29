@@ -57,6 +57,8 @@ class Member:
     allowance_paid: date | None = None
     # Große Bilder statt Text, für Kinder, die noch nicht lesen
     picture_mode: bool = False
+    # Aussehen der eigenen Ansicht („“ = Standard)
+    theme: str = ""
 
     def age(self, now: datetime) -> int | None:
         """Alter in Jahren, auf das Jahr genau. None, wenn nicht bekannt."""
@@ -96,6 +98,7 @@ class Member:
             "allowance": self.allowance,
             "allowance_paid": self.allowance_paid.isoformat() if self.allowance_paid else None,
             "picture_mode": self.picture_mode,
+            "theme": self.theme,
         }
 
     @classmethod
@@ -122,6 +125,7 @@ class Member:
                 date.fromisoformat(data["allowance_paid"]) if data.get("allowance_paid") else None
             ),
             picture_mode=bool(data.get("picture_mode", False)),
+            theme=str(data.get("theme") or ""),
         )
 
 

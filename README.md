@@ -178,6 +178,10 @@ Jede Aufgabe kann mit einem Gerät oder Sensor aus Home Assistant verbunden werd
 - **Kurzes Formular:** Für eine neue Aufgabe reichen Name, wer, wie oft und Sterne. Alles Weitere steht unter „Mehr Optionen“. Ohne Frist nimmt Sternchenplan 18 Uhr.
 - **❓ Hilfe:** Der Knopf oben erklärt jeden Reiter in einem Satz.
 
+## Designs zum Aussuchen
+
+Jedes Kind wählt unten in seiner Ansicht unter „🎨 Mein Design“ sein eigenes Aussehen: 🚀 Weltraum, 🌴 Dschungel, 🐠 Ozean, 🍭 Bonbon oder ✨ Klar. Eltern finden den 🎨-Knopf oben in der Reiterleiste und können zusätzlich „Elegant“ wählen. Die Wahl wird in Home Assistant gespeichert und gilt auf jedem Gerät. Per Dienst geht es auch: `sternchenplan.set_theme`.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.

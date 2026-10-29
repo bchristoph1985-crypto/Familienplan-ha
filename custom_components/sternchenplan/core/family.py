@@ -33,6 +33,9 @@ REDEMPTION_LIMIT = 100
 STAR_LOG_LIMIT = 200
 MAX_PRESETS = 12
 # Vorschläge für Bonus und Abzug, Eltern können sie ändern
+# Designs zum Aussuchen; „“ ist das klare Standard-Design.
+THEMES = ("", "space", "jungle", "ocean", "candy", "elegant")
+
 DEFAULT_PRESETS = (
     ("Extra geholfen", 3),
     ("Besonders lieb", 2),
@@ -1325,6 +1328,17 @@ class Family:
         self._require_manager(actor)
         member = self._child(member_id)
         member.picture_mode = enabled
+        return member
+
+    def set_theme(self, actor: Actor, member_id: str, theme: str) -> Member:
+        """Design der eigenen Ansicht (Kind für sich, Eltern für alle)."""
+        member = self.member(member_id)
+        actor = self._as_child(actor, member_id)
+        if not actor.is_manager and (actor.member is None or actor.member.id != member_id):
+            raise PermissionDenied("Du kannst nur dein eigenes Design wählen.")
+        if theme not in THEMES:
+            raise FamilyError("Dieses Design gibt es nicht.")
+        member.theme = theme
         return member
 
     # -- Taschengeld -------------------------------------------------------

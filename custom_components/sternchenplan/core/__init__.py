@@ -1,6 +1,6 @@
 """Aufgaben-Kern ohne Home-Assistant-Abhängigkeit."""
 
-from .family import SYSTEM, Actor, Family, FamilyError, PermissionDenied
+from .family import SYSTEM, THEMES, Actor, Family, FamilyError, PermissionDenied
 from .models import (
     Chore,
     ChoreState,
@@ -17,6 +17,7 @@ from .progress import BADGES, Progress, badge_status, level_floor, level_for
 __all__ = [
     "BADGES",
     "SYSTEM",
+    "THEMES",
     "Actor",
     "Chore",
     "ChoreState",

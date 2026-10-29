@@ -465,6 +465,22 @@ set_picture_mode:
       required: true
       selector:
         boolean:
+set_theme:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    theme:
+      selector:
+        select:
+          options:
+            - ""
+            - space
+            - jungle
+            - ocean
+            - candy
+            - elegant
 set_weather:
   fields:
     entity:
