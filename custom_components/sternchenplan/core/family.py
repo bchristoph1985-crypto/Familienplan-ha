@@ -106,6 +106,13 @@ class Family:
         # Ferien-Pause für alle: nichts ist fällig, nichts wird gesperrt
         self.pause_from: datetime | None = None
         self.pause_until: datetime | None = None
+        # Wetter: welche HA-Wetter-Entität zählt und ob es gerade nass ist.
+        # bad_weather setzt Home Assistant laufend, es wird nicht gespeichert.
+        self.weather_entity: str | None = None
+        self.bad_weather = False
+        # Wochenbericht an die Eltern: Wochentag (0 = Montag, -1 = aus) und Stunde
+        self.report_day = 6
+        self.report_hour = 18
 
     # -- Speichern -----------------------------------------------------------
 
@@ -124,6 +131,9 @@ class Family:
             "money_log": list(self.money_log),
             "pause_from": self.pause_from.isoformat() if self.pause_from else None,
             "pause_until": self.pause_until.isoformat() if self.pause_until else None,
+            "weather_entity": self.weather_entity,
+            "report_day": self.report_day,
+            "report_hour": self.report_hour,
         }
 
     @classmethod
@@ -145,6 +155,9 @@ class Family:
         if data.get("pause_until"):
             family.pause_until = datetime.fromisoformat(data["pause_until"])
             family.pause_from = datetime.fromisoformat(data["pause_from"])
+        family.weather_entity = data.get("weather_entity")
+        family.report_day = int(data.get("report_day", 6))
+        family.report_hour = int(data.get("report_hour", 18))
         for raw in data.get("members", []):
             if "progress" not in raw:
                 family._estimate_progress(family.members[raw["id"]])
@@ -443,6 +456,7 @@ class Family:
         steps: list[str] | None = None,
         weekdays: list[int] | None = None,
         icon: str = "",
+        outdoor: bool = False,
     ) -> Chore:
         self._require_manager(actor)
         name = name.strip()
@@ -470,6 +484,7 @@ class Family:
             steps=_clean_steps(steps),
             weekdays=_clean_weekdays(weekdays),
             icon=icon.strip()[:8],
+            outdoor=outdoor,
         )
         chore.due = self._allowed_day(chore, chore.due)
         self.chores[chore.id] = chore
@@ -494,6 +509,7 @@ class Family:
         steps: list[str] | None = None,
         weekdays: list[int] | None = None,
         icon: str | None = None,
+        outdoor: bool | None = None,
     ) -> Chore:
         """Nur übergebene Felder ändern. Punkte und Verlauf bleiben erhalten."""
         self._require_manager(actor)
@@ -538,6 +554,10 @@ class Family:
             chore.weekdays = _clean_weekdays(weekdays)
         if icon is not None:
             chore.icon = icon.strip()[:8]
+        if outdoor is not None:
+            chore.outdoor = outdoor
+            if not outdoor:
+                chore.weather_shift = 0
         chore.recurrence = new_recurrence
         chore.due = self._allowed_day(chore, new_due)
         if chore.state is ChoreState.OVERDUE and (chore.due is None or chore.due > now):
@@ -753,7 +773,12 @@ class Family:
                 and chore.due < now
                 and self.responsible(chore, now)
             ):
-                chore.state = ChoreState.OVERDUE
+                if chore.outdoor and self.bad_weather:
+                    self._postpone(chore, now)
+                else:
+                    chore.state = ChoreState.OVERDUE
+                    for member_id in self.responsible(chore, now):
+                        self._log(chore, "missed", member_id, now)
                 changed = True
         if self.pay_allowances(now):
             changed = True
@@ -898,12 +923,16 @@ class Family:
         # Bei Übernahme rotiert es weiter, als hätte der Zuständige erledigt.
         rotate_from = chore.claim_taken_from or member_id
         self._reset_claim(chore)
-        self._log(chore, "completed", member_id, now)
+        self._log(chore, "completed", member_id, now, points=earned)
 
         if chore.recurrence is Recurrence.NONE:
             chore.state = ChoreState.DONE
+            chore.weather_shift = 0
             return
-        chore.due = self._allowed_day(chore, _next_due(chore.due, chore.recurrence, now))
+        # Wegen Regen verschoben: der Takt richtet sich weiter nach der alten Frist.
+        base = chore.due - timedelta(days=chore.weather_shift) if chore.due else None
+        chore.weather_shift = 0
+        chore.due = self._allowed_day(chore, _next_due(base, chore.recurrence, now))
         if chore.rotation and chore.assignees:
             # Nach der Person weiter, die dran war bzw. erledigt hat. So zählt
             # auch ein Einspringen bei Abwesenheit als Runde.
@@ -1036,6 +1065,48 @@ class Family:
             due += timedelta(days=1)
         return due
 
+    # -- Wetter und Wochenbericht ---------------------------------------------
+
+    def set_weather(self, actor: Actor, entity_id: str | None) -> None:
+        self._require_manager(actor)
+        self.weather_entity = entity_id or None
+        if not self.weather_entity:
+            self.bad_weather = False
+
+    def _postpone(self, chore: Chore, now: datetime) -> None:
+        """Draußen-Aufgabe bei Regen: gleiche Uhrzeit, nächster passender Tag."""
+        while chore.due is not None and chore.due < now:
+            chore.due = self._allowed_day(chore, chore.due + timedelta(days=1))
+            chore.weather_shift += 1
+        self._log(chore, "postponed", None, now)
+
+    def set_report(self, actor: Actor, day: int, hour: int) -> None:
+        self._require_manager(actor)
+        if not -1 <= day <= 6 or not 0 <= hour <= 23:
+            raise FamilyError("Tag -1 bis 6, Stunde 0 bis 23.")
+        self.report_day, self.report_hour = day, hour
+
+    def week_report(self, now: datetime, days: int = 7) -> list[dict[str, Any]]:
+        """Pro Kind: erledigt, verpasst und verdiente Sterne der letzten Tage."""
+        since = now - timedelta(days=days)
+        rows = {
+            m.id: {"member": m.id, "name": m.name, "done": 0, "missed": 0, "stars": 0,
+                   "streak": m.progress.current_streak(now.astimezone(self.tz).date())}
+            for m in self.members.values()
+            if m.role is Role.CHILD
+        }
+        for chore in self.chores.values():
+            for entry in chore.history:
+                row = rows.get(entry.get("member"))
+                if row is None or datetime.fromisoformat(entry["at"]) < since:
+                    continue
+                if entry["event"] == "completed":
+                    row["done"] += 1
+                    row["stars"] += int(entry.get("points", chore.points))
+                elif entry["event"] == "missed":
+                    row["missed"] += 1
+        return list(rows.values())
+
     def set_picture_mode(self, actor: Actor, member_id: str, enabled: bool) -> Member:
         self._require_manager(actor)
         member = self._child(member_id)
@@ -1157,9 +1228,11 @@ class Family:
         chore.claim_taken_from = None
 
     @staticmethod
-    def _log(chore: Chore, event: str, member_id: str | None, now: datetime) -> None:
+    def _log(
+        chore: Chore, event: str, member_id: str | None, now: datetime, **extra: Any
+    ) -> None:
         chore.history.append(
-            {"event": event, "member": member_id, "at": now.isoformat()}
+            {"event": event, "member": member_id, "at": now.isoformat(), **extra}
         )
         del chore.history[:-HISTORY_LIMIT]
 

@@ -32,7 +32,7 @@ from .const import (
 from .consequences import async_apply
 from .core import Family
 from .photos import PhotoUploadView, PhotoView, cleanup, forget_missing
-from .reminders import async_celebrate, async_setup_reminders
+from .reminders import async_celebrate, async_setup_reminders, weather_is_bad
 from .services import async_register_services
 from .websocket_api import async_register_websocket
 
@@ -61,6 +61,7 @@ class SternchenplanData:
             await async_celebrate(self.hass, self.family, events)
 
     async def async_tick(self, _now=None) -> None:
+        self.family.bad_weather = weather_is_bad(self.hass, self.family.weather_entity)
         changed = self.family.refresh(dt_util.utcnow())
         if await async_apply(self.hass, self.entry) or changed:
             await self._async_store()

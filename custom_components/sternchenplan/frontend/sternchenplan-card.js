@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.20.0";
+const VERSION = "0.21.0";
 
 const T = {
   de: {
@@ -181,6 +181,22 @@ const T = {
     icon: "Symbol (für den Bilder-Modus)",
     pictureOn: "🖼️ Bilder-Modus",
     pictureOff: "🔤 Text-Modus",
+    outdoor: "🌦️ Draußen: bei Regen einen Tag später",
+    outdoorShort: "🌦️ draußen",
+    rainWait: "🌧️ wegen Regen verschoben",
+    rainBanner: "🌧️ Es regnet. Draußen-Aufgaben warten auf trockenes Wetter.",
+    weekTitle: "📊 Diese Woche",
+    weekRow: "{done} erledigt · {missed} verpasst",
+    weekBest: "Am fleißigsten",
+    weekEmpty: "Diese Woche ist noch nichts passiert.",
+    sendReport: "Bericht jetzt aufs Handy",
+    settings: "⚙️ Wetter und Wochenbericht",
+    weatherEntity: "Wetter für Draußen-Aufgaben",
+    weatherNone: "aus",
+    weatherNow: "gerade: {state}",
+    reportDay: "Wochenbericht an Eltern",
+    reportOff: "aus",
+    reportHour: "Uhrzeit",
     readAloud: "Vorlesen",
     moneyHint: "Das Geld liegt nicht wirklich hier. Sternchenplan führt nur das Konto. Auszahlen tut ihr selbst, bar oder per Überweisung.",
   },
@@ -352,6 +368,22 @@ const T = {
     icon: "Symbol (for picture mode)",
     pictureOn: "🖼️ Picture mode",
     pictureOff: "🔤 Text mode",
+    outdoor: "🌦️ Outdoors: one day later if it rains",
+    outdoorShort: "🌦️ outdoors",
+    rainWait: "🌧️ moved because of rain",
+    rainBanner: "🌧️ It's raining. Outdoor chores wait for dry weather.",
+    weekTitle: "📊 This week",
+    weekRow: "{done} done · {missed} missed",
+    weekBest: "Hardest worker",
+    weekEmpty: "Nothing has happened this week yet.",
+    sendReport: "Send report to my phone",
+    settings: "⚙️ Weather and weekly report",
+    weatherEntity: "Weather for outdoor chores",
+    weatherNone: "off",
+    weatherNow: "now: {state}",
+    reportDay: "Weekly report to parents",
+    reportOff: "off",
+    reportHour: "Time",
     readAloud: "Read aloud",
     moneyHint: "The money isn't really kept here. Sternchenplan only keeps the account. You pay out yourselves, in cash or by transfer.",
   },
@@ -657,6 +689,10 @@ class SternchenplanCard extends HTMLElement {
       case "pause-end":
         this._call("end_pause", {});
         break;
+      case "send-report":
+        this._call("send_report", {});
+        this._notify(this._t("sendReport") + " ✓");
+        break;
       case "tpl":
         this._useTemplate(Number(id));
         break;
@@ -759,6 +795,18 @@ class SternchenplanCard extends HTMLElement {
       this._awayForm[memberId] = { ...(this._awayForm[memberId] || {}), [key]: el.value };
       return;
     }
+    if (field.startsWith("set.")) {
+      if (ev.type !== "change") return;
+      const call = (service, data) =>
+        this._hass.callService("sternchenplan", service, data).catch((err) => this._notify(err.message));
+      if (field === "set.weather") call("set_weather", { entity: el.value });
+      else {
+        const r = { ...(this._data.report || { day: 6, hour: 18 }) };
+        r[field.slice(4)] = parseInt(el.value, 10);
+        call("set_report", r);
+      }
+      return;
+    }
     if (field.startsWith("money.") || field.startsWith("allow.")) {
       if (ev.type !== "change") return;
       // Einstellungen nicht über _call: der sperrt bei schnellen Folgeänderungen.
@@ -827,7 +875,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _emptyForm() {
-    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, steps: "", weekdays: [], icon: "", editId: null };
+    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, steps: "", weekdays: [], icon: "", outdoor: false, editId: null };
   }
 
   _resetForm() {
@@ -857,6 +905,7 @@ class SternchenplanCard extends HTMLElement {
       steps: (c.steps || []).join("\n"),
       weekdays: [...(c.weekdays || [])],
       icon: c.icon || "",
+      outdoor: !!c.outdoor,
       editId: c.id,
     };
     this._render();
@@ -879,6 +928,83 @@ class SternchenplanCard extends HTMLElement {
     // Das Ende ist exklusiv gespeichert: als „bis einschließlich“ den Tag davor zeigen.
     const last = new Date(new Date(p.until).getTime() - 1);
     return `<div class="pause-banner">${esc(this._t("pauseActive", { date: this._date(last.toISOString()) }))}</div>`;
+  }
+
+  _weatherText(entity, state) {
+    const obj = this._hass?.states?.[entity];
+    try {
+      if (obj && this._hass.formatEntityState) return this._hass.formatEntityState(obj);
+    } catch (e) {
+      /* ältere HA-Versionen: Rohwert zeigen */
+    }
+    return state;
+  }
+
+  _rainBanner() {
+    const w = this._data.weather;
+    if (!w?.bad || !this._data.chores.some((c) => c.outdoor)) return "";
+    return `<div class="pause-banner rain-banner">${this._t("rainBanner")}</div>`;
+  }
+
+  // Wochenbilanz für Eltern: erledigt gegen verpasst, wer am meisten geschafft hat.
+  _renderWeek() {
+    const rows = this._data.week || [];
+    if (!rows.length) return "";
+    const best = rows.reduce((a, b) => (b.stars > a.stars || (b.stars === a.stars && b.done > a.done) ? b : a));
+    const active = rows.some((r) => r.done || r.missed);
+    const list = rows
+      .map((r) => {
+        const m = this._member(r.member);
+        if (!m) return "";
+        const total = r.done + r.missed;
+        const pct = total ? Math.round((r.done / total) * 100) : 0;
+        const crown = active && best.done && r.member === best.member;
+        return `
+          <li class="week-row" style="--kid:${this._color(m.id)}">
+            ${this._avatar(m, 32)}
+            <div class="week-main">
+              <div class="week-head"><strong>${esc(m.name)}</strong>${crown ? ` <span class="chip best">🏆 ${this._t("weekBest")}</span>` : ""}
+                <span class="week-stars">⭐ ${r.stars}</span></div>
+              <div class="week-bar ${total ? "" : "nil"}" role="img" aria-label="${esc(this._t("weekRow", r))}"><span style="width:${pct}%"></span></div>
+              <div class="muted small">${esc(this._t("weekRow", r))}${r.streak ? ` · 🔥 ${r.streak}` : ""}</div>
+            </div>
+          </li>`;
+      })
+      .join("");
+    return `
+      <section class="week">
+        <div class="week-title"><strong>${this._t("weekTitle")}</strong>
+          ${this._config.readonly ? "" : `<button class="link" data-action="send-report">${this._t("sendReport")}</button>`}</div>
+        ${active ? `<ul class="week-list">${list}</ul>` : `<p class="muted small">${this._t("weekEmpty")}</p>`}
+      </section>`;
+  }
+
+  // Einstellungen für Wetter und Wochenbericht, oben im Aufgaben-Reiter.
+  _renderSettings() {
+    const d = this._data;
+    const weathers = Object.keys(this._hass?.states || {}).filter((id) => id.startsWith("weather."));
+    const current = d.weather?.entity || "";
+    if (current && !weathers.includes(current)) weathers.push(current);
+    const r = d.report || { day: 6, hour: 18 };
+    const days = this._t("days");
+    const name = (id) => this._hass?.states?.[id]?.attributes?.friendly_name || id;
+    return `
+      <details class="form settings-box">
+        <summary>${this._t("settings")}</summary>
+        <div class="grid">
+          <label>${this._t("weatherEntity")}<select data-field="set.weather">
+            <option value="">${this._t("weatherNone")}</option>
+            ${weathers.map((id) => `<option value="${esc(id)}" ${id === current ? "selected" : ""}>${esc(name(id))}</option>`).join("")}
+          </select>${d.weather?.state ? `<span class="muted small">${esc(this._t("weatherNow", { state: this._weatherText(current, d.weather.state) }))}</span>` : ""}</label>
+          <label>${this._t("reportDay")}<select data-field="set.day">
+            <option value="-1" ${r.day === -1 ? "selected" : ""}>${this._t("reportOff")}</option>
+            ${days.map((dn, i) => `<option value="${i}" ${i === r.day ? "selected" : ""}>${esc(dn)}</option>`).join("")}
+          </select></label>
+          <label>${this._t("reportHour")}<select data-field="set.hour" ${r.day === -1 ? "disabled" : ""}>
+            ${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${h === r.hour ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`).join("")}
+          </select></label>
+        </div>
+      </details>`;
   }
 
   _renderPause() {
@@ -950,7 +1076,7 @@ class SternchenplanCard extends HTMLElement {
           <div class="hero-text"><div class="hello">${esc(member.name)}</div><div class="star big-star">⭐ ${member.points}</div></div>
           ${member.progress ? `<span class="level-badge">${member.progress.level}</span>` : ""}
         </div>
-        ${this._pauseBanner()}
+        ${this._pauseBanner()}${this._rainBanner()}
         ${chores.length ? `<div class="pic-grid">${tiles}</div>` : `<div class="done-big">🎉</div>`}
         ${this._renderChildRewards(member)}
         ${this._renderBadges(member)}
@@ -988,6 +1114,7 @@ class SternchenplanCard extends HTMLElement {
       steps: (t.steps?.[lang] || []).join("\n"),
       icon: t.emoji,
       weekdays: t.school ? [0, 1, 2, 3, 4] : [],
+      outdoor: !!t.outdoor,
       due: this._toLocalInput(due.toISOString()),
     };
     this._render();
@@ -1046,6 +1173,7 @@ class SternchenplanCard extends HTMLElement {
         steps: this._stepList(f.steps),
         weekdays: f.weekdays,
         icon: f.icon || "",
+        outdoor: !!f.outdoor,
       });
       this._resetForm();
       this._render();
@@ -1063,6 +1191,7 @@ class SternchenplanCard extends HTMLElement {
       steps: this._stepList(f.steps),
       weekdays: f.weekdays,
       icon: f.icon || "",
+      outdoor: !!f.outdoor,
     };
     if (f.due) data.due = f.due;
     await this._call("create_chore", data);
@@ -1147,6 +1276,7 @@ class SternchenplanCard extends HTMLElement {
 
   _dueLabel(chore) {
     if (chore.state === "overdue") return `<span class="chip bad">${this._t("overdue")}</span>`;
+    if (chore.weather_shift > 0) return `<span class="chip rain">${this._t("rainWait")}</span>`;
     if (!chore.due) return `<span class="muted">${this._t("noDue")}</span>`;
     const due = new Date(chore.due);
     const now = new Date();
@@ -1440,7 +1570,7 @@ class SternchenplanCard extends HTMLElement {
           ${this._ring(done, total || open, color, 72)}
         </div>
         ${this._renderLevel(member)}
-        ${this._pauseBanner()}
+        ${this._pauseBanner()}${this._rainBanner()}
         ${this._renderGoal(member)}
         ${this._renderFamilyGoal()}
         ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
@@ -1674,7 +1804,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderToday() {
-    return `${this._pauseBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>`;
+    return `${this._pauseBanner()}${this._rainBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>${this._renderWeek()}`;
   }
 
   _renderTodayCards() {
@@ -1768,7 +1898,7 @@ class SternchenplanCard extends HTMLElement {
             <div class="title">${c.icon ? esc(c.icon) + " " : ""}${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.weekdays?.length ? " · " + esc(this._dayList(c.weekdays)) : ""}${c.requires_photo ? " · 📷" : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.weekdays?.length ? " · " + esc(this._dayList(c.weekdays)) : ""}${c.requires_photo ? " · 📷" : ""}${c.outdoor ? " · " + this._t("outdoorShort") : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -1780,7 +1910,7 @@ class SternchenplanCard extends HTMLElement {
       .join("");
     const rec = this._t("rec");
     return `
-      ${f.editId ? "" : this._renderTemplates()}
+      ${f.editId ? "" : this._renderSettings() + this._renderTemplates()}
       <details class="form chore-form" ${this._data.chores.length && !f.editId && !f.name ? "" : "open"}>
         <summary>${f.editId ? this._t("editChore") : "+ " + this._t("newChore")}</summary>
         <label>${this._t("name")}<input data-field="name" value="${esc(f.name)}" maxlength="60"></label>
@@ -1805,6 +1935,7 @@ class SternchenplanCard extends HTMLElement {
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
         <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""}>${this._t("photo")}</label>
+        <label class="check"><input type="checkbox" data-field="outdoor" ${f.outdoor ? "checked" : ""}>${this._t("outdoor")}</label>
         <fieldset><legend>${this._t("weekdays")}</legend>${this._t("dayShort")
           .map((d, i) => `<label class="check day"><input type="checkbox" data-field="weekday" value="${i}" ${f.weekdays.includes(i) ? "checked" : ""}>${d}</label>`)
           .join("")}</fieldset>
@@ -1916,12 +2047,19 @@ const TEMPLATES = [
   { emoji: "🛁", age: 12, points: 5, rec: "weekly", time: "18:00", photo: true, name: { de: "Bad putzen", en: "Clean the bathroom" } },
   { emoji: "🍳", age: 12, points: 4, rec: "weekly", time: "18:00", name: { de: "Beim Kochen helfen", en: "Help with cooking" } },
   { emoji: "🛌", age: 12, points: 3, rec: "biweekly", time: "18:00", name: { de: "Bettwäsche wechseln", en: "Change bed sheets" } },
-  { emoji: "🌱", age: 13, points: 5, rec: "weekly", time: "17:00", name: { de: "Rasen mähen", en: "Mow the lawn" } },
+  { emoji: "🌱", age: 13, points: 5, rec: "weekly", time: "17:00", outdoor: true, name: { de: "Rasen mähen", en: "Mow the lawn" } },
+  { emoji: "🍂", age: 8, points: 3, rec: "weekly", time: "16:00", outdoor: true, name: { de: "Laub rechen", en: "Rake leaves" } },
+  { emoji: "🚲", age: 9, points: 3, rec: "biweekly", time: "16:00", outdoor: true, name: { de: "Fahrrad putzen", en: "Clean the bike" } },
+  { emoji: "🌻", age: 6, points: 1, rec: "daily", time: "18:00", outdoor: true, name: { de: "Blumen gießen", en: "Water the plants" } },
   { emoji: "🚗", age: 14, points: 4, rec: "biweekly", time: "17:00", name: { de: "Auto aussaugen", en: "Vacuum the car" } },
 ];
 
 // Symbol raten, wenn die Aufgabe keins hat (Bilder-Modus).
 const CHORE_EMOJI = [
+  [["rasen", "lawn"], "🌱"],
+  [["laub", "leaves"], "🍂"],
+  [["fahrrad", "bike"], "🚲"],
+  [["gieß", "blumen", "water the", "plants"], "🌻"],
   [["müll", "trash", "abfall"], "🗑️"],
   [["spülmaschine", "geschirr", "dishwasher", "dishes"], "🍽️"],
   [["tisch", "table"], "🍴"],
@@ -2160,6 +2298,21 @@ const STYLE = `
   @keyframes popin { from { transform: scale(.4); } }
   .pause-banner { margin: 0 0 10px; padding: 12px 14px; border-radius: 16px; font-weight: 600;
                   background: linear-gradient(135deg, color-mix(in srgb, #13a8b8 22%, var(--card-background-color)), color-mix(in srgb, #e5a100 16%, var(--card-background-color))); }
+  .rain-banner { background: linear-gradient(120deg, rgba(96, 125, 139, 0.18), rgba(33, 150, 243, 0.14)); }
+  .chip.rain { background: rgba(33, 150, 243, 0.14); color: var(--primary-text-color); }
+  .chip.best { background: rgba(255, 193, 7, 0.22); color: var(--primary-text-color); }
+  section.week { margin-top: 16px; padding: 14px 16px; border-radius: 16px; background: var(--secondary-background-color); }
+  .week-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .week-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .week-row { display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .week-main { flex: 1; min-width: 0; }
+  .week-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .week-stars { margin-left: auto; font-weight: 600; }
+  .week-bar { height: 8px; margin: 6px 0 4px; border-radius: 99px; overflow: hidden;
+    background: color-mix(in srgb, var(--error-color, #db4437) 30%, transparent); }
+  .week-bar.nil { background: var(--divider-color, #e0e0e0); }
+  .week-bar span { display: block; height: 100%; border-radius: 99px; background: var(--kid); }
+  .settings-box { margin-bottom: 12px; }
   .pause-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
   .pause-box .pause-banner { flex: 1; margin: 0; }
   label.check.day { margin-right: 6px; }

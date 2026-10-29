@@ -66,6 +66,13 @@ def snapshot(
              "active": family.is_paused(now)}
             if family.pause_until else None
         ),
+        "weather": (
+            {"entity": family.weather_entity, "bad": family.bad_weather,
+             "state": (st.state if (st := hass.states.get(family.weather_entity)) else None)}
+            if family.weather_entity else None
+        ),
+        "report": {"day": family.report_day, "hour": family.report_hour},
+        "week": family.week_report(now) if actor.is_manager else [],
         "members": [
             {
                 "id": m.id,
@@ -121,6 +128,8 @@ def snapshot(
                 "steps_done": list(c.steps_done),
                 "weekdays": list(c.weekdays),
                 "icon": c.icon,
+                "outdoor": c.outdoor,
+                "weather_shift": c.weather_shift,
             }
             for c in family.chores.values()
         ],

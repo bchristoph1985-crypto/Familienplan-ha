@@ -132,6 +132,11 @@ Dienste: `set_money`, `set_allowance`, `exchange_stars`, `payout`,
 - **Nur an bestimmten Tagen:** Tägliche Aufgaben kannst du auf Wochentage beschränken, z. B. „Schultasche packen“ nur Mo–Fr. Die Vorlagen für Schulsachen setzen das schon.
 - **Bilder-Modus:** Für Kinder, die noch nicht lesen. Große Bildkacheln statt Text, ein 🔊-Knopf liest die Aufgabe vor (im Browser, ohne Internetdienst). Einschalten in der Elternansicht beim Kind („Bilder-Modus“) oder per `sternchenplan.set_picture_mode`. Jede Aufgabe kann ein eigenes Symbol bekommen.
 
+## Wetter und Wochenbericht
+
+- **Draußen-Aufgaben:** Hak bei einer Aufgabe „Draußen“ an (z. B. Rasen mähen, Laub rechen). Regnet es zur Frist, wird sie nicht überfällig und sperrt nichts, sondern rückt einen Tag weiter. Der Wochentakt bleibt dabei gleich. Welche Wetter-Entität zählt, stellst du im Reiter „Aufgaben“ unter „Wetter und Wochenbericht“ ein (oder per `sternchenplan.set_weather`). Als nass gilt: Regen, Schauer, Schnee, Gewitter, Hagel.
+- **Wochenbericht:** Eltern sehen unter „Heute“, wie die Woche lief: erledigt, verpasst, verdiente Sterne und wer am fleißigsten war. Einmal pro Woche (Standard: Sonntag 18 Uhr) kommt das als Push. Tag und Uhrzeit stellst du an derselben Stelle ein, `-1` schaltet ihn ab. Für eigene Automationen gibt es das Ereignis `sternchenplan_week_report` und den Dienst `sternchenplan.send_report`.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
@@ -183,4 +188,4 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
-- Weitere Funktionen: Wetter-Aufgaben, Wochenberichte, weitere Sprachen
+- Weitere Funktionen: Strafpunkte, weitere Sprachen

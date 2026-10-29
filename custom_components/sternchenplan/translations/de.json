@@ -289,6 +289,10 @@
         "icon": {
           "name": "Symbol",
           "description": "Emoji für den Bilder-Modus."
+        },
+        "outdoor": {
+          "name": "Draußen",
+          "description": "Nur bei trockenem Wetter. Regnet es zur Frist, rückt sie einen Tag weiter."
         }
       }
     },
@@ -347,6 +351,10 @@
         "icon": {
           "name": "Symbol",
           "description": "Emoji für den Bilder-Modus."
+        },
+        "outdoor": {
+          "name": "Draußen",
+          "description": "Nur bei trockenem Wetter. Regnet es zur Frist, rückt sie einen Tag weiter."
         }
       }
     },
@@ -755,6 +763,34 @@
           "description": "Bilder-Modus an oder aus."
         }
       }
+    },
+    "set_weather": {
+      "name": "Wetter",
+      "description": "Welche Wetter-Entität über Draußen-Aufgaben entscheidet. Leer = aus.",
+      "fields": {
+        "entity": {
+          "name": "Wetter-Entität",
+          "description": "Zum Beispiel weather.forecast_home."
+        }
+      }
+    },
+    "set_report": {
+      "name": "Wochenbericht",
+      "description": "Wann Eltern den Wochenbericht bekommen.",
+      "fields": {
+        "day": {
+          "name": "Tag",
+          "description": "0 = Montag … 6 = Sonntag, -1 = aus."
+        },
+        "hour": {
+          "name": "Stunde",
+          "description": "0–23."
+        }
+      }
+    },
+    "send_report": {
+      "name": "Wochenbericht jetzt senden",
+      "description": "Schickt den Bericht der letzten 7 Tage an die Eltern."
     }
   }
 }

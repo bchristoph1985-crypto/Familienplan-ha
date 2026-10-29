@@ -70,6 +70,9 @@ create_chore:
     icon:
       selector:
         text:
+    outdoor:
+      selector:
+        boolean:
 delete_chore:
   fields: &chore
     chore_id:
@@ -181,6 +184,9 @@ update_chore:
     icon:
       selector:
         text:
+    outdoor:
+      selector:
+        boolean:
 set_devices:
   fields:
     member:
@@ -435,3 +441,23 @@ set_picture_mode:
       required: true
       selector:
         boolean:
+set_weather:
+  fields:
+    entity:
+      selector:
+        entity:
+          domain: weather
+set_report:
+  fields:
+    day:
+      required: true
+      selector:
+        number:
+          min: -1
+          max: 6
+    hour:
+      selector:
+        number:
+          min: 0
+          max: 23
+send_report:

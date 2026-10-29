@@ -289,6 +289,10 @@
         "icon": {
           "name": "Symbol",
           "description": "Emoji shown in picture mode."
+        },
+        "outdoor": {
+          "name": "Outdoors",
+          "description": "Only in dry weather. If it rains at the deadline, it moves one day."
         }
       }
     },
@@ -347,6 +351,10 @@
         "icon": {
           "name": "Symbol",
           "description": "Emoji shown in picture mode."
+        },
+        "outdoor": {
+          "name": "Outdoors",
+          "description": "Only in dry weather. If it rains at the deadline, it moves one day."
         }
       }
     },
@@ -755,6 +763,34 @@
           "description": "Switch picture mode on or off."
         }
       }
+    },
+    "set_weather": {
+      "name": "Weather",
+      "description": "Which weather entity decides about outdoor chores. Empty = off.",
+      "fields": {
+        "entity": {
+          "name": "Weather entity",
+          "description": "For example weather.home."
+        }
+      }
+    },
+    "set_report": {
+      "name": "Weekly report",
+      "description": "When parents get the weekly report.",
+      "fields": {
+        "day": {
+          "name": "Day",
+          "description": "0 = Monday … 6 = Sunday, -1 = off."
+        },
+        "hour": {
+          "name": "Hour",
+          "description": "0–23."
+        }
+      }
+    },
+    "send_report": {
+      "name": "Send weekly report now",
+      "description": "Sends the report of the last 7 days to the parents."
     }
   }
 }

@@ -12,6 +12,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    BAD_WEATHER,
     CONF_ANNOUNCE_NOTIFY,
     CONF_ANNOUNCE_TIMES,
     CONF_PARENT_SUMMARY_TIME,
@@ -46,6 +47,10 @@ _TEXT = {
         "goal_ready": "🎯 Du hast genug Sterne für „{reward}“. Jetzt einlösen?",
         "family_goal": "🎉 Familienziel geschafft: {name}! Danke an alle.",
         "allowance": "💶 {amount} Taschengeld sind da!",
+        "week_title": "📊 Wochenbericht",
+        "week_row": "{name}: {done} erledigt, {missed} verpasst, ⭐ {stars}",
+        "week_best": "🏆 Am fleißigsten: {name}",
+        "week_empty": "Diese Woche wurde nichts erledigt.",
     },
     "en": {
         "title": "Sternchenplan",
@@ -63,6 +68,10 @@ _TEXT = {
         "goal_ready": "🎯 You have enough stars for “{reward}”. Redeem it now?",
         "family_goal": "🎉 Family goal reached: {name}! Thanks, everyone.",
         "allowance": "💶 {amount} pocket money has arrived!",
+        "week_title": "📊 Weekly report",
+        "week_row": "{name}: {done} done, {missed} missed, ⭐ {stars}",
+        "week_best": "🏆 Hardest worker: {name}",
+        "week_empty": "Nothing was done this week.",
     },
 }
 
@@ -278,6 +287,33 @@ async def _notify(hass: HomeAssistant, service: str, title: str, message: str) -
     )
 
 
+def weather_is_bad(hass: HomeAssistant, entity_id: str | None) -> bool:
+    if not entity_id or (state := hass.states.get(entity_id)) is None:
+        return False
+    return state.state in BAD_WEATHER
+
+
+def week_message(hass: HomeAssistant, family: Family, now: datetime) -> str:
+    text = _text(hass)
+    rows = family.week_report(now)
+    if not any(r["done"] or r["missed"] for r in rows):
+        return text["week_empty"]
+    lines = [text["week_row"].format(**r) for r in rows]
+    best = max(rows, key=lambda r: (r["stars"], r["done"]))
+    if best["done"]:
+        lines.append(text["week_best"].format(name=best["name"]))
+    return "\n".join(lines)
+
+
+async def async_send_week_report(hass: HomeAssistant, family: Family, now: datetime) -> None:
+    text = _text(hass)
+    message = week_message(hass, family, now)
+    hass.bus.async_fire("sternchenplan_week_report", {"report": family.week_report(now)})
+    for member in family.members.values():
+        if member.role is Role.PARENT and member.notify_service:
+            await _notify(hass, member.notify_service, text["week_title"], message)
+
+
 @callback
 def async_setup_reminders(
     hass: HomeAssistant, entry: SternchenplanConfigEntry
@@ -320,7 +356,14 @@ def async_setup_reminders(
         if message := announcement(hass, entry.runtime_data.family, now):
             await async_announce(hass, entry, message)
 
-    unsubs = [
+    async def week_report(now: datetime) -> None:
+        family = entry.runtime_data.family
+        local = dt_util.now()
+        if family.report_day == local.weekday() and family.report_hour == local.hour:
+            await async_send_week_report(hass, family, dt_util.utcnow())
+
+    unsubs = [async_track_time_change(hass, week_report, minute=0, second=0)]
+    unsubs += [
         async_track_time_change(hass, remind_children, hour=t.hour, minute=t.minute, second=0)
         for t in child_times
     ]

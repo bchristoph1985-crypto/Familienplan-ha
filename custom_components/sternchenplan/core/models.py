@@ -153,6 +153,9 @@ class Chore:
     # Nur an diesen Wochentagen (0 = Montag), leer = jeden Tag. Gilt für täglich.
     weekdays: list[int] = field(default_factory=list)
     icon: str = ""  # Symbol für den Bilder-Modus
+    # Draußen-Aufgabe: bei Regen rückt die Frist einen Tag weiter
+    outdoor: bool = False
+    weather_shift: int = 0  # so viele Tage wegen Wetter verschoben
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -181,6 +184,8 @@ class Chore:
             "steps_done": list(self.steps_done),
             "weekdays": list(self.weekdays),
             "icon": self.icon,
+            "outdoor": self.outdoor,
+            "weather_shift": self.weather_shift,
         }
 
     @classmethod
@@ -209,6 +214,8 @@ class Chore:
             steps_done=[int(i) for i in data.get("steps_done", [])],
             weekdays=[int(i) for i in data.get("weekdays", [])],
             icon=data.get("icon", ""),
+            outdoor=bool(data.get("outdoor", False)),
+            weather_shift=int(data.get("weather_shift", 0)),
         )
 
 

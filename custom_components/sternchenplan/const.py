@@ -1,7 +1,7 @@
 """Konstanten für Sternchenplan."""
 
 DOMAIN = "sternchenplan"
-VERSION = "0.20.0"
+VERSION = "0.21.0"
 CARD_URL = "/sternchenplan/sternchenplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -110,4 +110,16 @@ SERVICE_END_PAUSE = "end_pause"
 SERVICE_SET_PICTURE_MODE = "set_picture_mode"
 ATTR_WEEKDAYS = "weekdays"
 ATTR_ICON = "icon"
+ATTR_OUTDOOR = "outdoor"
+ATTR_ENTITY = "entity"
+ATTR_DAY = "day"
+ATTR_HOUR = "hour"
+SERVICE_SET_WEATHER = "set_weather"
+SERVICE_SET_REPORT = "set_report"
+SERVICE_SEND_REPORT = "send_report"
+# Wetterlagen, bei denen Draußen-Aufgaben einen Tag warten
+BAD_WEATHER = {
+    "rainy", "pouring", "snowy", "snowy-rainy", "lightning", "lightning-rainy",
+    "hail", "exceptional",
+}
 ATTR_ENABLED = "enabled"
