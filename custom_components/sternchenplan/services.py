@@ -84,6 +84,8 @@ from .const import (
     SERVICE_GIVE_STARS,
     SERVICE_ADD_PRESET,
     SERVICE_DELETE_PRESET,
+    SERVICE_LEARN_TAG,
+    SERVICE_CLEAR_TAG,
     ATTR_STARS,
     ATTR_REASON,
     ATTR_PRESET_ID,
@@ -602,6 +604,19 @@ async def _delete_preset(hass, call, data, actor) -> None:
     data.family.delete_preset(actor, call.data[ATTR_PRESET_ID])
 
 
+async def _learn_tag(hass, call, data, actor) -> None:
+    from .handsfree import start_learning  # noqa: PLC0415
+
+    if not actor.is_manager:
+        raise PermissionDenied("Nur Eltern.")
+    data.family.chore(call.data[ATTR_CHORE_ID])
+    start_learning(hass, call.data[ATTR_CHORE_ID])
+
+
+async def _clear_tag(hass, call, data, actor) -> None:
+    data.family.set_tag(actor, call.data[ATTR_CHORE_ID], "")
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -639,6 +654,8 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_GIVE_STARS, _give_stars, GIVE_STARS_SCHEMA),
         (SERVICE_ADD_PRESET, _add_preset, ADD_PRESET_SCHEMA),
         (SERVICE_DELETE_PRESET, _delete_preset, DELETE_PRESET_SCHEMA),
+        (SERVICE_LEARN_TAG, _learn_tag, CHORE_SCHEMA),
+        (SERVICE_CLEAR_TAG, _clear_tag, CHORE_SCHEMA),
         (SERVICE_SET_ALLOWANCE, _set_allowance, ALLOWANCE_SCHEMA),
         (SERVICE_EXCHANGE_STARS, _exchange, EXCHANGE_SCHEMA),
         (SERVICE_PAYOUT, _payout, PAYOUT_SCHEMA),

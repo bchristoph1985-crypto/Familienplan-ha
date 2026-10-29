@@ -156,6 +156,7 @@ class Chore:
     # Draußen-Aufgabe: bei Regen rückt die Frist einen Tag weiter
     outdoor: bool = False
     weather_shift: int = 0  # so viele Tage wegen Wetter verschoben
+    tag_id: str = ""  # NFC-Aufkleber: Scannen meldet die Aufgabe
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -186,6 +187,7 @@ class Chore:
             "icon": self.icon,
             "outdoor": self.outdoor,
             "weather_shift": self.weather_shift,
+            "tag_id": self.tag_id,
         }
 
     @classmethod
@@ -216,6 +218,7 @@ class Chore:
             icon=data.get("icon", ""),
             outdoor=bool(data.get("outdoor", False)),
             weather_shift=int(data.get("weather_shift", 0)),
+            tag_id=data.get("tag_id", ""),
         )
 
 

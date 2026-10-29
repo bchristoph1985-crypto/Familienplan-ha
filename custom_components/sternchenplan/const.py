@@ -1,7 +1,7 @@
 """Konstanten für Sternchenplan."""
 
 DOMAIN = "sternchenplan"
-VERSION = "0.24.0"
+VERSION = "0.25.0"
 CARD_URL = "/sternchenplan/sternchenplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -120,6 +120,8 @@ SERVICE_SEND_REPORT = "send_report"
 SERVICE_GIVE_STARS = "give_stars"
 SERVICE_ADD_PRESET = "add_preset"
 SERVICE_DELETE_PRESET = "delete_preset"
+SERVICE_LEARN_TAG = "learn_tag"
+SERVICE_CLEAR_TAG = "clear_tag"
 ATTR_STARS = "stars"
 ATTR_REASON = "reason"
 ATTR_PRESET_ID = "preset_id"

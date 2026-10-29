@@ -841,6 +841,26 @@
           "description": "From the card."
         }
       }
+    },
+    "learn_tag": {
+      "name": "Learn NFC tag",
+      "description": "The next tag scanned in the next 2 minutes belongs to this chore.",
+      "fields": {
+        "chore_id": {
+          "name": "ID",
+          "description": "From the card."
+        }
+      }
+    },
+    "clear_tag": {
+      "name": "Remove NFC tag",
+      "description": "The chore is no longer linked to a tag.",
+      "fields": {
+        "chore_id": {
+          "name": "ID",
+          "description": "From the card."
+        }
+      }
     }
   }
 }

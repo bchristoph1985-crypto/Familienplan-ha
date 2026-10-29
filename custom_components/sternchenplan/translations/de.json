@@ -841,6 +841,26 @@
           "description": "Aus der Karte."
         }
       }
+    },
+    "learn_tag": {
+      "name": "NFC-Aufkleber anlernen",
+      "description": "Der nächste Aufkleber, der in den nächsten 2 Minuten gescannt wird, gehört zu dieser Aufgabe.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Aus der Karte."
+        }
+      }
+    },
+    "clear_tag": {
+      "name": "NFC-Aufkleber lösen",
+      "description": "Die Aufgabe ist danach mit keinem Aufkleber mehr verbunden.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Aus der Karte."
+        }
+      }
     }
   }
 }

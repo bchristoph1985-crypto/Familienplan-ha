@@ -153,6 +153,18 @@ Das klappt mit der Home-Assistant-App (Push-Dienst `notify.mobile_app_…`). Gep
 
 Sternchenplan legt Kalender in Home Assistant an: „Aufgaben“ für die ganze Familie und „Aufgaben Lucas“ usw. für jedes Kind. Darin steht jede Frist der nächsten Wochen, auch Wiederholungen, Wochentage und wer bei Rotation dran ist. Ferien-Pausen bleiben leer. So siehst du alles im HA-Kalender, auf einem Wand-Tablet mit Kalenderkarte oder kannst Automationen auf „Termin beginnt“ bauen.
 
+## Abhaken ohne Bildschirm: NFC-Aufkleber und Sprache
+
+**NFC-Aufkleber:** Kleb einen NFC-Aufkleber (ein paar Cent das Stück) an die Mülltonne, den Hamsterkäfig oder die Spülmaschine. In der Elternansicht öffnest du die Aufgabe, tippst auf „Aufkleber anlernen“ und hältst dein Handy mit der Home-Assistant-App an den Aufkleber. Danach reicht es, wenn das Kind sein Handy dranhält: Die Aufgabe ist gemeldet, und es kommt eine Bestätigung. Mehrere Aufgaben dürfen denselben Aufkleber haben. Freigabe gilt wie sonst auch. Aufgaben mit Fotonachweis gehen nur in der App.
+
+**Sprache:** Mit Home Assistant Assist (Handy, Sprach-Satellit, Wear OS) versteht Sternchenplan von selbst:
+
+- „Ich habe den Müll rausgebracht“ / „Lucas hat den Tisch gedeckt“
+- „Was muss ich noch machen?“ / „Was muss Osmo noch machen?“
+- „Wie viele Sterne habe ich?“
+
+Spricht ein Kind über sein eigenes Konto, kann es nur für sich melden. Über einen Lautsprecher ohne Konto sagt es seinen Namen dazu.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.

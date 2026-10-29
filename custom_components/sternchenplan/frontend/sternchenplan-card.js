@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.24.0";
+const VERSION = "0.25.0";
 
 const T = {
   de: {
@@ -61,6 +61,15 @@ const T = {
     pass: "Freikarte bis {time}",
     givePass: "Freikarte",
     starsBtn: "± Sterne",
+    nfc: "📱 NFC-Aufkleber",
+    nfcHint: "Kleb einen NFC-Aufkleber z. B. an die Mülltonne. Wer ihn mit dem Handy (Home-Assistant-App) antippt, hat die Aufgabe erledigt.",
+    nfcLearn: "Aufkleber anlernen",
+    nfcWaiting: "Jetzt den Aufkleber mit dem Handy antippen (2 Minuten) …",
+    nfcLinked: "✓ Aufkleber verbunden",
+    nfcRemove: "lösen",
+    nfcSaveFirst: "Erst speichern, dann Aufkleber anlernen.",
+    voiceTitle: "🎙️ Sprachbefehle (Home Assistant Assist, auch über Alexa-Skill oder Sprach-Satelliten)",
+    voiceList: ["„Ich habe den Müll rausgebracht“", "„Lucas hat den Tisch gedeckt“", "„Was muss ich noch machen?“", "„Wie viele Sterne hat Osmo?“"],
     starsTitle: "Bonus oder Abzug für {name}",
     starsCustom: "Eigener Grund",
     starsAmount: "Sterne",
@@ -258,6 +267,15 @@ const T = {
     pass: "Free pass until {time}",
     givePass: "Free pass",
     starsBtn: "± Stars",
+    nfc: "📱 NFC tag",
+    nfcHint: "Stick an NFC tag e.g. on the bin. Whoever taps it with their phone (Home Assistant app) has done the chore.",
+    nfcLearn: "Learn tag",
+    nfcWaiting: "Now tap the tag with your phone (2 minutes) …",
+    nfcLinked: "✓ Tag linked",
+    nfcRemove: "remove",
+    nfcSaveFirst: "Save first, then learn the tag.",
+    voiceTitle: "🎙️ Voice commands (Home Assistant Assist)",
+    voiceList: ["“I did the dishes”", "“Lucas did the trash”", "“What do I still have to do?”", "“How many stars does Osmo have?”"],
     starsTitle: "Bonus or deduction for {name}",
     starsCustom: "Own reason",
     starsAmount: "Stars",
@@ -737,6 +755,12 @@ class SternchenplanCard extends HTMLElement {
         this._call("add_preset", { name, stars });
         break;
       }
+      case "tag-learn":
+        this._call("learn_tag", { chore_id: id });
+        break;
+      case "tag-clear":
+        this._call("clear_tag", { chore_id: id });
+        break;
       case "preset-del":
         this._call("delete_preset", { preset_id: id });
         break;
@@ -1059,6 +1083,18 @@ class SternchenplanCard extends HTMLElement {
       </div>`;
   }
 
+  _nfcBlock(f) {
+    const chore = f.editId && this._data.chores.find((c) => c.id === f.editId);
+    let body;
+    if (!chore) body = `<span class="muted small">${this._t("nfcSaveFirst")}</span>`;
+    else if (this._data.learning_tag === chore.id) body = `<span class="chip wait">${this._t("nfcWaiting")}</span>`;
+    else if (chore.has_tag)
+      body = `<span class="chip">${this._t("nfcLinked")}</span> <button class="link bad" data-action="tag-clear" data-id="${esc(chore.id)}">${this._t("nfcRemove")}</button>`;
+    else body = `<button class="link" data-action="tag-learn" data-id="${esc(chore.id)}">${this._t("nfcLearn")}</button>`;
+    return `<div class="nfc-box"><div class="small"><strong>${this._t("nfc")}</strong></div>
+      <div class="muted small">${this._t("nfcHint")}</div><div>${body}</div></div>`;
+  }
+
   _rainBanner() {
     const w = this._data.weather;
     if (!w?.bad || !this._data.chores.some((c) => c.outdoor)) return "";
@@ -1124,6 +1160,8 @@ class SternchenplanCard extends HTMLElement {
           </select></label>
         </div>
         ${this._renderPresetAdmin()}
+        <div class="voice-help"><div class="small"><strong>${this._t("voiceTitle")}</strong></div>
+          <ul class="muted small">${this._t("voiceList").map((v) => `<li>${esc(v)}</li>`).join("")}</ul></div>
       </details>`;
   }
 
@@ -2024,7 +2062,7 @@ class SternchenplanCard extends HTMLElement {
             <div class="title">${c.icon ? esc(c.icon) + " " : ""}${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.weekdays?.length ? " · " + esc(this._dayList(c.weekdays)) : ""}${c.requires_photo ? " · 📷" : ""}${c.outdoor ? " · " + this._t("outdoorShort") : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.weekdays?.length ? " · " + esc(this._dayList(c.weekdays)) : ""}${c.requires_photo ? " · 📷" : ""}${c.outdoor ? " · " + this._t("outdoorShort") : ""}${c.has_tag ? " · 📱" : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -2066,6 +2104,7 @@ class SternchenplanCard extends HTMLElement {
           .map((d, i) => `<label class="check day"><input type="checkbox" data-field="weekday" value="${i}" ${f.weekdays.includes(i) ? "checked" : ""}>${d}</label>`)
           .join("")}</fieldset>
         <label>${this._t("icon")}<input data-field="icon" value="${esc(f.icon)}" maxlength="8" placeholder="🧹" class="icon-input"></label>
+        ${this._nfcBlock(f)}
         <label>${this._t("steps")}<textarea data-field="steps" rows="3" maxlength="800">${esc(f.steps)}</textarea></label>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
@@ -2451,6 +2490,10 @@ const STYLE = `
   .stars-custom { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .stars-custom input[type="number"] { width: 72px; }
   .stars-custom input:not([type]) { flex: 1; min-width: 120px; }
+  .nfc-box { display: grid; gap: 4px; margin: 8px 0; padding: 10px 12px; border-radius: 12px;
+    border: 1px dashed var(--divider-color, #e0e0e0); }
+  .voice-help { margin-top: 12px; }
+  .voice-help ul { margin: 4px 0 0; padding-left: 18px; }
   .preset-admin { display: grid; gap: 8px; margin-top: 12px; }
   section.star-log { margin-top: 12px; }
   .pause-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }

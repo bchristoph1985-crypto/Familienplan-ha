@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, DONATE_URL, SIGNAL_UPDATED
 from .core import Family, Member, badge_status, level_floor
+from .handsfree import learning
 from .photos import signed_url
 from .takeover import takeover_terms
 
@@ -74,6 +75,7 @@ def snapshot(
         "report": {"day": family.report_day, "hour": family.report_hour},
         "week": family.week_report(now) if actor.is_manager else [],
         "presets": [dict(p) for p in family.presets] if actor.is_manager else [],
+        "learning_tag": learning(hass) if actor.is_manager else None,
         "members": [
             {
                 "id": m.id,
@@ -136,6 +138,7 @@ def snapshot(
                 "weekdays": list(c.weekdays),
                 "icon": c.icon,
                 "outdoor": c.outdoor,
+                "has_tag": bool(c.tag_id),
                 "weather_shift": c.weather_shift,
             }
             for c in family.chores.values()

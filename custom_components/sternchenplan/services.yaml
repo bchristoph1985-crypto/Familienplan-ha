@@ -494,3 +494,15 @@ delete_preset:
       required: true
       selector:
         text:
+learn_tag:
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+clear_tag:
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
