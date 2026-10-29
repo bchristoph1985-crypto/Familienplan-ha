@@ -10,6 +10,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, tzinfo
+from difflib import SequenceMatcher
 from typing import Any
 
 from .models import (
@@ -476,6 +477,7 @@ class Family:
         weekdays: list[int] | None = None,
         icon: str = "",
         outdoor: bool = False,
+        house: dict[str, str] | None = None,
     ) -> Chore:
         self._require_manager(actor)
         name = name.strip()
@@ -505,6 +507,7 @@ class Family:
             icon=icon.strip()[:8],
             outdoor=outdoor,
         )
+        _set_house(chore, house or {})
         chore.due = self._allowed_day(chore, chore.due)
         self.chores[chore.id] = chore
         return chore
@@ -529,6 +532,7 @@ class Family:
         weekdays: list[int] | None = None,
         icon: str | None = None,
         outdoor: bool | None = None,
+        house: dict[str, str] | None = None,
     ) -> Chore:
         """Nur übergebene Felder ändern. Punkte und Verlauf bleiben erhalten."""
         self._require_manager(actor)
@@ -573,6 +577,8 @@ class Family:
             chore.weekdays = _clean_weekdays(weekdays)
         if icon is not None:
             chore.icon = icon.strip()[:8]
+        if house:
+            _set_house(chore, house)
         if outdoor is not None:
             chore.outdoor = outdoor
             if not outdoor:
@@ -1238,6 +1244,83 @@ class Family:
             if (member := self.members.get(m)) and member.old_enough(age, when)
         ]
 
+    # -- Freihändig: NFC-Aufkleber und Sprache ------------------------------
+
+    def set_tag(self, actor: Actor, chore_id: str, tag_id: str) -> Chore:
+        self._require_manager(actor)
+        chore = self.chore(chore_id)
+        chore.tag_id = tag_id.strip()
+        return chore
+
+    def chores_with_tag(self, tag_id: str) -> list[Chore]:
+        return [c for c in self.chores.values() if tag_id and c.tag_id == tag_id]
+
+    def child_by_name(self, name: str) -> Member | None:
+        wanted = _norm(name)
+        for m in self.members.values():
+            if m.role is Role.CHILD and _norm(m.name) == wanted:
+                return m
+        return None
+
+    def open_for(self, member_id: str, now: datetime) -> list[Chore]:
+        """Was ein Kind jetzt noch tun kann: offen oder überfällig, Frist bis heute."""
+        end = now.astimezone(self.tz).replace(hour=23, minute=59, second=59)
+        return sorted(
+            (
+                c for c in self.chores_for(member_id, now)
+                if c.state in (ChoreState.OPEN, ChoreState.OVERDUE)
+                and (c.due is None or c.due <= end)
+            ),
+            key=lambda c: (c.state is not ChoreState.OVERDUE, c.due or end),
+        )
+
+    def match_chore(self, member_id: str, spoken: str, now: datetime) -> Chore | None:
+        """Gesprochenen Text der passendsten offenen Aufgabe zuordnen."""
+        words = set(_norm(spoken).split()) - _FILLER
+        if not words:
+            return None
+        best, score = None, 0.0
+        for chore in self.open_for(member_id, now):
+            name = set(_norm(chore.name).split()) - _FILLER
+            overlap = max(
+                (SequenceMatcher(None, w, n).ratio() for w in words for n in name),
+                default=0.0,
+            )
+            whole = SequenceMatcher(None, " ".join(sorted(words)), " ".join(sorted(name))).ratio()
+            value = max(overlap, whole)
+            if value > score:
+                best, score = chore, value
+        return best if score >= 0.75 else None
+
+    def house_done(self, chore_id: str, now: datetime) -> str | None:
+        """Ein Sensor meldet die Aufgabe als erledigt. Gibt zurück, für wen.
+
+        Gutgeschrieben wird nur, wenn genau ein Kind dran ist. Das Haus braucht
+        keine Freigabe, es hat ja selbst nachgesehen.
+        """
+        chore = self.chore(chore_id)
+        if chore.state not in (ChoreState.OPEN, ChoreState.OVERDUE, ChoreState.CLAIMED):
+            return None
+        if chore.state is ChoreState.CLAIMED and chore.claimed_by:
+            self._complete(chore, chore.claimed_by, now)
+            return chore.last_completed_by
+        who = self.responsible(chore, now)
+        if len(who) != 1:
+            return None
+        self.claim(SYSTEM, chore.id, who[0], now)
+        return who[0]
+
+    def claim_hands_free(self, member_id: str, chore: Chore, now: datetime) -> Chore:
+        """Per Aufkleber oder Sprache melden: zählt wie selbst abgehakt.
+
+        Freigabe gilt wie am Handy. Fotonachweis geht so nicht, dafür braucht
+        es die App.
+        """
+        member = self.member(member_id)
+        if self.needs_photo(chore):
+            raise FamilyError("Für diese Aufgabe brauchst du ein Foto. Bitte in der App abhaken.")
+        return self.claim(Actor(member=member), chore.id, member_id, now)
+
     def set_picture_mode(self, actor: Actor, member_id: str, enabled: bool) -> Member:
         self._require_manager(actor)
         member = self._child(member_id)
@@ -1366,6 +1449,28 @@ class Family:
             {"event": event, "member": member_id, "at": now.isoformat(), **extra}
         )
         del chore.history[:-HISTORY_LIMIT]
+
+
+# Füllwörter, die beim Zuordnen gesprochener Aufgaben nichts bedeuten
+_FILLER = {
+    "den", "die", "das", "der", "dem", "ein", "eine", "einen", "mein", "meine", "meinen",
+    "ich", "habe", "hab", "hat", "bin", "fertig", "erledigt", "gemacht", "geschafft",
+    "the", "a", "my", "i", "have", "did", "done", "finished", "with", "mit",
+}
+
+
+def _norm(text: str) -> str:
+    text = text.lower().replace("ß", "ss")
+    return "".join(ch if ch.isalnum() or ch == " " else " " for ch in text).strip()
+
+
+HOUSE_FIELDS = ("done_entity", "done_state", "start_entity", "start_state")
+
+
+def _set_house(chore: Chore, house: dict[str, str]) -> None:
+    for key in HOUSE_FIELDS:
+        if key in house:
+            setattr(chore, key, str(house[key] or "").strip()[:100])
 
 
 def _clean_steps(steps: list[str] | None) -> list[str]:

@@ -156,6 +156,13 @@ class Chore:
     # Draußen-Aufgabe: bei Regen rückt die Frist einen Tag weiter
     outdoor: bool = False
     weather_shift: int = 0  # so viele Tage wegen Wetter verschoben
+    tag_id: str = ""  # NFC-Aufkleber: Scannen meldet die Aufgabe
+    # Das Haus prüft selbst: Erreicht done_entity den Zustand done_state, ist die
+    # Aufgabe erledigt. Erreicht start_entity start_state, kommt „Jetzt dran“.
+    done_entity: str = ""
+    done_state: str = ""
+    start_entity: str = ""
+    start_state: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -186,6 +193,11 @@ class Chore:
             "icon": self.icon,
             "outdoor": self.outdoor,
             "weather_shift": self.weather_shift,
+            "tag_id": self.tag_id,
+            "done_entity": self.done_entity,
+            "done_state": self.done_state,
+            "start_entity": self.start_entity,
+            "start_state": self.start_state,
         }
 
     @classmethod
@@ -216,6 +228,11 @@ class Chore:
             icon=data.get("icon", ""),
             outdoor=bool(data.get("outdoor", False)),
             weather_shift=int(data.get("weather_shift", 0)),
+            tag_id=data.get("tag_id", ""),
+            done_entity=data.get("done_entity", ""),
+            done_state=data.get("done_state", ""),
+            start_entity=data.get("start_entity", ""),
+            start_state=data.get("start_state", ""),
         )
 
 

@@ -31,6 +31,8 @@ from .const import (
 )
 from .actions import async_setup_actions
 from .consequences import async_apply
+from .handsfree import async_setup_handsfree
+from .house import async_setup_house
 from .core import Family
 from .photos import PhotoUploadView, PhotoView, cleanup, forget_missing
 from .reminders import async_celebrate, async_setup_reminders, weather_is_bad
@@ -125,6 +127,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SternchenplanConfigEntry
     for unsub in async_setup_reminders(hass, entry):
         entry.async_on_unload(unsub)
     entry.async_on_unload(async_setup_actions(hass, entry))
+    for unsub in async_setup_handsfree(hass, entry):
+        entry.async_on_unload(unsub)
+    for unsub in async_setup_house(hass, entry):
+        entry.async_on_unload(unsub)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

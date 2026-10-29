@@ -84,6 +84,9 @@ from .const import (
     SERVICE_GIVE_STARS,
     SERVICE_ADD_PRESET,
     SERVICE_DELETE_PRESET,
+    SERVICE_LEARN_TAG,
+    SERVICE_CLEAR_TAG,
+    HOUSE_FIELDS,
     ATTR_STARS,
     ATTR_REASON,
     ATTR_PRESET_ID,
@@ -121,6 +124,7 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_WEEKDAYS, default=[]): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
         vol.Optional(ATTR_ICON, default=""): cv.string,
         vol.Optional(ATTR_OUTDOOR, default=False): cv.boolean,
+        **{vol.Optional(k): cv.string for k in HOUSE_FIELDS},
     }
 )
 
@@ -140,6 +144,7 @@ UPDATE_SCHEMA = CHORE_SCHEMA.extend(
         vol.Optional(ATTR_WEEKDAYS): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
         vol.Optional(ATTR_ICON): cv.string,
         vol.Optional(ATTR_OUTDOOR): cv.boolean,
+        **{vol.Optional(k): cv.string for k in HOUSE_FIELDS},
     }
 )
 
@@ -326,6 +331,7 @@ async def _create(hass, call, data, actor) -> None:
         weekdays=call.data[ATTR_WEEKDAYS],
         icon=call.data[ATTR_ICON],
         outdoor=call.data[ATTR_OUTDOOR],
+        house={k: call.data[k] for k in HOUSE_FIELDS if k in call.data},
     )
 
 
@@ -352,6 +358,7 @@ async def _update(hass, call, data, actor) -> None:
         weekdays=d.get(ATTR_WEEKDAYS),
         icon=d.get(ATTR_ICON),
         outdoor=d.get(ATTR_OUTDOOR),
+        house={k: d[k] for k in HOUSE_FIELDS if k in d},
     )
 
 
@@ -602,6 +609,19 @@ async def _delete_preset(hass, call, data, actor) -> None:
     data.family.delete_preset(actor, call.data[ATTR_PRESET_ID])
 
 
+async def _learn_tag(hass, call, data, actor) -> None:
+    from .handsfree import start_learning  # noqa: PLC0415
+
+    if not actor.is_manager:
+        raise PermissionDenied("Nur Eltern.")
+    data.family.chore(call.data[ATTR_CHORE_ID])
+    start_learning(hass, call.data[ATTR_CHORE_ID])
+
+
+async def _clear_tag(hass, call, data, actor) -> None:
+    data.family.set_tag(actor, call.data[ATTR_CHORE_ID], "")
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -639,6 +659,8 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_GIVE_STARS, _give_stars, GIVE_STARS_SCHEMA),
         (SERVICE_ADD_PRESET, _add_preset, ADD_PRESET_SCHEMA),
         (SERVICE_DELETE_PRESET, _delete_preset, DELETE_PRESET_SCHEMA),
+        (SERVICE_LEARN_TAG, _learn_tag, CHORE_SCHEMA),
+        (SERVICE_CLEAR_TAG, _clear_tag, CHORE_SCHEMA),
         (SERVICE_SET_ALLOWANCE, _set_allowance, ALLOWANCE_SCHEMA),
         (SERVICE_EXCHANGE_STARS, _exchange, EXCHANGE_SCHEMA),
         (SERVICE_PAYOUT, _payout, PAYOUT_SCHEMA),
