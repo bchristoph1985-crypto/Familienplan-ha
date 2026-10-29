@@ -34,7 +34,9 @@ from .const import (
     DEFAULT_ANNOUNCE_TIMES,
     CONF_CONSEQUENCES,
     CONF_LOCK_TIME,
+    CONF_PHOTO_DELETE_AFTER_REVIEW,
     CONF_PHOTO_RETENTION,
+    DEFAULT_PHOTO_DELETE_AFTER_REVIEW,
     CONF_TAKEOVER_DOUBLE,
     CONF_TAKEOVER_FROM,
     CONF_TAKEOVER_MAX,
@@ -49,16 +51,21 @@ from .const import (
     CONF_REMINDER_TIMES,
     DEFAULT_PARENT_SUMMARY_TIME,
     DEFAULT_REMINDER_TIMES,
+    CONF_LICENSE_KEY,
+    CONF_LICENSE_REMOVE,
     DATA_INITIAL_FAMILY,
     DOMAIN,
 )
 from homeassistant.util import dt as dt_util
 
 from .core import SYSTEM, FamilyError, Role
+from .licensing import LicenseError
 from .reminders import parse_times
 from .setup_helpers import (
+    DEFAULT_REWARDS,
     DEFAULT_STARTERS,
     STARTER_CHORES,
+    STARTER_REWARDS,
     Person,
     build_family,
     find_people,
@@ -85,6 +92,12 @@ CONF_PEOPLE = "people"
 CONF_EXTRA_CHILDREN = "extra_children"
 CONF_PARENTS = "parents"
 CONF_STARTERS = "starters"
+CONF_REWARDS = "rewards"
+CONF_PHOTO_PRIVACY = "photo_privacy"
+CONF_TABLET = "tablet"
+CONF_TABLET_APPROVAL = "tablet_approval"
+PHOTO_DELETE = "delete"
+PHOTO_KEEP = "keep"
 NO_USER = "__none__"
 
 
@@ -105,6 +118,10 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
         self._extra: list[str] = []
         self._parents: list[str] = []
         self._ages: dict[str, int] = {}
+        self._starters: list[str] = []
+        self._rewards: list[str] = []
+        self._tablet: list[str] = []
+        self._tablet_approval = False
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -132,7 +149,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
             elif self._selected:
                 return await self.async_step_parents()
             else:
-                return await self.async_step_ages()
+                return await self.async_step_tablet()
 
         schema: dict = {}
         if self._people:
@@ -157,7 +174,7 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         if user_input is not None:
             self._parents = user_input.get(CONF_PARENTS, [])
-            return await self.async_step_ages()
+            return await self.async_step_tablet()
 
         chosen = [p for p in self._people if p.entity_id in self._selected]
         # Vorschlag: wer in HA Administrator ist, ist Elternteil.
@@ -177,6 +194,46 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
                             mode=SelectSelectorMode.LIST,
                         )
                     )
+                }
+            ),
+        )
+
+    async def async_step_tablet(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Familientablet für Kinder ohne eigenes Handy. Freiwillig.
+
+        Zur Auswahl stehen HA-Konten, die nicht Eltern sind. War ein solches
+        Konto als Kind angehakt, ist es danach kein Familienmitglied mehr.
+        """
+        candidates = [
+            p for p in self._people if p.user_id and p.entity_id not in self._parents
+        ]
+        if not candidates:
+            return await self.async_step_ages()
+        if user_input is not None:
+            chosen = [p for p in candidates if p.entity_id in user_input.get(CONF_TABLET, [])]
+            self._tablet = [p.user_id for p in chosen]
+            self._tablet_approval = user_input.get(CONF_TABLET_APPROVAL, False)
+            self._selected = [
+                e for e in self._selected if e not in {p.entity_id for p in chosen}
+            ]
+            return await self.async_step_ages()
+        return self.async_show_form(
+            step_id="tablet",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_TABLET, default=[]): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=p.entity_id, label=p.name)
+                                for p in candidates
+                            ],
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    ),
+                    vol.Optional(CONF_TABLET_APPROVAL, default=False): BooleanSelector(),
                 }
             ),
         )
@@ -206,24 +263,76 @@ class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({vol.Optional(name): _age_selector() for name in names}),
         )
 
-    async def async_step_chores(
+    async def async_step_rewards(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        english = not (self.hass.config.language or "").startswith("de")
+        """Belohnungen, die Kinder mit ihren Punkten einlösen können."""
         if user_input is not None:
+            self._rewards = user_input.get(CONF_REWARDS, [])
+            return await self.async_step_photos()
+        return self.async_show_form(
+            step_id="rewards",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_REWARDS, default=DEFAULT_REWARDS): SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(STARTER_REWARDS),
+                            translation_key="reward",
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_photos(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Datenschutz: Was passiert mit Fotos vom Fotonachweis?"""
+        if user_input is not None:
+            english = not (self.hass.config.language or "").startswith("de")
             people = [p for p in self._people if p.entity_id in self._selected]
             family = build_family(
                 people,
                 self._parents,
                 self._extra,
-                user_input.get(CONF_STARTERS, []),
+                self._starters,
                 dt_util.utcnow(),
                 ages=self._ages,
+                rewards=self._rewards,
                 english=english,
+                tablet_users=self._tablet,
+                tablet_approval=self._tablet_approval,
             )
             return self.async_create_entry(
-                title=self._title, data={DATA_INITIAL_FAMILY: family.to_dict()}
+                title=self._title,
+                data={DATA_INITIAL_FAMILY: family.to_dict()},
+                options={
+                    CONF_PHOTO_DELETE_AFTER_REVIEW: user_input[CONF_PHOTO_PRIVACY] == PHOTO_DELETE,
+                },
             )
+        return self.async_show_form(
+            step_id="photos",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_PHOTO_PRIVACY, default=PHOTO_DELETE): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[PHOTO_DELETE, PHOTO_KEEP],
+                            translation_key="photo_privacy",
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_chores(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if user_input is not None:
+            self._starters = user_input.get(CONF_STARTERS, [])
+            return await self.async_step_rewards()
         names = self._child_names()
         fitting = suitable_starters([self._ages.get(n) for n in names])
         return self.async_show_form(
@@ -260,7 +369,7 @@ class MembersOptionsFlow(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        menu = ["add_member"]
+        menu = ["pro", "add_member"]
         if self.config_entry.runtime_data.family.members:
             menu.append("remove_member")
         if any(
@@ -268,6 +377,7 @@ class MembersOptionsFlow(OptionsFlow):
             for m in self.config_entry.runtime_data.family.members.values()
         ):
             menu.append("ages")
+        menu.append("tablet")
         menu.append("reminders")
         menu.append("announcements")
         menu.append("consequences")
@@ -278,6 +388,84 @@ class MembersOptionsFlow(OptionsFlow):
         ):
             menu.append("devices")
         return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_pro(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Lizenzschlüssel eintragen oder hier wieder freigeben."""
+        manager = self.config_entry.runtime_data.license
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                if user_input.get(CONF_LICENSE_REMOVE):
+                    await manager.async_deactivate()
+                elif key := user_input.get(CONF_LICENSE_KEY, "").strip():
+                    await manager.async_activate(key)
+            except LicenseError as err:
+                errors["base"] = err.reason
+            else:
+                return await self._async_finish()
+
+        status = manager.status()
+        if status["licensed"]:
+            state = f"Pro ist freigeschaltet (Schlüssel {status['key']})."
+        elif status["trial_days_left"]:
+            state = f"Testphase: Pro läuft noch {status['trial_days_left']} Tage."
+        else:
+            state = "Kostenlose Version. Pro ist aus."
+        schema: dict[Any, Any] = {}
+        if status["licensed"]:
+            schema[vol.Optional(CONF_LICENSE_REMOVE, default=False)] = BooleanSelector()
+        else:
+            schema[vol.Optional(CONF_LICENSE_KEY)] = str
+        return self.async_show_form(
+            step_id="pro",
+            errors=errors,
+            description_placeholders={"state": state},
+            data_schema=vol.Schema(schema),
+        )
+
+    async def async_step_tablet(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Familientablet: HA-Konto, an dem Kinder ohne Handy abhaken."""
+        family = self.config_entry.runtime_data.family
+        if user_input is not None:
+            family.set_tablet(
+                SYSTEM,
+                user_input.get(CONF_TABLET, []),
+                approval=user_input.get(CONF_TABLET_APPROVAL, False),
+            )
+            return await self._async_finish()
+        taken = {m.user_id for m in family.members.values() if m.user_id}
+        users = [
+            u
+            for u in await self.hass.auth.async_get_users()
+            if not u.system_generated and u.is_active and u.id not in taken
+        ]
+        return self.async_show_form(
+            step_id="tablet",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_TABLET,
+                        default=[u for u in family.tablet_users if u in {x.id for x in users}],
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=u.id, label=u.name or u.id)
+                                for u in sorted(users, key=lambda u: (u.name or "").casefold())
+                            ],
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    ),
+                    vol.Optional(
+                        CONF_TABLET_APPROVAL, default=family.tablet_approval
+                    ): BooleanSelector(),
+                }
+            ),
+        )
 
     async def async_step_add_member(
         self, user_input: dict[str, Any] | None = None
@@ -559,6 +747,12 @@ class MembersOptionsFlow(OptionsFlow):
                         CONF_TAKEOVER_MAX,
                         default=options.get(CONF_TAKEOVER_MAX, DEFAULT_TAKEOVER_MAX),
                     ): number(10),
+                    vol.Required(
+                        CONF_PHOTO_DELETE_AFTER_REVIEW,
+                        default=options.get(
+                            CONF_PHOTO_DELETE_AFTER_REVIEW, DEFAULT_PHOTO_DELETE_AFTER_REVIEW
+                        ),
+                    ): BooleanSelector(),
                     vol.Required(
                         CONF_PHOTO_RETENTION,
                         default=options.get(CONF_PHOTO_RETENTION, DEFAULT_PHOTO_RETENTION),

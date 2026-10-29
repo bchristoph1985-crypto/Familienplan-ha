@@ -36,6 +36,28 @@
       "ages": {
         "title": "Wie alt sind die Kinder?",
         "description": "Alter in Jahren. Damit bekommt jedes Kind nur Aufgaben, die zu seinem Alter passen, und rückt automatisch in neue Aufgaben nach, wenn es älter wird. Leer lassen geht auch."
+      },
+      "rewards": {
+        "title": "Welche Belohnungen gibt es?",
+        "description": "Kinder sammeln mit erledigten Aufgaben Punkte und lösen sie hier ein. Ihr bestätigt jede Einlösung. Eigene Belohnungen und andere Punktepreise legt ihr später unter Familienplan → Belohnungen fest.",
+        "data": {
+          "rewards": "Belohnungen"
+        }
+      },
+      "photos": {
+        "title": "Fotos und Datenschutz",
+        "description": "Bei Aufgaben mit Fotonachweis machen Kinder ein Foto, das nur Eltern sehen. Die Fotos bleiben in eurem Home Assistant und gehen nirgendwohin. Ob eine Aufgabe einen Fotonachweis braucht, legt ihr je Aufgabe fest, standardmäßig ist er aus.",
+        "data": {
+          "photo_privacy": "Was passiert mit den Fotos?"
+        }
+      },
+      "tablet": {
+        "title": "Familientablet",
+        "description": "Haben Kinder kein eigenes Handy? Dann wähle das HA-Konto des gemeinsamen Tablets (z. B. in der Küche). Dort tippen die Kinder ihren Namen an und haken ab. Ohne Tablet einfach leer lassen. Eltern können außerdem jederzeit für ein Kind abhaken.",
+        "data": {
+          "tablet": "Konto des Familientablets",
+          "tablet_approval": "Abgehaktes am Tablet von Eltern bestätigen lassen"
+        }
       }
     },
     "error": {
@@ -52,11 +74,13 @@
           "add_member": "Familienmitglied hinzufügen",
           "remove_member": "Familienmitglied entfernen",
           "reminders": "Erinnerungen",
-          "consequences": "Internetsperre",
+          "consequences": "Internetsperre (Pro)",
           "devices": "Geräte je Kind",
-          "rules": "Übernehmen und Fotos",
-          "announcements": "Ansagen über Lautsprecher",
-          "ages": "Alter der Kinder"
+          "rules": "Übernehmen & Fotos (Pro)",
+          "announcements": "Lautsprecher-Ansagen (Pro)",
+          "ages": "Alter der Kinder",
+          "pro": "Pro / Lizenz",
+          "tablet": "Familientablet"
         }
       },
       "add_member": {
@@ -118,7 +142,8 @@
           "takeover_from": "Übernehmen erlaubt ab",
           "takeover_double_from": "Doppelte Punkte ab",
           "takeover_max": "Höchstens pro Kind und Tag",
-          "photo_retention_days": "Fotos löschen nach (Tagen)"
+          "photo_retention_days": "Sonst spätestens löschen nach (Tagen)",
+          "photo_delete_after_review": "Fotos sofort nach Bestätigen oder Ablehnen löschen"
         }
       },
       "announcements": {
@@ -138,12 +163,34 @@
       "ages": {
         "title": "Wie alt sind die Kinder?",
         "description": "Alter in Jahren. Damit bekommt jedes Kind nur Aufgaben, die zu seinem Alter passen, und rückt automatisch in neue Aufgaben nach, wenn es älter wird. Leer lassen geht auch."
+      },
+      "pro": {
+        "title": "Familienplan Pro",
+        "description": "{state}\n\nKostenlos: Aufgaben, Punkte, Belohnungen, Erinnerungen.\nPro: Internetsperre, Fotonachweis, Aufgaben übernehmen, Lautsprecher-Ansagen, Abwesenheit mit Vertretung.\n\nDen Schlüssel bekommst du nach dem Kauf per E-Mail. Er wird einmal online aktiviert, danach läuft alles lokal.",
+        "data": {
+          "license_key": "Lizenzschlüssel",
+          "license_remove": "Schlüssel hier freigeben (z. B. vor Umzug auf neue Hardware)"
+        }
+      },
+      "tablet": {
+        "title": "Familientablet",
+        "description": "Haben Kinder kein eigenes Handy? Dann wähle das HA-Konto des gemeinsamen Tablets (z. B. in der Küche). Dort tippen die Kinder ihren Namen an und haken ab. Ohne Tablet einfach leer lassen. Eltern können außerdem jederzeit für ein Kind abhaken.",
+        "data": {
+          "tablet": "Konto des Familientablets",
+          "tablet_approval": "Abgehaktes am Tablet von Eltern bestätigen lassen"
+        }
       }
     },
     "error": {
       "invalid_member": "Name fehlt oder dieses Konto gehört schon zu einem Mitglied.",
       "invalid_time": "Bitte Uhrzeiten wie 17:00 eingeben.",
-      "tts_missing": "Für Lautsprecher bitte auch eine Sprachausgabe wählen."
+      "tts_missing": "Für Lautsprecher bitte auch eine Sprachausgabe wählen.",
+      "key_missing": "Bitte einen Lizenzschlüssel eingeben.",
+      "shop_not_ready": "Der Verkauf ist noch nicht eingerichtet. Schlüssel lassen sich noch nicht aktivieren.",
+      "cannot_connect": "Keine Verbindung zum Lizenzserver. Bitte später nochmal versuchen.",
+      "key_unknown": "Diesen Schlüssel gibt es nicht. Bitte genau so eingeben wie in der E-Mail.",
+      "too_many_activations": "Der Schlüssel ist schon auf zu vielen Geräten aktiv. Gib ihn dort zuerst frei.",
+      "key_revoked": "Dieser Schlüssel ist nicht mehr gültig."
     }
   },
   "selector": {
@@ -169,6 +216,23 @@
         "room": "Zimmer aufräumen (wöchentlich, jedes Kind, ab 4)",
         "bathroom": "Bad putzen (wöchentlich, reihum, ab 10)",
         "vacuum": "Staubsaugen (wöchentlich, reihum, ab 8)"
+      }
+    },
+    "reward": {
+      "options": {
+        "screen": "30 Minuten extra Bildschirmzeit (15 Punkte)",
+        "bedtime": "30 Minuten später ins Bett (20 Punkte)",
+        "dinner": "Abendessen aussuchen (25 Punkte)",
+        "movie": "Filmabend aussuchen (40 Punkte)",
+        "pocket": "1 € Taschengeld extra (40 Punkte)",
+        "friend": "Freund oder Freundin einladen (50 Punkte)",
+        "trip": "Ausflug aussuchen (100 Punkte)"
+      }
+    },
+    "photo_privacy": {
+      "options": {
+        "delete": "Sofort löschen, sobald wir bestätigt oder abgelehnt haben (empfohlen)",
+        "keep": "7 Tage aufbewahren, dann automatisch löschen"
       }
     }
   },
@@ -436,6 +500,90 @@
         "age": {
           "name": "Alter",
           "description": "In Jahren."
+        }
+      }
+    },
+    "create_reward": {
+      "name": "Belohnung anlegen",
+      "description": "Neue Belohnung, die Kinder mit Punkten einlösen können.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Zum Beispiel Kinoabend."
+        },
+        "cost": {
+          "name": "Punkte",
+          "description": "So viele Punkte kostet die Belohnung."
+        },
+        "members": {
+          "name": "Für wen",
+          "description": "Kinder (Name oder ID). Leer = alle Kinder."
+        }
+      }
+    },
+    "update_reward": {
+      "name": "Belohnung ändern",
+      "description": "Name, Punkte oder Kinder einer Belohnung ändern.",
+      "fields": {
+        "reward_id": {
+          "name": "Belohnungs-ID",
+          "description": "ID der Belohnung."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Neuer Name."
+        },
+        "cost": {
+          "name": "Punkte",
+          "description": "Neue Punktzahl."
+        },
+        "members": {
+          "name": "Für wen",
+          "description": "Kinder. Leer = alle Kinder."
+        }
+      }
+    },
+    "delete_reward": {
+      "name": "Belohnung löschen",
+      "description": "Löscht eine Belohnung. Offene Einlösungen bleiben bestehen.",
+      "fields": {
+        "reward_id": {
+          "name": "Belohnungs-ID",
+          "description": "ID der Belohnung."
+        }
+      }
+    },
+    "redeem_reward": {
+      "name": "Belohnung einlösen",
+      "description": "Ein Kind löst eine Belohnung ein. Die Punkte werden abgezogen, Eltern bestätigen.",
+      "fields": {
+        "reward_id": {
+          "name": "Belohnungs-ID",
+          "description": "ID der Belohnung."
+        },
+        "member": {
+          "name": "Mitglied",
+          "description": "Für wen. Standard: wer einlöst."
+        }
+      }
+    },
+    "approve_redemption": {
+      "name": "Einlösung bestätigen",
+      "description": "Eltern bestätigen, dass das Kind die Belohnung bekommt.",
+      "fields": {
+        "redemption_id": {
+          "name": "Einlösungs-ID",
+          "description": "ID der Einlösung."
+        }
+      }
+    },
+    "reject_redemption": {
+      "name": "Einlösung ablehnen",
+      "description": "Lehnt ab und gibt die Punkte zurück.",
+      "fields": {
+        "redemption_id": {
+          "name": "Einlösungs-ID",
+          "description": "ID der Einlösung."
         }
       }
     }

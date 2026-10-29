@@ -184,3 +184,66 @@ set_age:
           min: 0
           max: 120
           mode: box
+create_reward:
+  fields:
+    name:
+      required: true
+      selector:
+        text:
+    cost:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+    members:
+      selector:
+        text:
+          multiple: true
+update_reward:
+  fields:
+    reward_id:
+      required: true
+      selector:
+        text:
+    name:
+      selector:
+        text:
+    cost:
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+    members:
+      selector:
+        text:
+          multiple: true
+delete_reward:
+  fields:
+    reward_id:
+      required: true
+      selector:
+        text:
+redeem_reward:
+  fields:
+    reward_id:
+      required: true
+      selector:
+        text:
+    member:
+      selector:
+        text:
+approve_redemption:
+  fields:
+    redemption_id:
+      required: true
+      selector:
+        text:
+reject_redemption:
+  fields:
+    redemption_id:
+      required: true
+      selector:
+        text:

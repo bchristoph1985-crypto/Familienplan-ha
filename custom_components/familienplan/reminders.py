@@ -40,6 +40,7 @@ _TEXT = {
         "say_child": "{name}, bei dir ist noch offen: {list}.",
         "say_and": "und",
         "say_done": "Alle Aufgaben für heute sind erledigt.",
+        "redeemed": "{name} möchte eine Belohnung einlösen: {reward}",
     },
     "en": {
         "title": "Familienplan",
@@ -51,6 +52,7 @@ _TEXT = {
         "say_child": "{name}, you still have to do: {list}.",
         "say_and": "and",
         "say_done": "All chores for today are done.",
+        "redeemed": "{name} wants to redeem a reward: {reward}",
     },
 }
 
@@ -164,6 +166,15 @@ async def async_announce(hass: HomeAssistant, entry: FamilienplanConfigEntry, me
         await hass.services.async_call("notify", service, payload, blocking=False)
 
 
+async def notify_parents(hass: HomeAssistant, family: Family, key: str, **values: str) -> None:
+    """Kurze Push-Nachricht an alle Eltern mit Push-Dienst."""
+    text = _text(hass)
+    message = text[key].format(**values)
+    for member in family.members.values():
+        if member.role is Role.PARENT and member.notify_service:
+            await _notify(hass, member.notify_service, text["title"], message)
+
+
 async def _notify(hass: HomeAssistant, service: str, title: str, message: str) -> None:
     service = service.removeprefix("notify.")
     if not hass.services.has_service("notify", service):
@@ -210,6 +221,8 @@ def async_setup_reminders(
                 await _notify(hass, member.notify_service, _text(hass)["title"], message)
 
     async def announce(now: datetime) -> None:
+        if not entry.runtime_data.pro:
+            return
         now = dt_util.utcnow()
         if message := announcement(hass, entry.runtime_data.family, now):
             await async_announce(hass, entry, message)

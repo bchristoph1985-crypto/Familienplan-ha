@@ -1,7 +1,16 @@
 """Aufgaben-Kern ohne Home-Assistant-Abhängigkeit."""
 
 from .family import SYSTEM, Actor, Family, FamilyError, PermissionDenied
-from .models import Chore, ChoreState, Member, Recurrence, Role
+from .models import (
+    Chore,
+    ChoreState,
+    Member,
+    Recurrence,
+    Redemption,
+    RedemptionState,
+    Reward,
+    Role,
+)
 
 __all__ = [
     "SYSTEM",
@@ -13,5 +22,8 @@ __all__ = [
     "Member",
     "PermissionDenied",
     "Recurrence",
+    "Redemption",
+    "RedemptionState",
+    "Reward",
     "Role",
 ]

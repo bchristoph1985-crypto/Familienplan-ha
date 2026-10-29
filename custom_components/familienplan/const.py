@@ -1,12 +1,23 @@
 """Konstanten für Familienplan."""
 
+from datetime import timedelta
+
 DOMAIN = "familienplan"
-VERSION = "0.8.0"
+VERSION = "0.12.0"
 CARD_URL = "/familienplan/familienplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
 DATA_INITIAL_FAMILY = "initial_family"
 PANEL_URL = "familienplan"
+
+# Kostenlos / Pro. Die Organisations-ID gibt es nach dem Anlegen des Shops bei Polar.
+POLAR_API = "https://api.polar.sh"
+POLAR_ORGANIZATION_ID = ""
+TRIAL_DAYS = 30
+VALIDATE_EVERY = timedelta(days=7)
+CONF_LICENSE_KEY = "license_key"
+CONF_LICENSE_REMOVE = "license_remove"
+PRO_ONLY = "Das gehört zu Familienplan Pro. Den Schlüssel trägst du in den Optionen unter „Pro“ ein."
 
 ATTR_CHORE_ID = "chore_id"
 ATTR_MEMBER = "member"
@@ -36,6 +47,10 @@ CONF_TTS_ENGINE = "tts_engine"
 CONF_ANNOUNCE_NOTIFY = "announce_notify"
 DEFAULT_ANNOUNCE_TIMES = "17:00, 18:30"
 ATTR_MESSAGE = "message"
+ATTR_REWARD_ID = "reward_id"
+ATTR_REDEMPTION_ID = "redemption_id"
+ATTR_COST = "cost"
+ATTR_MEMBERS = "members"
 
 CONF_CONSEQUENCES = "consequences"
 CONF_LOCK_TIME = "lock_time"
@@ -52,6 +67,9 @@ DEFAULT_TAKEOVER_MAX = 2
 
 CONF_PHOTO_RETENTION = "photo_retention_days"
 DEFAULT_PHOTO_RETENTION = 7
+# Datenschutz: Fotos nach der Entscheidung der Eltern sofort löschen (Standard)
+CONF_PHOTO_DELETE_AFTER_REVIEW = "photo_delete_after_review"
+DEFAULT_PHOTO_DELETE_AFTER_REVIEW = True
 PHOTO_DIR = "familienplan_photos"
 PHOTO_URL = "/api/familienplan/photo"
 PHOTO_MAX_BYTES = 10 * 1024 * 1024
@@ -71,3 +89,9 @@ SERVICE_REVOKE_PASS = "revoke_pass"
 SERVICE_TAKE_OVER = "take_over_chore"
 SERVICE_ANNOUNCE = "announce"
 SERVICE_SET_AGE = "set_age"
+SERVICE_CREATE_REWARD = "create_reward"
+SERVICE_UPDATE_REWARD = "update_reward"
+SERVICE_DELETE_REWARD = "delete_reward"
+SERVICE_REDEEM_REWARD = "redeem_reward"
+SERVICE_APPROVE_REDEMPTION = "approve_redemption"
+SERVICE_REJECT_REDEMPTION = "reject_redemption"

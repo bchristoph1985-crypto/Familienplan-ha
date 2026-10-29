@@ -36,6 +36,28 @@
       "ages": {
         "title": "How old are the children?",
         "description": "Age in years. Each child only gets chores that suit their age and automatically moves into new chores as they grow older. You can leave it empty."
+      },
+      "rewards": {
+        "title": "Which rewards are there?",
+        "description": "Children earn points with completed chores and redeem them here. You confirm every redemption. Add your own rewards and prices later under Familienplan → Rewards.",
+        "data": {
+          "rewards": "Rewards"
+        }
+      },
+      "photos": {
+        "title": "Photos and privacy",
+        "description": "For chores with photo proof, children take a photo that only parents can see. Photos stay in your Home Assistant and never leave it. You decide per chore whether photo proof is needed; it is off by default.",
+        "data": {
+          "photo_privacy": "What happens to the photos?"
+        }
+      },
+      "tablet": {
+        "title": "Family tablet",
+        "description": "Children without their own phone? Pick the HA account of the shared tablet (e.g. in the kitchen). Children tap their name there and tick off chores. Leave empty if you have no tablet. Parents can always tick off for a child too.",
+        "data": {
+          "tablet": "Family tablet account",
+          "tablet_approval": "Parents confirm what was ticked off on the tablet"
+        }
       }
     },
     "error": {
@@ -52,11 +74,13 @@
           "add_member": "Add family member",
           "remove_member": "Remove family member",
           "reminders": "Reminders",
-          "consequences": "Internet lock",
+          "consequences": "Internet lock (Pro)",
           "devices": "Devices per child",
-          "rules": "Taking over & photos",
-          "announcements": "Speaker announcements",
-          "ages": "Children's ages"
+          "rules": "Taking over & photos (Pro)",
+          "announcements": "Speaker announcements (Pro)",
+          "ages": "Children's ages",
+          "pro": "Pro / license",
+          "tablet": "Family tablet"
         }
       },
       "add_member": {
@@ -118,7 +142,8 @@
           "takeover_from": "Taking over allowed from",
           "takeover_double_from": "Double points from",
           "takeover_max": "Max. per child and day",
-          "photo_retention_days": "Delete photos after (days)"
+          "photo_retention_days": "Otherwise delete at the latest after (days)",
+          "photo_delete_after_review": "Delete photos right after approving or rejecting"
         }
       },
       "announcements": {
@@ -138,12 +163,34 @@
       "ages": {
         "title": "How old are the children?",
         "description": "Age in years. Each child only gets chores that suit their age and automatically moves into new chores as they grow older. You can leave it empty."
+      },
+      "pro": {
+        "title": "Familienplan Pro",
+        "description": "{state}\n\nFree: chores, points, rewards, reminders.\nPro: internet lock, photo proof, taking over chores, speaker announcements, absence with substitute.\n\nYou get the key by e-mail after purchase. It is activated online once, after that everything runs locally.",
+        "data": {
+          "license_key": "License key",
+          "license_remove": "Release the key here (e.g. before moving to new hardware)"
+        }
+      },
+      "tablet": {
+        "title": "Family tablet",
+        "description": "Children without their own phone? Pick the HA account of the shared tablet (e.g. in the kitchen). Children tap their name there and tick off chores. Leave empty if you have no tablet. Parents can always tick off for a child too.",
+        "data": {
+          "tablet": "Family tablet account",
+          "tablet_approval": "Parents confirm what was ticked off on the tablet"
+        }
       }
     },
     "error": {
       "invalid_member": "Name missing or this user is already linked to a member.",
       "invalid_time": "Please use times like 17:00.",
-      "tts_missing": "Please also choose a text-to-speech engine for the speakers."
+      "tts_missing": "Please also choose a text-to-speech engine for the speakers.",
+      "key_missing": "Please enter a license key.",
+      "shop_not_ready": "Sales are not set up yet. Keys cannot be activated yet.",
+      "cannot_connect": "Cannot reach the license server. Please try again later.",
+      "key_unknown": "This key does not exist. Please enter it exactly as in the e-mail.",
+      "too_many_activations": "The key is already active on too many devices. Release it there first.",
+      "key_revoked": "This key is no longer valid."
     }
   },
   "selector": {
@@ -169,6 +216,23 @@
         "room": "Tidy up room (weekly, every child, 4+)",
         "bathroom": "Clean the bathroom (weekly, rotating, 10+)",
         "vacuum": "Vacuum (weekly, rotating, 8+)"
+      }
+    },
+    "reward": {
+      "options": {
+        "screen": "30 minutes extra screen time (15 points)",
+        "bedtime": "Stay up 30 minutes longer (20 points)",
+        "dinner": "Choose dinner (25 points)",
+        "movie": "Choose movie night (40 points)",
+        "pocket": "1 extra pocket money (40 points)",
+        "friend": "Invite a friend (50 points)",
+        "trip": "Choose a day trip (100 points)"
+      }
+    },
+    "photo_privacy": {
+      "options": {
+        "delete": "Delete right after we approve or reject (recommended)",
+        "keep": "Keep for 7 days, then delete automatically"
       }
     }
   },
@@ -436,6 +500,90 @@
         "age": {
           "name": "Age",
           "description": "In years."
+        }
+      }
+    },
+    "create_reward": {
+      "name": "Create reward",
+      "description": "New reward children can redeem with points.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "For example movie night."
+        },
+        "cost": {
+          "name": "Points",
+          "description": "How many points it costs."
+        },
+        "members": {
+          "name": "For whom",
+          "description": "Children (name or ID). Empty = all children."
+        }
+      }
+    },
+    "update_reward": {
+      "name": "Update reward",
+      "description": "Change name, points or children of a reward.",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "ID of the reward."
+        },
+        "name": {
+          "name": "Name",
+          "description": "New name."
+        },
+        "cost": {
+          "name": "Points",
+          "description": "New price."
+        },
+        "members": {
+          "name": "For whom",
+          "description": "Children. Empty = all children."
+        }
+      }
+    },
+    "delete_reward": {
+      "name": "Delete reward",
+      "description": "Deletes a reward. Open redemptions stay.",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "ID of the reward."
+        }
+      }
+    },
+    "redeem_reward": {
+      "name": "Redeem reward",
+      "description": "A child redeems a reward. Points are deducted, parents confirm.",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "ID of the reward."
+        },
+        "member": {
+          "name": "Member",
+          "description": "For whom. Default: whoever redeems."
+        }
+      }
+    },
+    "approve_redemption": {
+      "name": "Confirm redemption",
+      "description": "Parents confirm the child gets the reward.",
+      "fields": {
+        "redemption_id": {
+          "name": "Redemption ID",
+          "description": "ID of the redemption."
+        }
+      }
+    },
+    "reject_redemption": {
+      "name": "Reject redemption",
+      "description": "Rejects and gives the points back.",
+      "fields": {
+        "redemption_id": {
+          "name": "Redemption ID",
+          "description": "ID of the redemption."
         }
       }
     }

@@ -140,3 +140,39 @@ async def test_optionen_ansagen(hass: HomeAssistant, hass_admin_user, hass_read_
     assert done["type"] == "create_entry"
     assert entry.options["tts_engine"] == "tts.piper"
     assert entry.options["announce_notify"] == []
+
+
+async def test_einloesen_schickt_push_an_eltern(
+    hass: HomeAssistant, freezer, hass_admin_user, hass_read_only_user
+) -> None:
+    freezer.move_to("2026-11-02 08:00:00+00:00")
+    entry = await _setup(hass, {}, hass_admin_user, hass_read_only_user)
+    family = entry.runtime_data.family
+    papa = next(m for m in family.members.values() if m.name == "Papa")
+    papa.notify_service = "papa_handy"
+    lucas = next(m for m in family.members.values() if m.name == "Lucas")
+    lucas.points = 20
+    reward = family.create_reward(SYSTEM, "Eis", 15)
+    await entry.runtime_data.async_save()
+    calls = async_mock_service(hass, "notify", "papa_handy")
+
+    await hass.services.async_call(
+        DOMAIN, "redeem_reward", {"reward_id": reward.id}, blocking=True,
+        context=Context(user_id=hass_read_only_user.id),
+    )
+    await hass.async_block_till_done()
+    assert lucas.points == 5
+    assert calls[0].data["message"] == "Lucas möchte eine Belohnung einlösen: Eis"
+    redemption = family.pending_redemptions()[0]
+
+    # Kind kann sich nicht selbst bestätigen
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            DOMAIN, "approve_redemption", {"redemption_id": redemption.id}, blocking=True,
+            context=Context(user_id=hass_read_only_user.id),
+        )
+    await hass.services.async_call(
+        DOMAIN, "approve_redemption", {"redemption_id": redemption.id}, blocking=True,
+        context=Context(user_id=hass_admin_user.id),
+    )
+    assert family.pending_redemptions() == []

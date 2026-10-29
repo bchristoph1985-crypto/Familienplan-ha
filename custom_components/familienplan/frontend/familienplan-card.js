@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.8.0";
+const VERSION = "0.12.0";
 
 const T = {
   de: {
@@ -62,19 +62,43 @@ const T = {
     givePass: "Freikarte",
     takePass: "Freikarte weg",
     pointsLabel: "Punkte",
-    photo: "Fotonachweis",
+    photo: "Fotonachweis (Foto sehen nur Eltern)",
     photoDone: "📷 Foto & erledigt",
     photoOf: "Foto ansehen",
     lastPhoto: "Letztes Foto",
     minAge: "Ab Alter",
     fromAge: "ab {n} J.",
     years: "{n} J.",
+    tabRewards: "Belohnungen",
+    rewards: "Belohnungen",
+    redeem: "Einlösen",
+    missing: "noch {n} Punkte",
+    confirmRedeem: "„{name}“ für {n} Punkte einlösen?",
+    waitingParents: "Wartet auf die Eltern",
+    wantsReward: "möchte einlösen",
+    give: "Bekommt es",
+    refuse: "Ablehnen",
+    newReward: "Neue Belohnung",
+    editReward: "Belohnung bearbeiten",
+    forWhom: "Für wen",
+    allChildren: "alle Kinder",
+    forWhomHint: "nichts angehakt = alle Kinder",
+    cost: "Punkte",
+    noRewards: "Noch keine Belohnungen. Lege oben die erste an.",
     uploading: "Foto wird hochgeladen …",
     helpOthers: "Geschwistern helfen",
     helpHint: "Übernimm eine Aufgabe und hol dir die Punkte.",
     takeOver: "Übernehmen",
     takenFrom: "übernommen für {name}",
     double: "doppelte Punkte",
+    trial: "Pro-Testphase: noch {n} Tage",
+    free: "Kostenlose Version",
+    proHint: "Pro freischalten: Einstellungen › Geräte & Dienste › Familienplan › Konfigurieren › Pro / Lizenz",
+    proOnly: "Gehört zu Pro",
+    awayPro: "Abwesenheit mit Vertretung gehört zu Pro.",
+    whoAreYou: "Wer bist du?",
+    openCount: "{n} offen",
+    finished: "Fertig",
     rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen" },
   },
   en: {
@@ -126,19 +150,43 @@ const T = {
     givePass: "Free pass",
     takePass: "Remove pass",
     pointsLabel: "Points",
-    photo: "Photo proof",
+    photo: "Photo proof (only parents see it)",
     photoDone: "📷 Photo & done",
     photoOf: "View photo",
     lastPhoto: "Last photo",
     minAge: "Minimum age",
     fromAge: "{n}+",
     years: "{n} y",
+    tabRewards: "Rewards",
+    rewards: "Rewards",
+    redeem: "Redeem",
+    missing: "{n} points to go",
+    confirmRedeem: "Redeem “{name}” for {n} points?",
+    waitingParents: "Waiting for a parent",
+    wantsReward: "wants to redeem",
+    give: "Give it",
+    refuse: "Reject",
+    newReward: "New reward",
+    editReward: "Edit reward",
+    forWhom: "For whom",
+    allChildren: "all children",
+    forWhomHint: "none ticked = all children",
+    cost: "Points",
+    noRewards: "No rewards yet. Create the first one above.",
     uploading: "Uploading photo …",
     helpOthers: "Help your siblings",
     helpHint: "Take over a chore and earn the points.",
     takeOver: "Take over",
     takenFrom: "taken over for {name}",
     double: "double points",
+    trial: "Pro trial: {n} days left",
+    free: "Free version",
+    proHint: "Unlock Pro: Settings › Devices & services › Familienplan › Configure › Pro / license",
+    proOnly: "Part of Pro",
+    awayPro: "Absence with substitute is part of Pro.",
+    whoAreYou: "Who are you?",
+    openCount: "{n} open",
+    finished: "Done",
     rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks" },
   },
 };
@@ -155,7 +203,11 @@ class FamilienplanCard extends HTMLElement {
     this._tab = "today";
     this._form = this._emptyForm();
     this._awayForm = {};
+    this._rewardForm = this._emptyReward();
     this._busy = false;
+    // Familientablet: welches Kind gerade dran ist
+    this._actingAs = null;
+    this._idleTimer = null;
     this.shadowRoot.addEventListener("click", (ev) => this._onClick(ev));
     this.shadowRoot.addEventListener("input", (ev) => this._onInput(ev));
     this.shadowRoot.addEventListener("change", (ev) => this._onInput(ev));
@@ -225,6 +277,22 @@ class FamilienplanCard extends HTMLElement {
 
   _member(id) {
     return this._data?.members.find((m) => m.id === id);
+  }
+
+  // Wer bedient gerade? Am Familientablet das ausgewählte Kind.
+  _me() {
+    return this._data?.tablet ? this._actingAs : this._data?.me;
+  }
+
+  // Am Familientablet nach einer Minute ohne Tippen zurück zur Namensauswahl,
+  // damit das nächste Kind nicht im falschen Namen abhakt.
+  _touchIdle() {
+    clearTimeout(this._idleTimer);
+    if (!this._actingAs) return;
+    this._idleTimer = setTimeout(() => {
+      this._actingAs = null;
+      this._render();
+    }, 60000);
   }
 
   _memberByConfig() {
@@ -304,7 +372,18 @@ class FamilienplanCard extends HTMLElement {
     const el = ev.target.closest("[data-action]");
     if (!el) return;
     const { action, id, member } = el.dataset;
+    this._touchIdle();
     switch (action) {
+      case "pick":
+        this._actingAs = id;
+        this._touchIdle();
+        this._render();
+        break;
+      case "unpick":
+        this._actingAs = null;
+        clearTimeout(this._idleTimer);
+        this._render();
+        break;
       case "tab":
         this._tab = id;
         this._render();
@@ -312,15 +391,16 @@ class FamilienplanCard extends HTMLElement {
       case "claim": {
         const chore = this._data.chores.find((c) => c.id === id);
         const data = { chore_id: id };
-        if (member && member !== this._data.me) data.member = member;
-        if (chore?.requires_photo && !this._data.is_manager) this._pickPhoto("claim", data);
+        if (member && (member !== this._data.me || this._data.tablet)) data.member = member;
+        if (this._photoNeeded(chore)) this._pickPhoto("claim", data);
         else this._call("claim_chore", data);
         break;
       }
       case "take": {
         const chore = this._data.chores.find((c) => c.id === id);
         const data = { chore_id: id };
-        if (chore?.requires_photo && !this._data.is_manager) this._pickPhoto("take_over", data);
+        if (this._data.tablet) data.member = this._actingAs;
+        if (this._photoNeeded(chore)) this._pickPhoto("take_over", data);
         else this._call("take_over_chore", data);
         break;
       }
@@ -360,6 +440,43 @@ class FamilienplanCard extends HTMLElement {
         });
         break;
       }
+      case "redeem": {
+        const reward = this._data.rewards.find((r) => r.id === id);
+        if (reward && confirm(this._t("confirmRedeem", { name: reward.name, n: reward.cost }))) {
+          const data = { reward_id: id };
+          if (this._data.tablet) data.member = this._actingAs;
+          this._call("redeem_reward", data);
+        }
+        break;
+      }
+      case "give":
+        this._call("approve_redemption", { redemption_id: id });
+        break;
+      case "refuse":
+        this._call("reject_redemption", { redemption_id: id });
+        break;
+      case "reward-save":
+        this._saveReward();
+        break;
+      case "reward-edit": {
+        const r = this._data.rewards.find((x) => x.id === id);
+        if (r) {
+          this._rewardForm = { name: r.name, cost: r.cost, members: [...r.members], editId: r.id };
+          this._render();
+        }
+        break;
+      }
+      case "reward-cancel":
+        this._rewardForm = this._emptyReward();
+        this._render();
+        break;
+      case "reward-delete": {
+        const r = this._data.rewards.find((x) => x.id === id);
+        if (r && confirm(this._t("confirmDelete", { name: r.name }))) {
+          this._call("delete_reward", { reward_id: id });
+        }
+        break;
+      }
       case "pass":
         this._call("grant_pass", { member: id });
         break;
@@ -381,6 +498,17 @@ class FamilienplanCard extends HTMLElement {
       this._awayForm[memberId] = { ...(this._awayForm[memberId] || {}), [key]: el.value };
       return;
     }
+    if (field.startsWith("reward.")) {
+      const key = field.slice(7);
+      if (key === "member") {
+        const set = new Set(this._rewardForm.members);
+        el.checked ? set.add(el.value) : set.delete(el.value);
+        this._rewardForm.members = [...set];
+      } else {
+        this._rewardForm[key] = el.value;
+      }
+      return;
+    }
     if (field === "assignee") {
       const set = new Set(this._form.assignees);
       el.checked ? set.add(el.value) : set.delete(el.value);
@@ -390,6 +518,21 @@ class FamilienplanCard extends HTMLElement {
     } else {
       this._form[field] = el.value;
     }
+  }
+
+  _emptyReward() {
+    return { name: "", cost: 20, members: [], editId: null };
+  }
+
+  async _saveReward() {
+    const f = this._rewardForm;
+    const cost = Number(f.cost);
+    if (!f.name.trim() || !(cost >= 1)) return;
+    const data = { name: f.name.trim(), cost, members: f.members };
+    if (f.editId) await this._call("update_reward", { reward_id: f.editId, ...data });
+    else await this._call("create_reward", data);
+    this._rewardForm = this._emptyReward();
+    this._render();
   }
 
   _emptyForm() {
@@ -483,14 +626,14 @@ class FamilienplanCard extends HTMLElement {
     const ro = this._config.readonly;
     let action = "";
     if (chore.state === "claimed") {
-      const mine = chore.claimed_by === this._data.me;
+      const mine = chore.claimed_by === this._me();
       action = `<span class="chip wait">${this._t("waiting")}</span>`;
       if (!ro && (mine || this._data.is_manager)) {
         action += `<button class="link" data-action="undo" data-id="${esc(chore.id)}">${this._t("undo")}</button>`;
       }
     } else if (showClaim && !ro) {
       const label = forName ? this._t("doneFor", { name: esc(forName) }) : this._t("done");
-      const photo = chore.requires_photo && !this._data.is_manager;
+      const photo = this._photoNeeded(chore);
       action = `<button class="primary" data-action="claim" data-id="${esc(chore.id)}" data-member="${esc(memberId)}">${
         photo ? this._t("photoDone") : "✓ " + label
       }</button>`;
@@ -499,11 +642,31 @@ class FamilienplanCard extends HTMLElement {
       <li class="row ${chore.state}">
         ${chore.state === "claimed" ? this._thumb(chore) : ""}
         <div class="main">
-          <div class="title">${esc(chore.name)}${chore.requires_photo ? ' <span class="muted">📷</span>' : ""}</div>
+          <div class="title">${esc(chore.name)}${this._photoIcon(chore)}</div>
           <div class="sub">${this._dueLabel(chore)} · <span class="pts">${chore.points} P</span>${this._takenInfo(chore)}</div>
         </div>
         <div class="actions">${action}</div>
       </li>`;
+  }
+
+  // Ohne Pro (Testphase vorbei, kein Schlüssel) gibt es keinen Fotonachweis.
+  _pro() {
+    return this._data?.pro?.pro !== false;
+  }
+
+  _photoNeeded(chore) {
+    return !!chore?.requires_photo && this._pro() && !this._data.is_manager;
+  }
+
+  _photoIcon(chore) {
+    return chore.requires_photo && this._pro() ? ' <span class="muted">📷</span>' : "";
+  }
+
+  _proLine() {
+    const p = this._data.pro;
+    if (!p || p.licensed) return "";
+    if (p.pro) return `<p class="muted small pro">${esc(this._t("trial", { n: p.trial_days_left }))}</p>`;
+    return `<p class="muted small pro">${esc(this._t("free"))} · ${esc(this._t("proHint"))}</p>`;
   }
 
   _thumb(chore) {
@@ -534,7 +697,7 @@ class FamilienplanCard extends HTMLElement {
 
   _renderTakeOver(member) {
     const t = this._data.takeover;
-    if (!t?.allowed || this._config.readonly || member.id !== this._data.me) return "";
+    if (!t?.allowed || !this._pro() || this._config.readonly || member.id !== this._me()) return "";
     const chores = this._takeable(member.id);
     if (!chores.length) return "";
     const rows = chores
@@ -544,7 +707,7 @@ class FamilienplanCard extends HTMLElement {
         return `
         <li class="row ${c.state}">
           <div class="main">
-            <div class="title">${esc(c.name)}${c.requires_photo ? ' <span class="muted">📷</span>' : ""}</div>
+            <div class="title">${esc(c.name)}${this._photoIcon(c)}</div>
             <div class="sub muted">${esc(owner)} · <span class="pts">${pts} P</span></div>
           </div>
           <div class="actions"><button class="primary" data-action="take" data-id="${esc(c.id)}">${this._t("takeOver")}${
@@ -563,6 +726,88 @@ class FamilienplanCard extends HTMLElement {
       </section>`;
   }
 
+  _renderChildRewards(member) {
+    const rewards = (this._data.rewards || []).filter((r) => !r.members.length || r.members.includes(member.id));
+    const pending = (this._data.redemptions || []).filter((r) => r.member_id === member.id);
+    if (!rewards.length && !pending.length) return "";
+    const ro = this._config.readonly || member.id !== this._me();
+    const waiting = pending
+      .map(
+        (r) => `
+        <li class="row">
+          <div class="main"><div class="title">🎁 ${esc(r.reward_name)}</div><div class="sub"><span class="chip wait">${this._t("waitingParents")}</span></div></div>
+          <div class="actions">${ro ? "" : `<button class="link" data-action="refuse" data-id="${esc(r.id)}">${this._t("undo")}</button>`}</div>
+        </li>`,
+      )
+      .join("");
+    const rows = rewards
+      .slice()
+      .sort((a, b) => a.cost - b.cost)
+      .map((r) => {
+        const enough = member.points >= r.cost;
+        const action = ro
+          ? ""
+          : enough
+            ? `<button class="primary" data-action="redeem" data-id="${esc(r.id)}">${this._t("redeem")}</button>`
+            : `<span class="muted small">${esc(this._t("missing", { n: r.cost - member.points }))}</span>`;
+        const pct = Math.min(100, Math.round((member.points / r.cost) * 100));
+        return `
+        <li class="row">
+          <div class="main">
+            <div class="title">${esc(r.name)}</div>
+            <div class="sub"><span class="pts">${r.cost} P</span></div>
+            <div class="bar"><span style="width:${pct}%"></span></div>
+          </div>
+          <div class="actions">${action}</div>
+        </li>`;
+      })
+      .join("");
+    return `
+      <section class="help">
+        <div class="section-head"><strong>🎁 ${this._t("rewards")}</strong></div>
+        <ul>${waiting}${rows}</ul>
+      </section>`;
+  }
+
+  _renderRewardAdmin() {
+    const f = this._rewardForm;
+    const kids = this._children();
+    const names = (ids) => (ids.length ? ids.map((id) => this._member(id)?.name).filter(Boolean).join(", ") : this._t("allChildren"));
+    const rows = (this._data.rewards || [])
+      .slice()
+      .sort((a, b) => a.cost - b.cost)
+      .map(
+        (r) => `
+        <li class="row">
+          <div class="main"><div class="title">${esc(r.name)}</div><div class="sub muted">${r.cost} P · ${esc(names(r.members))}</div></div>
+          <div class="actions">
+            <button class="link" data-action="reward-edit" data-id="${esc(r.id)}">${this._t("edit")}</button>
+            <button class="link bad" data-action="reward-delete" data-id="${esc(r.id)}">${this._t("delete")}</button>
+          </div>
+        </li>`,
+      )
+      .join("");
+    return `
+      <details class="form" ${(this._data.rewards || []).length && !f.editId ? "" : "open"}>
+        <summary>${f.editId ? this._t("editReward") : "+ " + this._t("newReward")}</summary>
+        <div class="grid">
+          <label>${this._t("name")}<input data-field="reward.name" value="${esc(f.name)}" maxlength="60"></label>
+          <label>${this._t("cost")}<input type="number" min="1" data-field="reward.cost" value="${esc(f.cost)}"></label>
+        </div>
+        <fieldset><legend>${this._t("forWhom")} <span class="muted">(${this._t("forWhomHint")})</span></legend>
+          ${kids
+            .map(
+              (m) =>
+                `<label class="check"><input type="checkbox" data-field="reward.member" value="${esc(m.id)}" ${f.members.includes(m.id) ? "checked" : ""}>${esc(m.name)}</label>`,
+            )
+            .join("")}
+        </fieldset>
+        <button class="primary" data-action="reward-save">${f.editId ? this._t("save") : this._t("create")}</button>
+        ${f.editId ? `<button class="link" data-action="reward-cancel">${this._t("cancel")}</button>` : ""}
+      </details>
+      ${rows ? `<ul>${rows}</ul>` : `<p class="empty muted">${this._t("noRewards")}</p>`}`;
+  }
+
   _openFor(memberId) {
     return this._data.chores.filter(
       (c) => c.responsible.includes(memberId) && c.state !== "done" && this._dueSoon(c),
@@ -574,6 +819,26 @@ class FamilienplanCard extends HTMLElement {
     const end = new Date();
     end.setHours(23, 59, 59, 999);
     return new Date(chore.due) <= end;
+  }
+
+  _renderTablet() {
+    const kid = this._actingAs && this._member(this._actingAs);
+    if (kid) {
+      return `
+        <button class="link back" data-action="unpick">← ${this._t("finished")}</button>
+        ${this._renderChild(kid)}`;
+    }
+    const tiles = this._children()
+      .map((m) => {
+        const open = this._openFor(m.id).filter((c) => c.state !== "claimed").length;
+        return `
+          <button class="tile" data-action="pick" data-id="${esc(m.id)}">
+            <span class="tile-name">${esc(m.name)}</span>
+            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ${esc(this._t("points", { n: m.points }))}</span>
+          </button>`;
+      })
+      .join("");
+    return `<div class="hello">${this._t("whoAreYou")}</div><div class="tiles">${tiles}</div>`;
   }
 
   _renderChild(member) {
@@ -588,28 +853,33 @@ class FamilienplanCard extends HTMLElement {
       </div>
       ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
       ${list}
-      ${this._renderTakeOver(member)}`;
+      ${this._renderTakeOver(member)}
+      ${this._renderChildRewards(member)}`;
   }
 
   _renderParent() {
     const d = this._data;
     const waiting = d.chores.filter((c) => c.state === "claimed");
+    const open = waiting.length + (d.redemptions || []).length;
     const tabs = [
       ["today", this._t("tabToday")],
-      ["approve", `${this._t("tabApprove")}${waiting.length ? ` <span class="count">${waiting.length}</span>` : ""}`],
+      ["approve", `${this._t("tabApprove")}${open ? ` <span class="count">${open}</span>` : ""}`],
       ["chores", this._t("tabChores")],
+      ["rewards", this._t("tabRewards")],
       ["away", this._t("tabAway")],
     ];
     let body = "";
     if (this._tab === "approve") body = this._renderApprovals(waiting);
     else if (this._tab === "chores") body = this._renderChores();
+    else if (this._tab === "rewards") body = this._renderRewardAdmin();
     else if (this._tab === "away") body = this._renderAway();
     else body = this._renderToday();
     return `
       <nav class="tabs">${tabs
         .map(([id, label]) => `<button class="tab ${this._tab === id ? "on" : ""}" data-action="tab" data-id="${id}">${label}</button>`)
         .join("")}</nav>
-      ${body}`;
+      ${body}
+      ${this._proLine()}`;
   }
 
   _children() {
@@ -627,7 +897,7 @@ class FamilienplanCard extends HTMLElement {
           status += ` <span class="chip">${esc(this._t("pass", { time }))}</span>`;
         }
         let passBtn = "";
-        if (m.has_devices && !this._config.readonly) {
+        if (m.has_devices && this._pro() && !this._config.readonly) {
           passBtn = m.pass_until
             ? `<button class="link" data-action="revoke-pass" data-id="${esc(m.id)}">${this._t("takePass")}</button>`
             : `<button class="link" data-action="pass" data-id="${esc(m.id)}">${this._t("givePass")}</button>`;
@@ -645,8 +915,24 @@ class FamilienplanCard extends HTMLElement {
   }
 
   _renderApprovals(waiting) {
-    if (!waiting.length) return `<p class="empty">${this._t("nothingToApprove")}</p>`;
-    return `<ul>${waiting
+    const redemptions = this._data.redemptions || [];
+    if (!waiting.length && !redemptions.length) return `<p class="empty">${this._t("nothingToApprove")}</p>`;
+    const gifts = redemptions
+      .map(
+        (r) => `
+        <li class="row">
+          <div class="main">
+            <div class="title">🎁 ${esc(r.reward_name)}</div>
+            <div class="sub muted">${esc(this._member(r.member_id)?.name)} ${this._t("wantsReward")} · ${r.cost} P</div>
+          </div>
+          <div class="actions">
+            <button class="primary" data-action="give" data-id="${esc(r.id)}">✓ ${this._t("give")}</button>
+            <button class="link bad" data-action="refuse" data-id="${esc(r.id)}">${this._t("refuse")}</button>
+          </div>
+        </li>`,
+      )
+      .join("");
+    return `<ul>${gifts}${waiting
       .map(
         (c) => `
         <li class="row">
@@ -677,7 +963,7 @@ class FamilienplanCard extends HTMLElement {
             <div class="title">${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.requires_photo ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.requires_photo && this._pro() ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -712,7 +998,9 @@ class FamilienplanCard extends HTMLElement {
         </div>
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
-        <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""}>${this._t("photo")}</label>
+        <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""} ${this._pro() ? "" : "disabled"}>${this._t("photo")}${
+          this._pro() ? "" : ` <span class="chip">${this._t("proOnly")}</span>`
+        }</label>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
       </details>
@@ -727,6 +1015,7 @@ class FamilienplanCard extends HTMLElement {
   }
 
   _renderAway() {
+    if (!this._pro()) return `<p class="empty muted">${esc(this._t("awayPro"))}</p>${this._proLine()}`;
     return `<ul>${this._children()
       .map((m) => {
         const form = this._awayForm[m.id] || {};
@@ -760,6 +1049,7 @@ class FamilienplanCard extends HTMLElement {
       const me = this._member(this._data.me);
       const mode = this._config.mode;
       if (forced) body = this._renderChild(forced);
+      else if (this._data.tablet && !this._data.is_manager) body = this._renderTablet();
       else if (mode === "eltern" || (mode === "auto" && this._data.is_manager && (!me || me.role === "parent")))
         body = this._renderParent();
       else if (me) body = this._renderChild(me);
@@ -801,7 +1091,16 @@ const STYLE = `
   a.link { color: var(--primary-color); text-decoration: none; padding: 0 8px; white-space: nowrap; }
   .thumb img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; display: block; }
   p.small { font-size: 0.85em; margin: 0 0 4px; }
+  p.pro { margin-top: 12px; text-align: center; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
+  button.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 110px; border-radius: 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); }
+  .tile-name { font-size: 1.5em; font-weight: 500; }
+  .tile-sub { font-size: 0.9em; opacity: 0.9; }
+  button.back { margin: 0 0 4px -8px; }
   section.help { margin-top: 16px; padding-top: 8px; border-top: 2px solid var(--divider-color, #e0e0e0); }
+  .bar { height: 6px; border-radius: 3px; background: var(--divider-color, #e0e0e0); margin-top: 6px; overflow: hidden; max-width: 220px; }
+  .bar span { display: block; height: 100%; background: var(--success-color, #43a047); }
+  .muted.small, span.small { font-size: 0.85em; }
   .empty.small { padding: 4px 0; text-align: left; color: var(--secondary-text-color); }
   .tabs { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 8px; }
   .tab { background: none; color: var(--primary-text-color); white-space: nowrap; }

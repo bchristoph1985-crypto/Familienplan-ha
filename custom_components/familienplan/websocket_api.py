@@ -40,6 +40,12 @@ def snapshot(
     return {
         "me": actor.member.id if actor.member else None,
         "is_manager": actor.is_manager,
+        "tablet": actor.tablet and not actor.is_manager,
+        "pro": {
+            k: v
+            for k, v in entry.runtime_data.license.status(now).items()
+            if actor.is_manager or k != "key"
+        },
         "takeover": {"allowed": allowed, "multiplier": multiplier},
         "members": [
             {
@@ -83,6 +89,24 @@ def snapshot(
                 "last_completed_at": iso(c.last_completed_at),
             }
             for c in family.chores.values()
+        ],
+        "rewards": [
+            {"id": r.id, "name": r.name, "cost": r.cost, "members": list(r.members)}
+            for r in family.rewards.values()
+        ],
+        # Eltern sehen alle offenen Einlösungen, Kinder nur ihre eigenen.
+        "redemptions": [
+            {
+                "id": r.id,
+                "reward_name": r.reward_name,
+                "member_id": r.member_id,
+                "cost": r.cost,
+                "requested_at": iso(r.requested_at),
+            }
+            for r in family.pending_redemptions()
+            if actor.is_manager
+            or actor.tablet
+            or (actor.member and actor.member.id == r.member_id)
         ],
     }
 

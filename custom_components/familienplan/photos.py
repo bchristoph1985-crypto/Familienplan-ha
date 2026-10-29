@@ -22,12 +22,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_PHOTO_DELETE_AFTER_REVIEW,
     CONF_PHOTO_RETENTION,
+    DEFAULT_PHOTO_DELETE_AFTER_REVIEW,
     DEFAULT_PHOTO_RETENTION,
     DOMAIN,
     PHOTO_DIR,
     PHOTO_MAX_BYTES,
     PHOTO_URL,
+    PRO_ONLY,
 )
 from .core import FamilyError, PermissionDenied
 
@@ -73,6 +76,22 @@ def cleanup(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
     return removed
 
 
+def delete_after_review(entry: FamilienplanConfigEntry) -> bool:
+    return bool(
+        entry.options.get(CONF_PHOTO_DELETE_AFTER_REVIEW, DEFAULT_PHOTO_DELETE_AFTER_REVIEW)
+    )
+
+
+def _unlink(path: Path) -> None:
+    path.unlink(missing_ok=True)
+
+
+async def async_discard(hass: HomeAssistant, filename: str | None) -> None:
+    """Ein Foto sofort von der Platte löschen."""
+    if filename and "/" not in filename and "\\" not in filename and not filename.startswith("."):
+        await hass.async_add_executor_job(_unlink, photo_dir(hass) / filename)
+
+
 def forget_missing(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
     folder = photo_dir(hass)
     changed = False
@@ -98,6 +117,8 @@ class PhotoUploadView(HomeAssistantView):
         if not entries:
             return self.json_message("Familienplan ist nicht eingerichtet.", 404)
         data = entries[0].runtime_data
+        if not data.pro:
+            return self.json_message(PRO_ONLY, 403)
         user = request["hass_user"]
         actor = actor_for_user(data, user.id, user.is_admin)
 
