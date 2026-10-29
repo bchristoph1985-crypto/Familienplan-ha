@@ -73,6 +73,18 @@ create_chore:
     outdoor:
       selector:
         boolean:
+    done_entity:
+      selector:
+        entity:
+    done_state:
+      selector:
+        text:
+    start_entity:
+      selector:
+        entity:
+    start_state:
+      selector:
+        text:
 delete_chore:
   fields: &chore
     chore_id:
@@ -187,6 +199,18 @@ update_chore:
     outdoor:
       selector:
         boolean:
+    done_entity:
+      selector:
+        entity:
+    done_state:
+      selector:
+        text:
+    start_entity:
+      selector:
+        entity:
+    start_state:
+      selector:
+        text:
 set_devices:
   fields:
     member:

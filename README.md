@@ -165,6 +165,13 @@ Sternchenplan legt Kalender in Home Assistant an: „Aufgaben“ für die ganze 
 
 Spricht ein Kind über sein eigenes Konto, kann es nur für sich melden. Über einen Lautsprecher ohne Konto sagt es seinen Namen dazu.
 
+## Das Haus prüft selbst
+
+Jede Aufgabe kann mit einem Gerät oder Sensor aus Home Assistant verbunden werden, ganz ohne Automation. Das stellst du in der Aufgabe unter „🏠 Das Haus prüft selbst“ ein:
+
+- **Erledigt, wenn …:** Der Saugroboter meldet „docked“, also ist „Saugroboter leeren“ erledigt. Gutgeschrieben wird dem Kind, das gerade dran ist. Eine Freigabe braucht es dafür nicht, das Haus hat ja selbst nachgesehen. Sind mehrere Kinder gleichzeitig dran, wird nichts gutgeschrieben, weil unklar ist, wer es war.
+- **Jetzt dran, wenn …:** Die Spülmaschine geht auf „off“, dann bekommt das Kind „Jetzt bist du dran: Spülmaschine ausräumen“.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.

@@ -301,6 +301,22 @@
         "outdoor": {
           "name": "Draußen",
           "description": "Nur bei trockenem Wetter. Regnet es zur Frist, rückt sie einen Tag weiter."
+        },
+        "done_entity": {
+          "name": "Erledigt, wenn … (Entität)",
+          "description": "Erreicht diese Entität den Zustand unten, ist die Aufgabe erledigt."
+        },
+        "done_state": {
+          "name": "… diesen Zustand hat",
+          "description": "Zum Beispiel off, closed oder docked."
+        },
+        "start_entity": {
+          "name": "Dran, wenn … (Entität)",
+          "description": "Erreicht diese Entität den Zustand unten, bekommt das Kind „Jetzt bist du dran“."
+        },
+        "start_state": {
+          "name": "… diesen Zustand hat",
+          "description": "Zum Beispiel off, wenn die Spülmaschine fertig ist."
         }
       }
     },
@@ -363,6 +379,22 @@
         "outdoor": {
           "name": "Draußen",
           "description": "Nur bei trockenem Wetter. Regnet es zur Frist, rückt sie einen Tag weiter."
+        },
+        "done_entity": {
+          "name": "Erledigt, wenn … (Entität)",
+          "description": "Erreicht diese Entität den Zustand unten, ist die Aufgabe erledigt."
+        },
+        "done_state": {
+          "name": "… diesen Zustand hat",
+          "description": "Zum Beispiel off, closed oder docked."
+        },
+        "start_entity": {
+          "name": "Dran, wenn … (Entität)",
+          "description": "Erreicht diese Entität den Zustand unten, bekommt das Kind „Jetzt bist du dran“."
+        },
+        "start_state": {
+          "name": "… diesen Zustand hat",
+          "description": "Zum Beispiel off, wenn die Spülmaschine fertig ist."
         }
       }
     },

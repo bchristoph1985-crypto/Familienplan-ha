@@ -477,6 +477,7 @@ class Family:
         weekdays: list[int] | None = None,
         icon: str = "",
         outdoor: bool = False,
+        house: dict[str, str] | None = None,
     ) -> Chore:
         self._require_manager(actor)
         name = name.strip()
@@ -506,6 +507,7 @@ class Family:
             icon=icon.strip()[:8],
             outdoor=outdoor,
         )
+        _set_house(chore, house or {})
         chore.due = self._allowed_day(chore, chore.due)
         self.chores[chore.id] = chore
         return chore
@@ -530,6 +532,7 @@ class Family:
         weekdays: list[int] | None = None,
         icon: str | None = None,
         outdoor: bool | None = None,
+        house: dict[str, str] | None = None,
     ) -> Chore:
         """Nur übergebene Felder ändern. Punkte und Verlauf bleiben erhalten."""
         self._require_manager(actor)
@@ -574,6 +577,8 @@ class Family:
             chore.weekdays = _clean_weekdays(weekdays)
         if icon is not None:
             chore.icon = icon.strip()[:8]
+        if house:
+            _set_house(chore, house)
         if outdoor is not None:
             chore.outdoor = outdoor
             if not outdoor:
@@ -1287,6 +1292,24 @@ class Family:
                 best, score = chore, value
         return best if score >= 0.75 else None
 
+    def house_done(self, chore_id: str, now: datetime) -> str | None:
+        """Ein Sensor meldet die Aufgabe als erledigt. Gibt zurück, für wen.
+
+        Gutgeschrieben wird nur, wenn genau ein Kind dran ist. Das Haus braucht
+        keine Freigabe, es hat ja selbst nachgesehen.
+        """
+        chore = self.chore(chore_id)
+        if chore.state not in (ChoreState.OPEN, ChoreState.OVERDUE, ChoreState.CLAIMED):
+            return None
+        if chore.state is ChoreState.CLAIMED and chore.claimed_by:
+            self._complete(chore, chore.claimed_by, now)
+            return chore.last_completed_by
+        who = self.responsible(chore, now)
+        if len(who) != 1:
+            return None
+        self.claim(SYSTEM, chore.id, who[0], now)
+        return who[0]
+
     def claim_hands_free(self, member_id: str, chore: Chore, now: datetime) -> Chore:
         """Per Aufkleber oder Sprache melden: zählt wie selbst abgehakt.
 
@@ -1439,6 +1462,15 @@ _FILLER = {
 def _norm(text: str) -> str:
     text = text.lower().replace("ß", "ss")
     return "".join(ch if ch.isalnum() or ch == " " else " " for ch in text).strip()
+
+
+HOUSE_FIELDS = ("done_entity", "done_state", "start_entity", "start_state")
+
+
+def _set_house(chore: Chore, house: dict[str, str]) -> None:
+    for key in HOUSE_FIELDS:
+        if key in house:
+            setattr(chore, key, str(house[key] or "").strip()[:100])
 
 
 def _clean_steps(steps: list[str] | None) -> list[str]:

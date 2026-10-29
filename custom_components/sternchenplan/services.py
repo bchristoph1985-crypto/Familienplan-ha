@@ -86,6 +86,7 @@ from .const import (
     SERVICE_DELETE_PRESET,
     SERVICE_LEARN_TAG,
     SERVICE_CLEAR_TAG,
+    HOUSE_FIELDS,
     ATTR_STARS,
     ATTR_REASON,
     ATTR_PRESET_ID,
@@ -123,6 +124,7 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_WEEKDAYS, default=[]): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
         vol.Optional(ATTR_ICON, default=""): cv.string,
         vol.Optional(ATTR_OUTDOOR, default=False): cv.boolean,
+        **{vol.Optional(k): cv.string for k in HOUSE_FIELDS},
     }
 )
 
@@ -142,6 +144,7 @@ UPDATE_SCHEMA = CHORE_SCHEMA.extend(
         vol.Optional(ATTR_WEEKDAYS): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
         vol.Optional(ATTR_ICON): cv.string,
         vol.Optional(ATTR_OUTDOOR): cv.boolean,
+        **{vol.Optional(k): cv.string for k in HOUSE_FIELDS},
     }
 )
 
@@ -328,6 +331,7 @@ async def _create(hass, call, data, actor) -> None:
         weekdays=call.data[ATTR_WEEKDAYS],
         icon=call.data[ATTR_ICON],
         outdoor=call.data[ATTR_OUTDOOR],
+        house={k: call.data[k] for k in HOUSE_FIELDS if k in call.data},
     )
 
 
@@ -354,6 +358,7 @@ async def _update(hass, call, data, actor) -> None:
         weekdays=d.get(ATTR_WEEKDAYS),
         icon=d.get(ATTR_ICON),
         outdoor=d.get(ATTR_OUTDOOR),
+        house={k: d[k] for k in HOUSE_FIELDS if k in d},
     )
 
 

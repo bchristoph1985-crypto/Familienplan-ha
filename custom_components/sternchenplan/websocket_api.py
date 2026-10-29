@@ -17,7 +17,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, DONATE_URL, SIGNAL_UPDATED
+from .const import DOMAIN, DONATE_URL, HOUSE_FIELDS, SIGNAL_UPDATED
 from .core import Family, Member, badge_status, level_floor
 from .handsfree import learning
 from .photos import signed_url
@@ -139,6 +139,7 @@ def snapshot(
                 "icon": c.icon,
                 "outdoor": c.outdoor,
                 "has_tag": bool(c.tag_id),
+                **{k: getattr(c, k) for k in HOUSE_FIELDS},
                 "weather_shift": c.weather_shift,
             }
             for c in family.chores.values()

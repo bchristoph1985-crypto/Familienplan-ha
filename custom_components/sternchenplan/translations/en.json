@@ -301,6 +301,22 @@
         "outdoor": {
           "name": "Outdoors",
           "description": "Only in dry weather. If it rains at the deadline, it moves one day."
+        },
+        "done_entity": {
+          "name": "Done when … (entity)",
+          "description": "When this entity reaches the state below, the chore is done."
+        },
+        "done_state": {
+          "name": "… has state",
+          "description": "For example off, closed or docked."
+        },
+        "start_entity": {
+          "name": "Due when … (entity)",
+          "description": "When this entity reaches the state below, the child gets a “your turn” message."
+        },
+        "start_state": {
+          "name": "… has state",
+          "description": "For example off when the dishwasher has finished."
         }
       }
     },
@@ -363,6 +379,22 @@
         "outdoor": {
           "name": "Outdoors",
           "description": "Only in dry weather. If it rains at the deadline, it moves one day."
+        },
+        "done_entity": {
+          "name": "Done when … (entity)",
+          "description": "When this entity reaches the state below, the chore is done."
+        },
+        "done_state": {
+          "name": "… has state",
+          "description": "For example off, closed or docked."
+        },
+        "start_entity": {
+          "name": "Due when … (entity)",
+          "description": "When this entity reaches the state below, the child gets a “your turn” message."
+        },
+        "start_state": {
+          "name": "… has state",
+          "description": "For example off when the dishwasher has finished."
         }
       }
     },

@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.25.0";
+const VERSION = "0.26.0";
 
 const T = {
   de: {
@@ -62,6 +62,14 @@ const T = {
     givePass: "Freikarte",
     starsBtn: "± Sterne",
     nfc: "📱 NFC-Aufkleber",
+    house: "🏠 Das Haus prüft selbst",
+    houseHint: "Ohne Automation: Ein Gerät oder Sensor hakt die Aufgabe ab oder sagt dem Kind, dass es dran ist.",
+    houseDone: "Erledigt, wenn",
+    houseStart: "Jetzt dran, wenn",
+    houseEntity: "Gerät oder Sensor",
+    houseState: "Zustand",
+    houseNow: "jetzt: {state}",
+    houseExamples: "Beispiele: Saugroboter „docked“ → Staubsaugen erledigt. Spülmaschine „off“ → „Jetzt bist du dran: ausräumen“.",
     nfcHint: "Kleb einen NFC-Aufkleber z. B. an die Mülltonne. Wer ihn mit dem Handy (Home-Assistant-App) antippt, hat die Aufgabe erledigt.",
     nfcLearn: "Aufkleber anlernen",
     nfcWaiting: "Jetzt den Aufkleber mit dem Handy antippen (2 Minuten) …",
@@ -268,6 +276,14 @@ const T = {
     givePass: "Free pass",
     starsBtn: "± Stars",
     nfc: "📱 NFC tag",
+    house: "🏠 The house checks itself",
+    houseHint: "No automation needed: a device or sensor checks the chore off or tells the child it's their turn.",
+    houseDone: "Done when",
+    houseStart: "Your turn when",
+    houseEntity: "Device or sensor",
+    houseState: "State",
+    houseNow: "now: {state}",
+    houseExamples: "Examples: robot vacuum “docked” → vacuuming done. Dishwasher “off” → “your turn: empty it”.",
     nfcHint: "Stick an NFC tag e.g. on the bin. Whoever taps it with their phone (Home Assistant app) has done the chore.",
     nfcLearn: "Learn tag",
     nfcWaiting: "Now tap the tag with your phone (2 minutes) …",
@@ -939,6 +955,8 @@ class SternchenplanCard extends HTMLElement {
       this._form[field] = el.checked;
     } else {
       this._form[field] = el.value;
+      // Nach Gerätewahl Zustandsvorschläge und „jetzt: …“ zeigen
+      if (field.endsWith("_entity") && ev.type === "change") this._render();
     }
   }
 
@@ -958,7 +976,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _emptyForm() {
-    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, steps: "", weekdays: [], icon: "", outdoor: false, editId: null };
+    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, steps: "", weekdays: [], icon: "", outdoor: false, done_entity: "", done_state: "", start_entity: "", start_state: "", editId: null };
   }
 
   _resetForm() {
@@ -989,6 +1007,10 @@ class SternchenplanCard extends HTMLElement {
       weekdays: [...(c.weekdays || [])],
       icon: c.icon || "",
       outdoor: !!c.outdoor,
+      done_entity: c.done_entity || "",
+      done_state: c.done_state || "",
+      start_entity: c.start_entity || "",
+      start_state: c.start_state || "",
       editId: c.id,
     };
     this._render();
@@ -1081,6 +1103,43 @@ class SternchenplanCard extends HTMLElement {
           <button class="link" data-action="preset-add">+ ${this._t("presetAdd")}</button>
         </div>
       </div>`;
+  }
+
+  _houseData(f) {
+    return { done_entity: f.done_entity || "", done_state: f.done_state || "", start_entity: f.start_entity || "", start_state: f.start_state || "" };
+  }
+
+  // Gerät + Zustand wählen. Die Liste schlägt passende Geräte und Zustände vor.
+  _houseBlock(f) {
+    const states = this._hass?.states || {};
+    const useful = /^(binary_sensor|switch|vacuum|input_boolean|cover|lock|sensor|lawn_mower|media_player|light|fan|valve)\./;
+    const ids = Object.keys(states).filter((id) => useful.test(id)).sort();
+    const options = ids
+      .map((id) => `<option value="${esc(id)}">${esc(states[id].attributes?.friendly_name || id)}</option>`)
+      .join("");
+    const row = (kind, label) => {
+      const entity = f[`${kind}_entity`];
+      const now = entity && states[entity] ? states[entity].state : "";
+      const guesses = [...new Set([now, ...(states[entity]?.attributes?.options || []), "on", "off", "docked", "closed", "open", "idle"].filter(Boolean))];
+      return `
+        <div class="house-row">
+          <span class="house-label">${label}</span>
+          <input list="house-entities" placeholder="${this._t("houseEntity")}" aria-label="${this._t("houseEntity")}" data-field="${kind}_entity" value="${esc(entity)}">
+          <input list="house-${kind}-states" placeholder="${this._t("houseState")}" aria-label="${this._t("houseState")}" data-field="${kind}_state" value="${esc(f[`${kind}_state`])}" class="house-state">
+          <datalist id="house-${kind}-states">${guesses.map((g) => `<option value="${esc(g)}"></option>`).join("")}</datalist>
+          ${now ? `<span class="muted small">${esc(this._t("houseNow", { state: now }))}</span>` : ""}
+        </div>`;
+    };
+    const open = f.done_entity || f.start_entity;
+    return `
+      <details class="house-box" ${open ? "open" : ""}>
+        <summary><strong>${this._t("house")}</strong></summary>
+        <div class="muted small">${this._t("houseHint")}</div>
+        <datalist id="house-entities">${options}</datalist>
+        ${row("done", this._t("houseDone"))}
+        ${row("start", this._t("houseStart"))}
+        <div class="muted small">${this._t("houseExamples")}</div>
+      </details>`;
   }
 
   _nfcBlock(f) {
@@ -1333,6 +1392,7 @@ class SternchenplanCard extends HTMLElement {
         weekdays: f.weekdays,
         icon: f.icon || "",
         outdoor: !!f.outdoor,
+        ...this._houseData(f),
       });
       this._resetForm();
       this._render();
@@ -1351,6 +1411,7 @@ class SternchenplanCard extends HTMLElement {
       weekdays: f.weekdays,
       icon: f.icon || "",
       outdoor: !!f.outdoor,
+      ...this._houseData(f),
     };
     if (f.due) data.due = f.due;
     await this._call("create_chore", data);
@@ -2062,7 +2123,7 @@ class SternchenplanCard extends HTMLElement {
             <div class="title">${c.icon ? esc(c.icon) + " " : ""}${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.weekdays?.length ? " · " + esc(this._dayList(c.weekdays)) : ""}${c.requires_photo ? " · 📷" : ""}${c.outdoor ? " · " + this._t("outdoorShort") : ""}${c.has_tag ? " · 📱" : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.weekdays?.length ? " · " + esc(this._dayList(c.weekdays)) : ""}${c.requires_photo ? " · 📷" : ""}${c.outdoor ? " · " + this._t("outdoorShort") : ""}${c.has_tag ? " · 📱" : ""}${c.done_entity || c.start_entity ? " · 🏠" : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -2105,6 +2166,7 @@ class SternchenplanCard extends HTMLElement {
           .join("")}</fieldset>
         <label>${this._t("icon")}<input data-field="icon" value="${esc(f.icon)}" maxlength="8" placeholder="🧹" class="icon-input"></label>
         ${this._nfcBlock(f)}
+        ${this._houseBlock(f)}
         <label>${this._t("steps")}<textarea data-field="steps" rows="3" maxlength="800">${esc(f.steps)}</textarea></label>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
@@ -2493,6 +2555,12 @@ const STYLE = `
   .nfc-box { display: grid; gap: 4px; margin: 8px 0; padding: 10px 12px; border-radius: 12px;
     border: 1px dashed var(--divider-color, #e0e0e0); }
   .voice-help { margin-top: 12px; }
+  .house-box { margin: 8px 0; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--divider-color, #e0e0e0); }
+  .house-box summary { cursor: pointer; }
+  .house-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+  .house-label { min-width: 120px; font-size: 0.9em; }
+  .house-row input { flex: 1; min-width: 150px; }
+  .house-row input.house-state { flex: 0 1 120px; min-width: 100px; }
   .voice-help ul { margin: 4px 0 0; padding-left: 18px; }
   .preset-admin { display: grid; gap: 8px; margin-top: 12px; }
   section.star-log { margin-top: 12px; }
