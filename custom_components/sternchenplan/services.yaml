@@ -247,3 +247,25 @@ reject_redemption:
       required: true
       selector:
         text:
+set_goal:
+  fields:
+    reward_id:
+      selector:
+        text:
+    member:
+      selector:
+        text:
+set_family_goal:
+  fields:
+    name:
+      required: true
+      selector:
+        text:
+    target:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+clear_family_goal:

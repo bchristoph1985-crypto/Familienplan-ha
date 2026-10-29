@@ -43,6 +43,8 @@ _TEXT = {
         "redeemed": "{name} möchte eine Belohnung einlösen: {reward}",
         "level_up": "🎉 Level {level} geschafft! Du bist jetzt {title}.",
         "badge": "{emoji} Neues Abzeichen: {badge}",
+        "goal_ready": "🎯 Du hast genug Sterne für „{reward}“. Jetzt einlösen?",
+        "family_goal": "🎉 Familienziel geschafft: {name}! Danke an alle.",
     },
     "en": {
         "title": "Sternchenplan",
@@ -57,6 +59,8 @@ _TEXT = {
         "redeemed": "{name} wants to redeem a reward: {reward}",
         "level_up": "🎉 Level {level} reached! You are now {title}.",
         "badge": "{emoji} New badge: {badge}",
+        "goal_ready": "🎯 You have enough stars for “{reward}”. Redeem it now?",
+        "family_goal": "🎉 Family goal reached: {name}! Thanks, everyone.",
     },
 }
 
@@ -101,6 +105,13 @@ async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict
     """Neue Level und Abzeichen: Ereignis für eigene Automationen und Push ans Kind."""
     text = _text(hass)
     for event in events:
+        if event["type"] == "family_goal":
+            hass.bus.async_fire("sternchenplan_family_goal", {"name": event["name"]})
+            message = text["family_goal"].format(name=event["name"])
+            for m in family.members.values():
+                if m.notify_service:
+                    await _notify(hass, m.notify_service, text["title"], message)
+            continue
         member = family.members.get(event["member"])
         if member is None:
             continue
@@ -111,6 +122,12 @@ async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict
                 "sternchenplan_level_up",
                 {"member": member.name, "member_id": member.id,
                  "level": event["level"], "title": title},
+            )
+        elif event["type"] == "goal_ready":
+            message = text["goal_ready"].format(reward=event["reward"])
+            hass.bus.async_fire(
+                "sternchenplan_goal_ready",
+                {"member": member.name, "member_id": member.id, "reward": event["reward"]},
             )
         else:
             name = BADGE_NAMES[_lang(hass)].get(event["badge"], event["badge"])

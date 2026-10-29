@@ -56,6 +56,10 @@ from .const import (
     SERVICE_SET_AGE,
     SERVICE_UNDO_CLAIM,
     SERVICE_UPDATE_CHORE,
+    SERVICE_CLEAR_FAMILY_GOAL,
+    SERVICE_SET_FAMILY_GOAL,
+    SERVICE_SET_GOAL,
+    ATTR_TARGET,
 )
 from .consequences import next_release
 from .takeover import takeover_terms
@@ -150,6 +154,14 @@ UPDATE_REWARD_SCHEMA = vol.Schema(
 REWARD_SCHEMA = vol.Schema({vol.Required(ATTR_REWARD_ID): cv.string})
 REDEEM_SCHEMA = REWARD_SCHEMA.extend({vol.Optional(ATTR_MEMBER): cv.string})
 REDEMPTION_SCHEMA = vol.Schema({vol.Required(ATTR_REDEMPTION_ID): cv.string})
+# Ohne reward_id (oder leer) wird das Sparziel gelöscht.
+GOAL_SCHEMA = vol.Schema(
+    {vol.Optional(ATTR_REWARD_ID): vol.Any(None, cv.string), vol.Optional(ATTR_MEMBER): cv.string}
+)
+FAMILY_GOAL_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_NAME): cv.string, vol.Required(ATTR_TARGET): _COST}
+)
+EMPTY_SCHEMA = vol.Schema({})
 
 
 def _runtime(hass: HomeAssistant) -> SternchenplanData:
@@ -406,6 +418,18 @@ async def _revoke_pass(hass, call, data, actor) -> None:
 
 
 @callback
+async def _set_goal(hass, call, data, actor) -> None:
+    data.family.set_goal(actor, _who(data, call, actor), call.data.get(ATTR_REWARD_ID) or None)
+
+
+async def _set_family_goal(hass, call, data, actor) -> None:
+    data.family.set_family_goal(actor, call.data[ATTR_NAME], call.data[ATTR_TARGET], dt_util.utcnow())
+
+
+async def _clear_family_goal(hass, call, data, actor) -> None:
+    data.family.clear_family_goal(actor)
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -429,5 +453,8 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_REDEEM_REWARD, _redeem, REDEEM_SCHEMA),
         (SERVICE_APPROVE_REDEMPTION, _approve_redemption, REDEMPTION_SCHEMA),
         (SERVICE_REJECT_REDEMPTION, _reject_redemption, REDEMPTION_SCHEMA),
+        (SERVICE_SET_GOAL, _set_goal, GOAL_SCHEMA),
+        (SERVICE_SET_FAMILY_GOAL, _set_family_goal, FAMILY_GOAL_SCHEMA),
+        (SERVICE_CLEAR_FAMILY_GOAL, _clear_family_goal, EMPTY_SCHEMA),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

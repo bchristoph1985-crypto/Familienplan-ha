@@ -146,3 +146,22 @@ async def test_level_und_abzeichen_feiern(hass: HomeAssistant, entry) -> None:
     messages = [c.data["message"] for c in lucas_calls]
     assert "🎉 Level 2 geschafft! Du bist jetzt Helfer." in messages
     assert "🌟 Neues Abzeichen: Erster Stern" in messages
+
+
+async def test_familienziel_per_dienst(hass: HomeAssistant, entry) -> None:
+    papa_calls = async_mock_service(hass, "notify", "papa_handy")
+    reached = []
+    hass.bus.async_listen("sternchenplan_family_goal", reached.append)
+    await hass.services.async_call(
+        DOMAIN, "set_family_goal", {"name": "Zoo", "target": 1}, blocking=True
+    )
+    family = entry.runtime_data.family
+    chore = next(c for c in family.chores.values() if c.name == "Müll")
+    await hass.services.async_call(
+        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Lucas"}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert reached[0].data["name"] == "Zoo"
+    assert any("Familienziel geschafft: Zoo" in c.data["message"] for c in papa_calls)
+    await hass.services.async_call(DOMAIN, "clear_family_goal", {}, blocking=True)
+    assert family.goal is None

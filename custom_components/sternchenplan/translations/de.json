@@ -571,6 +571,38 @@
           "description": "ID der Einlösung."
         }
       }
+    },
+    "set_goal": {
+      "name": "Sparziel festlegen",
+      "description": "Ein Kind wählt eine Belohnung, auf die es hinspart. Ohne Belohnung wird das Ziel gelöscht.",
+      "fields": {
+        "reward_id": {
+          "name": "Belohnungs-ID",
+          "description": "ID der Belohnung. Leer löscht das Ziel."
+        },
+        "member": {
+          "name": "Mitglied",
+          "description": "Für wen. Standard: wer aufruft."
+        }
+      }
+    },
+    "set_family_goal": {
+      "name": "Familienziel festlegen",
+      "description": "Alle Kinder sammeln gemeinsam Sterne für ein Ziel, z. B. einen Ausflug. Den Kindern wird nichts abgezogen.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Worauf die Familie spart."
+        },
+        "target": {
+          "name": "Sterne",
+          "description": "Wie viele Sterne alle Kinder zusammen brauchen."
+        }
+      }
+    },
+    "clear_family_goal": {
+      "name": "Familienziel entfernen",
+      "description": "Entfernt das aktuelle Familienziel."
     }
   }
 }

@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.16.0";
+const VERSION = "0.17.0";
 
 const T = {
   de: {
@@ -128,6 +128,20 @@ const T = {
     levelUp: "Level {n}!",
     youAre: "Du bist jetzt {title}",
     tapClose: "Tippen zum Weitermachen",
+    goal: "Mein Sparziel",
+    goalMissing: "noch {n} Sterne",
+    goalReady: "Geschafft! Du kannst es einlösen.",
+    setGoal: "🎯 Als Ziel",
+    isGoal: "🎯 Mein Ziel",
+    familyGoal: "Familienziel",
+    together: "{n} von {t} ⭐, alle zusammen",
+    familyReached: "Geschafft! 🎉",
+    fgName: "Wofür spart ihr gemeinsam?",
+    fgTarget: "Sterne zusammen",
+    fgStart: "Familienziel starten",
+    fgClear: "Familienziel beenden",
+    fgHint: "Alle Kinder sammeln gemeinsam. Niemandem wird etwas abgezogen.",
+    fgConfirm: "Familienziel „{name}“ beenden?",
   },
   en: {
     hello: "Hi {name}",
@@ -244,6 +258,20 @@ const T = {
     levelUp: "Level {n}!",
     youAre: "You are now {title}",
     tapClose: "Tap to continue",
+    goal: "My savings goal",
+    goalMissing: "{n} stars to go",
+    goalReady: "Done! You can redeem it.",
+    setGoal: "🎯 Set as goal",
+    isGoal: "🎯 My goal",
+    familyGoal: "Family goal",
+    together: "{n} of {t} ⭐, all together",
+    familyReached: "Done! 🎉",
+    fgName: "What are you saving for together?",
+    fgTarget: "Stars together",
+    fgStart: "Start family goal",
+    fgClear: "End family goal",
+    fgHint: "All children collect together. Nothing is deducted from anyone.",
+    fgConfirm: "End family goal “{name}”?",
   },
 };
 
@@ -260,6 +288,7 @@ class SternchenplanCard extends HTMLElement {
     this._form = this._emptyForm();
     this._awayForm = {};
     this._rewardForm = this._emptyReward();
+    this._fgForm = { name: "", target: 300 };
     this._busy = false;
     // Familientablet: welches Kind gerade dran ist
     this._actingAs = null;
@@ -509,6 +538,25 @@ class SternchenplanCard extends HTMLElement {
         }
         break;
       }
+      case "goal": {
+        const data = { reward_id: id || null };
+        if (this._data.tablet) data.member = this._actingAs;
+        this._call("set_goal", data);
+        break;
+      }
+      case "fgoal-save": {
+        const target = parseInt(this._fgForm.target, 10);
+        if (this._fgForm.name.trim() && target > 0) {
+          this._call("set_family_goal", { name: this._fgForm.name.trim(), target });
+          this._fgForm = { name: "", target: 300 };
+        }
+        break;
+      }
+      case "fgoal-clear": {
+        const g = this._data.family_goal;
+        if (g && confirm(this._t("fgConfirm", { name: g.name }))) this._call("clear_family_goal", {});
+        break;
+      }
       case "give":
         this._call("approve_redemption", { redemption_id: id });
         break;
@@ -556,6 +604,10 @@ class SternchenplanCard extends HTMLElement {
     if (field.startsWith("away.")) {
       const [, memberId, key] = field.split(".");
       this._awayForm[memberId] = { ...(this._awayForm[memberId] || {}), [key]: el.value };
+      return;
+    }
+    if (field.startsWith("fg.")) {
+      this._fgForm[field.slice(3)] = el.value;
       return;
     }
     if (field.startsWith("reward.")) {
@@ -882,13 +934,18 @@ class SternchenplanCard extends HTMLElement {
             ? `<button class="primary" data-action="redeem" data-id="${esc(r.id)}">${this._t("redeem")}</button>`
             : `<span class="muted small">${esc(this._t("missing", { n: r.cost - member.points }))}</span>`;
         const pct = Math.min(100, Math.round((member.points / r.cost) * 100));
+        const isGoal = member.goal === r.id;
+        const goalBtn = ro
+          ? isGoal ? `<span class="chip">${this._t("isGoal")}</span>` : ""
+          : `<button class="link goal-btn ${isGoal ? "on" : ""}" data-action="goal" data-id="${isGoal ? "" : esc(r.id)}">${this._t(isGoal ? "isGoal" : "setGoal")}</button>`;
         return `
-        <div class="reward ${enough ? "ready" : ""}">
+        <div class="reward ${enough ? "ready" : ""} ${isGoal ? "is-goal" : ""}">
           <div class="reward-emoji">${this._rewardEmoji(r.name)}</div>
           <div class="reward-name">${esc(r.name)}</div>
           <div class="reward-cost">⭐ ${r.cost}</div>
           <div class="bar"><span style="width:${pct}%"></span></div>
           <div class="reward-action">${action}</div>
+          ${goalBtn}
         </div>`;
       })
       .join("");
@@ -910,7 +967,7 @@ class SternchenplanCard extends HTMLElement {
       .map(
         (r) => `
         <li class="row">
-          <div class="main"><div class="title">${esc(r.name)}</div><div class="sub muted">${r.cost} P · ${esc(names(r.members))}</div></div>
+          <div class="main"><div class="title">${esc(r.name)}</div><div class="sub muted">⭐ ${r.cost} · ${esc(names(r.members))}</div></div>
           <div class="actions">
             <button class="link" data-action="reward-edit" data-id="${esc(r.id)}">${this._t("edit")}</button>
             <button class="link bad" data-action="reward-delete" data-id="${esc(r.id)}">${this._t("delete")}</button>
@@ -936,7 +993,25 @@ class SternchenplanCard extends HTMLElement {
         <button class="primary" data-action="reward-save">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="reward-cancel">${this._t("cancel")}</button>` : ""}
       </details>
-      ${rows ? `<ul>${rows}</ul>` : `<p class="empty muted">${this._t("noRewards")}</p>`}`;
+      ${rows ? `<ul>${rows}</ul>` : `<p class="empty muted">${this._t("noRewards")}</p>`}
+      ${this._renderFamilyGoalAdmin()}`;
+  }
+
+  _renderFamilyGoalAdmin() {
+    const g = this._data.family_goal;
+    const f = this._fgForm;
+    return `
+      <div class="section-title">🏰 ${this._t("familyGoal")}</div>
+      ${g ? `${this._renderFamilyGoal()}<button class="link bad" data-action="fgoal-clear">${this._t("fgClear")}</button>` : ""}
+      <details class="form" ${g ? "" : "open"}>
+        <summary>+ ${this._t("fgStart")}</summary>
+        <p class="muted small">${this._t("fgHint")}</p>
+        <div class="grid">
+          <label>${this._t("fgName")}<input data-field="fg.name" value="${esc(f.name)}" maxlength="60" placeholder="Freizeitpark"></label>
+          <label>${this._t("fgTarget")}<input type="number" min="1" data-field="fg.target" value="${esc(f.target)}"></label>
+        </div>
+        <button class="primary" data-action="fgoal-save">${this._t("fgStart")}</button>
+      </details>`;
   }
 
   _openFor(memberId) {
@@ -994,12 +1069,48 @@ class SternchenplanCard extends HTMLElement {
           ${this._ring(done, total || open, color, 72)}
         </div>
         ${this._renderLevel(member)}
+        ${this._renderGoal(member)}
+        ${this._renderFamilyGoal()}
         ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
         <div class="section-title">${this._t("todayTitle")}</div>
         ${list}
         ${this._renderTakeOver(member)}
         ${this._renderChildRewards(member)}
         ${this._renderBadges(member)}
+      </div>`;
+  }
+
+  _renderGoal(member) {
+    const reward = member.goal && (this._data.rewards || []).find((r) => r.id === member.goal);
+    if (!reward) return "";
+    const pct = Math.min(100, Math.round((member.points / reward.cost) * 100));
+    const ready = member.points >= reward.cost;
+    const ro = this._config.readonly || member.id !== this._me();
+    return `
+      <div class="goal ${ready ? "ready" : ""}">
+        <div class="goal-emoji">${this._rewardEmoji(reward.name)}</div>
+        <div class="goal-main">
+          <div class="muted small">🎯 ${this._t("goal")}</div>
+          <strong>${esc(reward.name)}</strong>
+          <div class="xp"><i style="width:${pct}%"></i></div>
+          <div class="muted small">⭐ ${member.points} / ${reward.cost} · ${esc(ready ? this._t("goalReady") : this._t("goalMissing", { n: reward.cost - member.points }))}</div>
+        </div>
+        ${ready && !ro ? `<button class="primary" data-action="redeem" data-id="${esc(reward.id)}">${this._t("redeem")}</button>` : ""}
+      </div>`;
+  }
+
+  _renderFamilyGoal() {
+    const g = this._data.family_goal;
+    if (!g) return "";
+    const pct = Math.min(100, Math.round((g.progress / g.target) * 100));
+    return `
+      <div class="fgoal ${g.reached_at ? "ready" : ""}">
+        <div class="fgoal-top"><span class="fgoal-icon">🏰</span>
+          <div class="goal-main"><div class="muted small">${this._t("familyGoal")}</div><strong>${esc(g.name)}</strong></div>
+          <div class="fgoal-kids">${this._children().map((m) => this._avatar(m, 26)).join("")}</div>
+        </div>
+        <div class="xp fgoal-bar"><i style="width:${pct}%"></i></div>
+        <div class="muted small">${esc(g.reached_at ? this._t("familyReached") : this._t("together", { n: g.progress, t: g.target }))}</div>
       </div>`;
   }
 
@@ -1120,7 +1231,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderToday() {
-    return `<div class="kidgrid">${this._renderTodayCards()}</div>`;
+    return `${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>`;
   }
 
   _renderTodayCards() {
@@ -1169,7 +1280,7 @@ class SternchenplanCard extends HTMLElement {
           <span class="gift">${this._rewardEmoji(r.reward_name)}</span>
           <div class="main">
             <div class="title">${esc(r.reward_name)}</div>
-            <div class="sub muted">${esc(this._member(r.member_id)?.name)} ${this._t("wantsReward")} · ${r.cost} P</div>
+            <div class="sub muted">${esc(this._member(r.member_id)?.name)} ${this._t("wantsReward")} · ⭐ ${r.cost}</div>
           </div>
           <div class="actions">
             <button class="primary" data-action="give" data-id="${esc(r.id)}">✓ ${this._t("give")}</button>
@@ -1478,6 +1589,23 @@ const STYLE = `
   .badge-sub { font-size: 0.72em; color: var(--secondary-text-color); }
   .badge-bar { width: 80%; height: 4px; border-radius: 2px; background: var(--divider-color, #e0e0e0); overflow: hidden; }
   .badge-bar i { display: block; height: 100%; background: var(--kid); }
+  .goal, .fgoal { margin: 0 0 10px; padding: 12px 14px; border-radius: 16px; background: var(--secondary-background-color); }
+  .goal { display: flex; align-items: center; gap: 12px; }
+  .goal.ready { box-shadow: inset 0 0 0 2px var(--kid); }
+  .goal-emoji { font-size: 2.2em; }
+  .goal-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .goal .xp { margin: 6px 0 4px; }
+  .fgoal { background: linear-gradient(135deg, color-mix(in srgb, #a259ff 16%, var(--card-background-color)), color-mix(in srgb, #4f7cff 12%, var(--card-background-color))); }
+  .fgoal-top { display: flex; align-items: center; gap: 10px; }
+  .fgoal-icon { font-size: 1.9em; }
+  .fgoal-kids { display: flex; }
+  .fgoal-kids .avatar { margin-left: -6px; border: 2px solid var(--card-background-color); }
+  .fgoal-bar i { background: linear-gradient(90deg, #a259ff, #4f7cff, #22a565); }
+  .fgoal.ready .fgoal-bar i { background: linear-gradient(90deg, #22a565, #e5a100); }
+  .fgoal .xp { background: color-mix(in srgb, #a259ff 14%, var(--card-background-color)); margin: 10px 0 4px; }
+  .reward.is-goal { box-shadow: inset 0 0 0 2px #e5a100; }
+  button.goal-btn { min-height: 28px; font-size: 0.8em; }
+  button.goal-btn.on { color: #e5a100; font-weight: 600; }
   .party { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
            background: rgba(0,0,0,.45); animation: fade .25s ease-out; cursor: pointer; }
   .party-card { text-align: center; padding: 26px 34px; border-radius: 24px; background: var(--card-background-color);

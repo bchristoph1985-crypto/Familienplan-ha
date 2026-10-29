@@ -15,6 +15,7 @@ from typing import Any
 from .models import (
     Chore,
     ChoreState,
+    FamilyGoal,
     Member,
     Recurrence,
     Redemption,
@@ -95,6 +96,7 @@ class Family:
         # Level und Abzeichen, die seit dem letzten Abholen neu sind. Wird nicht
         # gespeichert. Home Assistant feiert damit (Push, Ereignis).
         self.events: list[dict[str, Any]] = []
+        self.goal: FamilyGoal | None = None
 
     # -- Speichern -----------------------------------------------------------
 
@@ -107,6 +109,7 @@ class Family:
             "redemptions": [r.to_dict() for r in self.redemptions],
             "tablet_users": list(self.tablet_users),
             "tablet_approval": self.tablet_approval,
+            "goal": self.goal.to_dict() if self.goal else None,
         }
 
     @classmethod
@@ -120,6 +123,8 @@ class Family:
         family.redemptions = [Redemption.from_dict(r) for r in data.get("redemptions", [])]
         family.tablet_users = list(data.get("tablet_users", []))
         family.tablet_approval = bool(data.get("tablet_approval", False))
+        if data.get("goal"):
+            family.goal = FamilyGoal.from_dict(data["goal"])
         for raw in data.get("members", []):
             if "progress" not in raw:
                 family._estimate_progress(family.members[raw["id"]])
@@ -744,6 +749,9 @@ class Family:
         self._require_manager(actor)
         self.reward(reward_id)
         del self.rewards[reward_id]
+        for member in self.members.values():
+            if member.goal_reward_id == reward_id:
+                member.goal_reward_id = None
 
     def redeem(self, actor: Actor, reward_id: str, member_id: str, now: datetime) -> Redemption:
         """Kind löst ein. Die Punkte werden sofort abgezogen, Eltern bestätigen."""
@@ -760,6 +768,8 @@ class Family:
             )
         member.points -= reward.cost
         member.progress.redeemed += 1
+        if member.goal_reward_id == reward.id:
+            member.goal_reward_id = None
         self._celebrate(member, now)
         redemption = Redemption(
             uuid.uuid4().hex, reward.id, reward.name, member_id, reward.cost, now
@@ -850,7 +860,53 @@ class Family:
         if local.hour < EARLY_HOUR:
             progress.early += 1
         progress.count_day(local.date())
+        self._goal_step(member, earned, now)
         self._celebrate(member, now, level_before=level_for(progress.earned - max(0, earned)))
+
+    def _goal_step(self, member: Member, earned: int, now: datetime) -> None:
+        goal = self.goal
+        if goal and goal.reached_at is None and member.role is Role.CHILD and earned > 0:
+            goal.progress = min(goal.target, goal.progress + earned)
+            if goal.progress >= goal.target:
+                goal.reached_at = now
+                self.events.append({"type": "family_goal", "name": goal.name})
+        reward = self.rewards.get(member.goal_reward_id or "")
+        if reward and member.points < reward.cost:
+            member.goal_ready_told = False
+        elif reward and not member.goal_ready_told:
+            member.goal_ready_told = True
+            self.events.append(
+                {"type": "goal_ready", "member": member.id, "reward": reward.name}
+            )
+
+    # -- Ziele ---------------------------------------------------------------
+
+    def set_goal(self, actor: Actor, member_id: str, reward_id: str | None) -> Member:
+        """Sparziel wählen (Kind für sich, Eltern für jedes Kind). None löscht es."""
+        member = self.member(member_id)
+        actor = self._as_child(actor, member_id)
+        if not actor.is_manager and (actor.member is None or actor.member.id != member_id):
+            raise PermissionDenied("Du kannst nur dein eigenes Ziel wählen.")
+        if reward_id:
+            if not self.reward(reward_id).available_for(member_id):
+                raise FamilyError("Diese Belohnung gibt es für dich nicht.")
+            member.goal_ready_told = member.points >= self.rewards[reward_id].cost
+        member.goal_reward_id = reward_id or None
+        return member
+
+    def set_family_goal(self, actor: Actor, name: str, target: int, now: datetime) -> FamilyGoal:
+        self._require_manager(actor)
+        name = name.strip()
+        if not name:
+            raise FamilyError("Name fehlt.")
+        if target < 1:
+            raise FamilyError("Das Ziel braucht mindestens einen Stern.")
+        self.goal = FamilyGoal(name, target, now)
+        return self.goal
+
+    def clear_family_goal(self, actor: Actor) -> None:
+        self._require_manager(actor)
+        self.goal = None
 
     def _celebrate(self, member: Member, now: datetime, *, level_before: int | None = None) -> None:
         progress = member.progress

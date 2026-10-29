@@ -1,7 +1,7 @@
 """Konstanten für Sternchenplan."""
 
 DOMAIN = "sternchenplan"
-VERSION = "0.16.0"
+VERSION = "0.17.0"
 CARD_URL = "/sternchenplan/sternchenplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -87,3 +87,7 @@ SERVICE_DELETE_REWARD = "delete_reward"
 SERVICE_REDEEM_REWARD = "redeem_reward"
 SERVICE_APPROVE_REDEMPTION = "approve_redemption"
 SERVICE_REJECT_REDEMPTION = "reject_redemption"
+SERVICE_SET_GOAL = "set_goal"
+SERVICE_SET_FAMILY_GOAL = "set_family_goal"
+SERVICE_CLEAR_FAMILY_GOAL = "clear_family_goal"
+ATTR_TARGET = "target"

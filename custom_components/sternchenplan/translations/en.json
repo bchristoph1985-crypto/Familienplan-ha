@@ -571,6 +571,38 @@
           "description": "ID of the redemption."
         }
       }
+    },
+    "set_goal": {
+      "name": "Set savings goal",
+      "description": "A child picks a reward to save up for. Without a reward the goal is removed.",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "ID of the reward. Empty removes the goal."
+        },
+        "member": {
+          "name": "Member",
+          "description": "For whom. Default: the caller."
+        }
+      }
+    },
+    "set_family_goal": {
+      "name": "Set family goal",
+      "description": "All children collect stars together for a shared goal, e.g. a trip. Nothing is deducted from the children.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "What the family is saving for."
+        },
+        "target": {
+          "name": "Stars",
+          "description": "How many stars all children need together."
+        }
+      }
+    },
+    "clear_family_goal": {
+      "name": "Remove family goal",
+      "description": "Removes the current family goal."
     }
   }
 }

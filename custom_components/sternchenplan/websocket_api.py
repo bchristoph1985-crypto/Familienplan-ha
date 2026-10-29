@@ -59,6 +59,7 @@ def snapshot(
         "tablet": actor.tablet and not actor.is_manager,
         "donate_url": DONATE_URL if actor.is_manager else None,
         "takeover": {"allowed": allowed, "multiplier": multiplier},
+        "family_goal": family.goal.to_dict() if family.goal else None,
         "members": [
             {
                 "id": m.id,
@@ -74,6 +75,7 @@ def snapshot(
                 "pass_until": iso(m.pass_until) if m.has_pass(now) else None,
                 "age": m.age(now),
                 "progress": _progress(m, now.astimezone(family.tz).date()),
+                "goal": m.goal_reward_id if m.goal_reward_id in family.rewards else None,
             }
             for m in family.members.values()
         ],

@@ -4,6 +4,7 @@ from .family import SYSTEM, Actor, Family, FamilyError, PermissionDenied
 from .models import (
     Chore,
     ChoreState,
+    FamilyGoal,
     Member,
     Recurrence,
     Redemption,
@@ -21,6 +22,7 @@ __all__ = [
     "ChoreState",
     "Family",
     "FamilyError",
+    "FamilyGoal",
     "Member",
     "PermissionDenied",
     "Progress",

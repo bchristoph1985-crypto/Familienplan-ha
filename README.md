@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.16.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.17.0. Noch nicht für den Alltag gedacht.
 
 ## Umstieg vom Arbeitstitel „Familienplan“
 
@@ -85,6 +85,20 @@ Beim Update von 0.15 schätzt Sternchenplan den bisherigen Stand aus Sternen,
 Einlösungen und dem Verlauf. Abzeichen, die schon verdient sind, gibt es still
 dazu, ohne Feier-Flut.
 
+## Sparziel und Familienziel
+
+- **Sparziel 🎯:** Jedes Kind kann eine Belohnung als Ziel markieren (Knopf
+  „Als Ziel“ unter der Belohnung). Oben in der Kinderansicht steht dann, wie
+  viele Sterne noch fehlen. Sobald es reicht, kommt eine Push-Nachricht.
+- **Familienziel 🏰:** Eltern legen unter *Belohnungen* ein gemeinsames Ziel
+  an, z. B. „Freizeitpark, 500 Sterne“. Alle Sterne, die die Kinder verdienen,
+  zählen dafür. Niemandem wird etwas abgezogen. Ist das Ziel erreicht, gibt es
+  eine Nachricht an alle.
+
+Dienste: `sternchenplan.set_goal`, `sternchenplan.set_family_goal`,
+`sternchenplan.clear_family_goal`. Ereignisse: `sternchenplan_goal_ready`,
+`sternchenplan_family_goal`.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
@@ -136,4 +150,4 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
-- Weitere Funktionen: Spar- und Familienziel, Taschengeld, Routinen, Vorlagen nach Alter
+- Weitere Funktionen: Taschengeld, Routinen, Vorlagen nach Alter
