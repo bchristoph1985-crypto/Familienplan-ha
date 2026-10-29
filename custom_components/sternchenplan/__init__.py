@@ -37,7 +37,7 @@ from .reminders import async_celebrate, async_setup_reminders, weather_is_bad
 from .services import async_register_services
 from .websocket_api import async_register_websocket
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.CALENDAR, Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type SternchenplanConfigEntry = ConfigEntry[SternchenplanData]

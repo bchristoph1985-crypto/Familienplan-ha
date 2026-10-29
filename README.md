@@ -149,6 +149,10 @@ Meldet ein Kind eine Aufgabe, die eine Freigabe braucht, oder will es eine Beloh
 
 Das klappt mit der Home-Assistant-App (Push-Dienst `notify.mobile_app_…`). Geprüft wird serverseitig wie überall: Nur ein Elternkonto kann freigeben. Andere Push-Dienste bekommen die Nachricht ohne Knöpfe.
 
+## Kalender
+
+Sternchenplan legt Kalender in Home Assistant an: „Aufgaben“ für die ganze Familie und „Aufgaben Lucas“ usw. für jedes Kind. Darin steht jede Frist der nächsten Wochen, auch Wiederholungen, Wochentage und wer bei Rotation dran ist. Ferien-Pausen bleiben leer. So siehst du alles im HA-Kalender, auf einem Wand-Tablet mit Kalenderkarte oder kannst Automationen auf „Termin beginnt“ bauen.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
