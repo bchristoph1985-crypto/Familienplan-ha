@@ -74,12 +74,11 @@
           "add_member": "Familienmitglied hinzufügen",
           "remove_member": "Familienmitglied entfernen",
           "reminders": "Erinnerungen",
-          "consequences": "Internetsperre (Pro)",
+          "consequences": "Internetsperre",
           "devices": "Geräte je Kind",
-          "rules": "Übernehmen & Fotos (Pro)",
-          "announcements": "Lautsprecher-Ansagen (Pro)",
+          "rules": "Übernehmen & Fotos",
+          "announcements": "Lautsprecher-Ansagen",
           "ages": "Alter der Kinder",
-          "pro": "Pro / Lizenz",
           "tablet": "Familientablet"
         }
       },
@@ -164,14 +163,6 @@
         "title": "Wie alt sind die Kinder?",
         "description": "Alter in Jahren. Damit bekommt jedes Kind nur Aufgaben, die zu seinem Alter passen, und rückt automatisch in neue Aufgaben nach, wenn es älter wird. Leer lassen geht auch."
       },
-      "pro": {
-        "title": "Sternchenplan Pro",
-        "description": "{state}\n\nKostenlos: Aufgaben, Punkte, Belohnungen, Erinnerungen.\nPro: Internetsperre, Fotonachweis, Aufgaben übernehmen, Lautsprecher-Ansagen, Abwesenheit mit Vertretung.\n\nDen Schlüssel bekommst du nach dem Kauf per E-Mail. Er wird einmal online aktiviert, danach läuft alles lokal.",
-        "data": {
-          "license_key": "Lizenzschlüssel",
-          "license_remove": "Schlüssel hier freigeben (z. B. vor Umzug auf neue Hardware)"
-        }
-      },
       "tablet": {
         "title": "Familientablet",
         "description": "Haben Kinder kein eigenes Handy? Dann wähle das HA-Konto des gemeinsamen Tablets (z. B. in der Küche). Dort tippen die Kinder ihren Namen an und haken ab. Ohne Tablet einfach leer lassen. Eltern können außerdem jederzeit für ein Kind abhaken.",
@@ -184,13 +175,7 @@
     "error": {
       "invalid_member": "Name fehlt oder dieses Konto gehört schon zu einem Mitglied.",
       "invalid_time": "Bitte Uhrzeiten wie 17:00 eingeben.",
-      "tts_missing": "Für Lautsprecher bitte auch eine Sprachausgabe wählen.",
-      "key_missing": "Bitte einen Lizenzschlüssel eingeben.",
-      "shop_not_ready": "Der Verkauf ist noch nicht eingerichtet. Schlüssel lassen sich noch nicht aktivieren.",
-      "cannot_connect": "Keine Verbindung zum Lizenzserver. Bitte später nochmal versuchen.",
-      "key_unknown": "Diesen Schlüssel gibt es nicht. Bitte genau so eingeben wie in der E-Mail.",
-      "too_many_activations": "Der Schlüssel ist schon auf zu vielen Geräten aktiv. Gib ihn dort zuerst frei.",
-      "key_revoked": "Dieser Schlüssel ist nicht mehr gültig."
+      "tts_missing": "Für Lautsprecher bitte auch eine Sprachausgabe wählen."
     }
   },
   "selector": {

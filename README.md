@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.14.1. Noch nicht für den Alltag gedacht.
+Stand: Version 0.15.0. Noch nicht für den Alltag gedacht.
 
 ## Umstieg vom Arbeitstitel „Familienplan“
 
@@ -53,26 +53,20 @@ Belohnungen einlösen, aber nichts freigeben. Auf Wunsch müssen Eltern alles
 bestätigen, was am Tablet abgehakt wurde. Eltern können zudem jederzeit in
 ihrer Ansicht für ein Kind abhaken.
 
-## Kostenlos und Pro
+## Kostenlos
 
-| Kostenlos | Pro |
-|---|---|
-| Aufgaben, Alter, Reihum, Fristen | Internetsperre (FRITZ!Box & Co.) |
-| Punkte und Belohnungen | Fotonachweis |
-| Push-Erinnerungen | Aufgaben übernehmen („wegmopsen“) |
-| Seitenleiste und Karte | Lautsprecher-Ansagen |
-| | Abwesenheit mit Vertretung |
+Sternchenplan ist komplett kostenlos, ohne Testphase, Lizenz oder Abo. Alle
+Funktionen sind an: Aufgaben, Punkte, Belohnungen, Erinnerungen,
+Familientablet, Internetsperre (FRITZ!Box & Co.), Fotonachweis, Aufgaben
+übernehmen, Lautsprecher-Ansagen und Abwesenheit mit Vertretung.
 
-Nach der Installation läuft Pro 30 Tage zum Ausprobieren. Danach den
-Lizenzschlüssel unter *Einstellungen › Geräte & Dienste › Sternchenplan ›
-Konfigurieren › Pro / Lizenz* eintragen. Er wird einmal online bei Polar
-aktiviert und etwa einmal pro Woche nachgeprüft. Ohne Internet bleibt Pro an.
-Pro endet nur, wenn Polar den Schlüssel ablehnt (z. B. nach Erstattung). Dann
-gibt Sternchenplan gesperrte Geräte sofort frei, Fotoaufgaben gehen ohne Foto,
-Einstellungen bleiben erhalten.
+Wer von 0.14 kommt: Ein eingetragener Lizenzschlüssel wird einfach nicht mehr
+gebraucht. Es muss nichts umgestellt werden.
 
-Der Shop läuft über Polar (Organisation `sternchenplan`). Die Organisations-ID
-steht in `const.py` (`POLAR_ORGANIZATION_ID`).
+## Trinkgeld
+
+Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
+Der Link folgt in Kürze.
 
 ## Seitenleiste und Dashboard-Karte
 
@@ -118,7 +112,6 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 ## Offen
 
-- Name und Lizenz (siehe Phase-0-Dokument)
 - Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
-- Pro-Funktionen und Lizenzschlüssel (Phase 3)
+- Weitere Funktionen: Level und Abzeichen, Serien, Spar- und Familienziel, Taschengeld, Routinen, Vorlagen nach Alter

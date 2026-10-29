@@ -17,7 +17,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, SIGNAL_UPDATED
+from .const import DOMAIN, DONATE_URL, SIGNAL_UPDATED
 from .core import Family
 from .photos import signed_url
 from .takeover import takeover_terms
@@ -41,11 +41,7 @@ def snapshot(
         "me": actor.member.id if actor.member else None,
         "is_manager": actor.is_manager,
         "tablet": actor.tablet and not actor.is_manager,
-        "pro": {
-            k: v
-            for k, v in entry.runtime_data.license.status(now).items()
-            if actor.is_manager or k != "key"
-        },
+        "donate_url": DONATE_URL if actor.is_manager else None,
         "takeover": {"allowed": allowed, "multiplier": multiplier},
         "members": [
             {

@@ -30,7 +30,6 @@ from .const import (
     PHOTO_DIR,
     PHOTO_MAX_BYTES,
     PHOTO_URL,
-    PRO_ONLY,
 )
 from .core import FamilyError, PermissionDenied
 
@@ -117,8 +116,6 @@ class PhotoUploadView(HomeAssistantView):
         if not entries:
             return self.json_message("Sternchenplan ist nicht eingerichtet.", 404)
         data = entries[0].runtime_data
-        if not data.pro:
-            return self.json_message(PRO_ONLY, 403)
         user = request["hass_user"]
         actor = actor_for_user(data, user.id, user.is_admin)
 

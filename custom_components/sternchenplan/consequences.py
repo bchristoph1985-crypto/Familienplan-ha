@@ -81,8 +81,7 @@ async def async_apply(hass: HomeAssistant, entry: SternchenplanConfigEntry, now:
     """
     family = entry.runtime_data.family
     now = now or dt_util.utcnow()
-    # Ohne Pro wird nichts gesperrt, bereits gesperrte Geräte werden freigegeben.
-    enabled = entry.options.get(CONF_CONSEQUENCES, False) and entry.runtime_data.pro
+    enabled = entry.options.get(CONF_CONSEQUENCES, False)
     start, end = _times(entry)
     window = in_window(dt_util.as_local(now).time(), start, end)
     context = Context()
