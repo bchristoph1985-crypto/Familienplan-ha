@@ -91,11 +91,7 @@ const T = {
     takeOver: "Übernehmen",
     takenFrom: "übernommen für {name}",
     double: "doppelte Punkte",
-    trial: "Pro-Testphase: noch {n} Tage",
-    free: "Kostenlose Version",
-    proHint: "Pro freischalten: Einstellungen › Geräte & Dienste › Sternchenplan › Konfigurieren › Pro / Lizenz",
-    proOnly: "Gehört zu Pro",
-    awayPro: "Abwesenheit mit Vertretung gehört zu Pro.",
+    donate: "Sternchenplan ist kostenlos. Gefällt er euch? ☕ Trinkgeld geben",
     whoAreYou: "Wer bist du?",
     leftToday: "Noch {n} für heute",
     leftOne: "Noch eine Aufgabe für heute",
@@ -185,11 +181,7 @@ const T = {
     takeOver: "Take over",
     takenFrom: "taken over for {name}",
     double: "double points",
-    trial: "Pro trial: {n} days left",
-    free: "Free version",
-    proHint: "Unlock Pro: Settings › Devices & services › Sternchenplan › Configure › Pro / license",
-    proOnly: "Part of Pro",
-    awayPro: "Absence with substitute is part of Pro.",
+    donate: "Sternchenplan is free. Like it? ☕ Leave a tip",
     whoAreYou: "Who are you?",
     leftToday: "{n} left for today",
     leftOne: "One chore left for today",
@@ -740,24 +732,18 @@ class SternchenplanCard extends HTMLElement {
       </li>`;
   }
 
-  // Ohne Pro (Testphase vorbei, kein Schlüssel) gibt es keinen Fotonachweis.
-  _pro() {
-    return this._data?.pro?.pro !== false;
-  }
-
   _photoNeeded(chore) {
-    return !!chore?.requires_photo && this._pro() && !this._data.is_manager;
+    return !!chore?.requires_photo && !this._data.is_manager;
   }
 
   _photoIcon(chore) {
-    return chore.requires_photo && this._pro() ? ' <span class="muted">📷</span>' : "";
+    return chore.requires_photo ? ' <span class="muted">📷</span>' : "";
   }
 
-  _proLine() {
-    const p = this._data.pro;
-    if (!p || p.licensed) return "";
-    if (p.pro) return `<p class="muted small pro">${esc(this._t("trial", { n: p.trial_days_left }))}</p>`;
-    return `<p class="muted small pro">${esc(this._t("free"))} · ${esc(this._t("proHint"))}</p>`;
+  _donateLine() {
+    const url = this._data.donate_url;
+    if (!url) return "";
+    return `<p class="muted small pro"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(this._t("donate"))}</a></p>`;
   }
 
   _thumb(chore) {
@@ -788,7 +774,7 @@ class SternchenplanCard extends HTMLElement {
 
   _renderTakeOver(member) {
     const t = this._data.takeover;
-    if (!t?.allowed || !this._pro() || this._config.readonly || member.id !== this._me()) return "";
+    if (!t?.allowed || this._config.readonly || member.id !== this._me()) return "";
     const chores = this._takeable(member.id);
     if (!chores.length) return "";
     const rows = chores
@@ -984,7 +970,7 @@ class SternchenplanCard extends HTMLElement {
         .map(([id, label]) => `<button class="tab ${this._tab === id ? "on" : ""}" data-action="tab" data-id="${id}">${label}</button>`)
         .join("")}</nav>
       ${body}
-      ${this._proLine()}`;
+      ${this._donateLine()}`;
   }
 
   _children() {
@@ -1006,7 +992,7 @@ class SternchenplanCard extends HTMLElement {
           status += ` <span class="chip">${esc(this._t("pass", { time }))}</span>`;
         }
         let passBtn = "";
-        if (m.has_devices && this._pro() && !this._config.readonly) {
+        if (m.has_devices && !this._config.readonly) {
           passBtn = m.pass_until
             ? `<button class="link" data-action="revoke-pass" data-id="${esc(m.id)}">${this._t("takePass")}</button>`
             : `<button class="link" data-action="pass" data-id="${esc(m.id)}">${this._t("givePass")}</button>`;
@@ -1079,7 +1065,7 @@ class SternchenplanCard extends HTMLElement {
             <div class="title">${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.requires_photo && this._pro() ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.requires_photo ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -1114,9 +1100,7 @@ class SternchenplanCard extends HTMLElement {
         </div>
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
-        <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""} ${this._pro() ? "" : "disabled"}>${this._t("photo")}${
-          this._pro() ? "" : ` <span class="chip">${this._t("proOnly")}</span>`
-        }</label>
+        <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""}>${this._t("photo")}</label>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
       </details>
@@ -1131,7 +1115,6 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderAway() {
-    if (!this._pro()) return `<p class="empty muted">${esc(this._t("awayPro"))}</p>${this._proLine()}`;
     return `<ul>${this._children()
       .map((m) => {
         const form = this._awayForm[m.id] || {};

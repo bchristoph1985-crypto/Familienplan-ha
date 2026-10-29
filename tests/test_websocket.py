@@ -34,6 +34,7 @@ async def test_karte_bekommt_stand_und_updates(
     first = (await client.receive_json())["event"]
     assert first["is_manager"] is True
     assert first["me"] is not None
+    assert first["donate_url"].startswith("https://")
     assert {m["name"] for m in first["members"]} == {"Papa", "Lucas"}
     assert first["chores"] == []
 

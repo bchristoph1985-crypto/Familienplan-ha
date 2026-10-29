@@ -13,7 +13,6 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
 from .const import (
-    PRO_ONLY,
     ATTR_ASSIGNEES,
     ATTR_CHORE_ID,
     ATTR_DEVICES,
@@ -199,11 +198,6 @@ def _guarded(
     return wrapper
 
 
-def _require_pro(data: SternchenplanData) -> None:
-    if not data.pro:
-        raise FamilyError(PRO_ONLY)
-
-
 def _utc(value):
     """Zeit aus dem Dienstaufruf. Ohne Zeitzone gilt die HA-Zeitzone."""
     if value is None:
@@ -269,7 +263,6 @@ async def _claim(hass, call, data, actor) -> None:
 
 def take_over(data, actor, chore_id: str, member_id: str, photo: str | None = None) -> None:
     """Gemeinsam für Dienst und Foto-Upload."""
-    _require_pro(data)
     now = dt_util.utcnow()
     allowed, multiplier, max_per_day, day_start = takeover_terms(data.entry, now)
     if not allowed and not actor.is_manager:
@@ -290,7 +283,6 @@ async def _announce(hass, call, data, actor) -> None:
 
     if not actor.is_manager:
         raise PermissionDenied("Nur Eltern können Ansagen machen.")
-    _require_pro(data)
     if not announce_configured(data.entry):
         raise FamilyError("Es sind keine Lautsprecher eingestellt.")
     message = call.data.get(ATTR_MESSAGE) or announcement(
@@ -384,7 +376,6 @@ async def _reject(hass, call, data, actor) -> None:
 
 
 async def _set_absence(hass, call, data, actor) -> None:
-    _require_pro(data)
     substitute = call.data.get(ATTR_SUBSTITUTE)
     data.family.set_absence(
         actor,

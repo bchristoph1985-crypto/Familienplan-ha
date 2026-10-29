@@ -82,8 +82,8 @@ class Family:
         self.locked: dict[str, list[str]] = {}
         self.rewards: dict[str, Reward] = {}
         self.redemptions: list[Redemption] = []
-        # Fotonachweis gehört zu Pro. Ohne Pro gilt jede Aufgabe als ohne
-        # Fotopflicht, die Einstellung an der Aufgabe bleibt aber erhalten.
+        # Schaltet den Fotonachweis familienweit ab. Ohne gilt jede Aufgabe als
+        # ohne Fotopflicht, die Einstellung an der Aufgabe bleibt aber erhalten.
         self.photo_proof = True
         # HA-Konten der Familientablets und ob dort Abgehaktes von Eltern
         # bestätigt werden muss.

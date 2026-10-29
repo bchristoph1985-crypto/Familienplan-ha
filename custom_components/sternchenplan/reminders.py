@@ -221,8 +221,6 @@ def async_setup_reminders(
                 await _notify(hass, member.notify_service, _text(hass)["title"], message)
 
     async def announce(now: datetime) -> None:
-        if not entry.runtime_data.pro:
-            return
         now = dt_util.utcnow()
         if message := announcement(hass, entry.runtime_data.family, now):
             await async_announce(hass, entry, message)

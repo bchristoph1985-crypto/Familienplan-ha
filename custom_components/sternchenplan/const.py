@@ -1,23 +1,15 @@
 """Konstanten für Sternchenplan."""
 
-from datetime import timedelta
-
 DOMAIN = "sternchenplan"
-VERSION = "0.14.1"
+VERSION = "0.15.0"
 CARD_URL = "/sternchenplan/sternchenplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
 DATA_INITIAL_FAMILY = "initial_family"
 PANEL_URL = "sternchenplan"
 
-# Kostenlos / Pro. Die Organisations-ID gibt es nach dem Anlegen des Shops bei Polar.
-POLAR_API = "https://api.polar.sh"
-POLAR_ORGANIZATION_ID = "874a4931-4818-439e-b695-33bd1b3e0f0c"
-TRIAL_DAYS = 30
-VALIDATE_EVERY = timedelta(days=7)
-CONF_LICENSE_KEY = "license_key"
-CONF_LICENSE_REMOVE = "license_remove"
-PRO_ONLY = "Das gehört zu Sternchenplan Pro. Den Schlüssel trägst du in den Optionen unter „Pro“ ein."
+# Sternchenplan ist kostenlos. Wer mag, gibt hier ein Trinkgeld.
+DONATE_URL = "https://github.com/bchristoph1985-crypto/sternchenplan#trinkgeld"
 
 ATTR_CHORE_ID = "chore_id"
 ATTR_MEMBER = "member"
