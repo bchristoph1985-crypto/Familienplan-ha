@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.18.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.19.0. Noch nicht für den Alltag gedacht.
 
 ## Umstieg vom Arbeitstitel „Familienplan“
 
@@ -114,6 +114,18 @@ oder per Überweisung aus und tippt dann auf „Auszahlen“.
 Dienste: `set_money`, `set_allowance`, `exchange_stars`, `payout`,
 `adjust_money`.
 
+## Routinen und Vorlagen
+
+- **Routinen:** Jede Aufgabe kann Schritte haben, z. B. die Morgenroutine mit
+  Aufstehen, Anziehen, Zähne putzen und Bett machen. Das Kind hakt jeden
+  Schritt einzeln ab. Mit dem letzten Schritt gilt die Aufgabe als gemeldet.
+  Bei einer Routine mit Fotonachweis tippt das Kind danach selbst auf
+  „Foto & erledigt“. Dienst: `sternchenplan.check_step`.
+- **Vorlagen nach Alter:** Unter *Aufgaben › 📚 Vorlagen* gibt es 24 fertige
+  Aufgaben und Routinen, sortiert nach Alter (4–6, 7–9, 10–12, ab 13). Ein Tipp
+  füllt das Formular mit Namen, Sternen, Wiederholung, Uhrzeit und
+  Mindestalter. Ihr wählt nur noch, wer sie macht.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
@@ -165,4 +177,4 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
-- Weitere Funktionen: Routinen, Vorlagen nach Alter
+- Weitere Funktionen: Bilder-Modus, Ferien-Pause, Wetter, Berichte

@@ -65,6 +65,10 @@ from .const import (
     ATTR_NOTE,
     ATTR_PAYDAY,
     ATTR_RATE,
+    ATTR_DONE,
+    ATTR_INDEX,
+    ATTR_STEPS,
+    SERVICE_CHECK_STEP,
     SERVICE_ADJUST_MONEY,
     SERVICE_EXCHANGE_STARS,
     SERVICE_PAYOUT,
@@ -93,6 +97,7 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_REQUIRES_APPROVAL, default=False): cv.boolean,
         vol.Optional(ATTR_REQUIRES_PHOTO, default=False): cv.boolean,
         vol.Optional(ATTR_MIN_AGE, default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=18)),
+        vol.Optional(ATTR_STEPS, default=[]): vol.All(cv.ensure_list, [cv.string]),
     }
 )
 
@@ -108,10 +113,15 @@ UPDATE_SCHEMA = CHORE_SCHEMA.extend(
         vol.Optional(ATTR_REQUIRES_APPROVAL): cv.boolean,
         vol.Optional(ATTR_REQUIRES_PHOTO): cv.boolean,
         vol.Optional(ATTR_MIN_AGE): vol.All(vol.Coerce(int), vol.Range(min=0, max=18)),
+        vol.Optional(ATTR_STEPS): vol.All(cv.ensure_list, [cv.string]),
     }
 )
 
 CLAIM_SCHEMA = CHORE_SCHEMA.extend({vol.Optional(ATTR_MEMBER): cv.string})
+STEP_SCHEMA = CLAIM_SCHEMA.extend(
+    {vol.Required(ATTR_INDEX): vol.All(vol.Coerce(int), vol.Range(min=0)),
+     vol.Optional(ATTR_DONE, default=True): cv.boolean}
+)
 
 ABSENCE_SCHEMA = vol.Schema(
     {
@@ -267,6 +277,7 @@ async def _create(hass, call, data, actor) -> None:
         requires_approval=call.data[ATTR_REQUIRES_APPROVAL],
         requires_photo=call.data[ATTR_REQUIRES_PHOTO],
         min_age=call.data[ATTR_MIN_AGE],
+        steps=call.data[ATTR_STEPS],
     )
 
 
@@ -289,6 +300,7 @@ async def _update(hass, call, data, actor) -> None:
         requires_approval=d.get(ATTR_REQUIRES_APPROVAL),
         requires_photo=d.get(ATTR_REQUIRES_PHOTO),
         min_age=d.get(ATTR_MIN_AGE),
+        steps=d.get(ATTR_STEPS),
     )
 
 
@@ -494,6 +506,13 @@ async def _adjust_money(hass, call, data, actor) -> None:
     )
 
 
+async def _check_step(hass, call, data, actor) -> None:
+    d = call.data
+    data.family.check_step(
+        actor, d[ATTR_CHORE_ID], _who(data, call, actor), d[ATTR_INDEX], d[ATTR_DONE], dt_util.utcnow()
+    )
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -521,6 +540,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_SET_FAMILY_GOAL, _set_family_goal, FAMILY_GOAL_SCHEMA),
         (SERVICE_CLEAR_FAMILY_GOAL, _clear_family_goal, EMPTY_SCHEMA),
         (SERVICE_SET_MONEY, _set_money, MONEY_SCHEMA),
+        (SERVICE_CHECK_STEP, _check_step, STEP_SCHEMA),
         (SERVICE_SET_ALLOWANCE, _set_allowance, ALLOWANCE_SCHEMA),
         (SERVICE_EXCHANGE_STARS, _exchange, EXCHANGE_SCHEMA),
         (SERVICE_PAYOUT, _payout, PAYOUT_SCHEMA),

@@ -27,6 +27,7 @@ from .progress import EARLY_HOUR, level_for, new_badges
 
 HISTORY_LIMIT = 50
 MONEY_LOG_LIMIT = 200
+MAX_STEPS = 12
 REDEMPTION_LIMIT = 100
 
 _INTERVALS = {
@@ -431,6 +432,7 @@ class Family:
         requires_approval: bool = False,
         requires_photo: bool = False,
         min_age: int = 0,
+        steps: list[str] | None = None,
     ) -> Chore:
         self._require_manager(actor)
         name = name.strip()
@@ -455,6 +457,7 @@ class Family:
             requires_approval=requires_approval,
             requires_photo=requires_photo,
             min_age=max(0, min_age),
+            steps=_clean_steps(steps),
         )
         self.chores[chore.id] = chore
         return chore
@@ -475,6 +478,7 @@ class Family:
         requires_approval: bool | None = None,
         requires_photo: bool | None = None,
         min_age: int | None = None,
+        steps: list[str] | None = None,
     ) -> Chore:
         """Nur übergebene Felder ändern. Punkte und Verlauf bleiben erhalten."""
         self._require_manager(actor)
@@ -510,6 +514,11 @@ class Family:
             chore.requires_photo = requires_photo
         if min_age is not None:
             chore.min_age = max(0, min_age)
+        if steps is not None:
+            new_steps = _clean_steps(steps)
+            if new_steps != chore.steps:
+                chore.steps = new_steps
+                chore.steps_done = []
         chore.recurrence = new_recurrence
         chore.due = new_due
         if chore.state is ChoreState.OVERDUE and (chore.due is None or chore.due > now):
@@ -559,6 +568,31 @@ class Family:
         self._check_claimable(chore)
         chore.photo = photo  # altes Foto gehört zur letzten Runde
         self._submit(chore, member_id, now, needs_check=self._needs_check(actor, chore))
+        return chore
+
+    def check_step(
+        self, actor: Actor, chore_id: str, member_id: str, index: int, done: bool, now: datetime
+    ) -> Chore:
+        """Einen Schritt einer Routine abhaken. Sind alle erledigt, gilt die Aufgabe
+        als gemeldet, außer sie braucht ein Foto: dann tippt das Kind selbst."""
+        chore = self.chore(chore_id)
+        self.member(member_id)
+        actor = self._as_child(actor, member_id)
+        if not actor.is_manager:
+            if actor.member is None or actor.member.id != member_id:
+                raise PermissionDenied("Du kannst nur für dich selbst abhaken.")
+            if member_id not in self.responsible(chore, now):
+                raise PermissionDenied("Diese Aufgabe ist gerade nicht deine.")
+        if not 0 <= index < len(chore.steps):
+            raise FamilyError("Diesen Schritt gibt es nicht.")
+        self._check_claimable(chore)
+        marked = set(chore.steps_done)
+        marked.add(index) if done else marked.discard(index)
+        chore.steps_done = sorted(marked)
+        if len(chore.steps_done) == len(chore.steps) and not (
+            self.needs_photo(chore) and not actor.is_manager
+        ):
+            self.claim(actor, chore_id, member_id, now)
         return chore
 
     def needs_photo(self, chore: Chore) -> bool:
@@ -671,6 +705,7 @@ class Family:
             raise FamilyError("Es gibt nichts abzulehnen.")
         self._log(chore, "rejected", chore.claimed_by, now)
         chore.claimed_by = None
+        chore.steps_done = []
         self._reset_claim(chore)
         chore.state = (
             ChoreState.OVERDUE if chore.due and chore.due < now else ChoreState.OPEN
@@ -840,6 +875,7 @@ class Family:
         chore.last_completed_by = member_id
         chore.last_completed_at = now
         chore.claimed_by = None
+        chore.steps_done = []
         # Bei Übernahme rotiert es weiter, als hätte der Zuständige erledigt.
         rotate_from = chore.claim_taken_from or member_id
         self._reset_claim(chore)
@@ -1041,6 +1077,13 @@ class Family:
             {"event": event, "member": member_id, "at": now.isoformat()}
         )
         del chore.history[:-HISTORY_LIMIT]
+
+
+def _clean_steps(steps: list[str] | None) -> list[str]:
+    cleaned = [s.strip()[:60] for s in steps or [] if s and s.strip()]
+    if len(cleaned) > MAX_STEPS:
+        raise FamilyError(f"Höchstens {MAX_STEPS} Schritte.")
+    return cleaned
 
 
 def _next_due(due: datetime | None, recurrence: Recurrence, now: datetime) -> datetime:

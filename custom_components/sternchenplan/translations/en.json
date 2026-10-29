@@ -277,6 +277,10 @@
         "min_age": {
           "name": "Minimum age",
           "description": "Only children of this age or older take part. 0 = everyone."
+        },
+        "steps": {
+          "name": "Steps",
+          "description": "Turns the chore into a routine: the child ticks off each step."
         }
       }
     },
@@ -323,6 +327,10 @@
         "min_age": {
           "name": "Minimum age",
           "description": "Only children of this age or older take part. 0 = everyone."
+        },
+        "steps": {
+          "name": "Steps",
+          "description": "Turns the chore into a routine: the child ticks off each step."
         }
       }
     },
@@ -675,6 +683,28 @@
         "note": {
           "name": "Note",
           "description": "Shown in the history."
+        }
+      }
+    },
+    "check_step": {
+      "name": "Tick off routine step",
+      "description": "Ticks off one step of a routine. When all steps are done, the chore counts as reported.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID of the routine."
+        },
+        "index": {
+          "name": "Step",
+          "description": "Number of the step, starting at 0."
+        },
+        "done": {
+          "name": "Done",
+          "description": "Off unticks the step."
+        },
+        "member": {
+          "name": "Member",
+          "description": "For whom. Default: the caller."
         }
       }
     }

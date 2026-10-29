@@ -277,6 +277,10 @@
         "min_age": {
           "name": "Ab Alter",
           "description": "Nur Kinder ab diesem Alter sind dran. 0 = alle."
+        },
+        "steps": {
+          "name": "Schritte",
+          "description": "Macht die Aufgabe zur Routine: Das Kind hakt jeden Schritt einzeln ab."
         }
       }
     },
@@ -323,6 +327,10 @@
         "min_age": {
           "name": "Ab Alter",
           "description": "Nur Kinder ab diesem Alter sind dran. 0 = alle."
+        },
+        "steps": {
+          "name": "Schritte",
+          "description": "Macht die Aufgabe zur Routine: Das Kind hakt jeden Schritt einzeln ab."
         }
       }
     },
@@ -675,6 +683,28 @@
         "note": {
           "name": "Notiz",
           "description": "Steht im Verlauf."
+        }
+      }
+    },
+    "check_step": {
+      "name": "Routine-Schritt abhaken",
+      "description": "Hakt einen Schritt einer Routine ab. Sind alle erledigt, gilt die Aufgabe als gemeldet.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID der Routine."
+        },
+        "index": {
+          "name": "Schritt",
+          "description": "Nummer des Schritts, ab 0."
+        },
+        "done": {
+          "name": "Erledigt",
+          "description": "Aus nimmt den Haken wieder weg."
+        },
+        "member": {
+          "name": "Mitglied",
+          "description": "Für wen. Standard: wer aufruft."
         }
       }
     }

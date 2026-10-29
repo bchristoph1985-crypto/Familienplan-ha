@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.18.0";
+const VERSION = "0.19.0";
 
 const T = {
   de: {
@@ -160,6 +160,13 @@ const T = {
     noHistory: "Noch keine Buchungen.",
     kinds: { allowance: "Wochengeld", exchange: "Sterne getauscht", payout: "ausgezahlt", adjust: "gebucht" },
     days: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+    steps: "Schritte (einer pro Zeile, leer = normale Aufgabe)",
+    stepsShort: "{n} Schritte",
+    templates: "📚 Vorlagen",
+    templatesHint: "Tippe auf eine Vorlage, dann wähle unten, wer sie machen soll.",
+    ageAll: "Alle",
+    ageGroup: "{from}–{to} J.",
+    ageFrom: "ab {n} J.",
     moneyHint: "Das Geld liegt nicht wirklich hier. Sternchenplan führt nur das Konto. Auszahlen tut ihr selbst, bar oder per Überweisung.",
   },
   en: {
@@ -309,6 +316,13 @@ const T = {
     noHistory: "No entries yet.",
     kinds: { allowance: "Allowance", exchange: "Stars exchanged", payout: "paid out", adjust: "booked" },
     days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    steps: "Steps (one per line, empty = normal chore)",
+    stepsShort: "{n} steps",
+    templates: "📚 Templates",
+    templatesHint: "Tap a template, then choose below who should do it.",
+    ageAll: "All",
+    ageGroup: "{from}–{to} yrs",
+    ageFrom: "{n}+ yrs",
     moneyHint: "The money isn't really kept here. Sternchenplan only keeps the account. You pay out yourselves, in cash or by transfer.",
   },
 };
@@ -327,6 +341,7 @@ class SternchenplanCard extends HTMLElement {
     this._awayForm = {};
     this._rewardForm = this._emptyReward();
     this._fgForm = { name: "", target: 300 };
+    this._tplAge = 0;
     this._busy = false;
     // Familientablet: welches Kind gerade dran ist
     this._actingAs = null;
@@ -576,6 +591,33 @@ class SternchenplanCard extends HTMLElement {
         }
         break;
       }
+      case "step": {
+        const chore = this._data.chores.find((c) => c.id === id);
+        const i = Number(el.dataset.i);
+        const done = !(chore?.steps_done || []).includes(i);
+        if (chore) {
+          // Sofort zeigen, der Server bestätigt gleich.
+          chore.steps_done = done ? [...chore.steps_done, i] : chore.steps_done.filter((x) => x !== i);
+          if (done && chore.steps_done.length === chore.steps.length) this._celebrate(el);
+          this._render();
+        }
+        this._hass
+          .callService("sternchenplan", "check_step", { chore_id: id, index: i, done, member })
+          .catch((err) => this._notify(err.message));
+        break;
+      }
+      case "tpl":
+        this._useTemplate(Number(id));
+        break;
+      case "tpl-toggle":
+        // Klick kommt vor dem Umschalten: merken, damit ein neuer Stand es nicht zuklappt.
+        this._tplOpen = !el.parentElement.open;
+        break;
+      case "tpl-age":
+        this._tplOpen = true;
+        this._tplAge = Number(id);
+        this._render();
+        break;
       case "exchange": {
         const rate = this._data.money?.rate;
         if (rate && confirm(this._t("confirmExchange", { stars: rate }))) {
@@ -724,7 +766,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _emptyForm() {
-    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, editId: null };
+    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, steps: "", editId: null };
   }
 
   _resetForm() {
@@ -751,10 +793,80 @@ class SternchenplanCard extends HTMLElement {
       approval: c.requires_approval,
       photo: c.requires_photo,
       minAge: c.min_age || 0,
+      steps: (c.steps || []).join("\n"),
       editId: c.id,
     };
     this._render();
     this.shadowRoot.querySelector("details.form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  _stepList(text) {
+    return String(text || "")
+      .split("\n")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  }
+
+  _lang() {
+    return this._t("rec") === T.de.rec ? "de" : "en";
+  }
+
+  // Vorlage ins Formular übernehmen. Wer sie macht, wählen die Eltern selbst.
+  _useTemplate(index) {
+    const t = TEMPLATES[index];
+    if (!t) return;
+    const lang = this._lang();
+    const due = new Date();
+    const [h, m] = t.time.split(":").map(Number);
+    due.setHours(h, m, 0, 0);
+    if (due < new Date()) due.setDate(due.getDate() + 1);
+    this._form = {
+      ...this._emptyForm(),
+      assignees: this._form.assignees,
+      name: t.name[lang],
+      points: t.points,
+      recurrence: t.rec,
+      minAge: t.age,
+      photo: !!t.photo,
+      steps: (t.steps?.[lang] || []).join("\n"),
+      due: this._toLocalInput(due.toISOString()),
+    };
+    this._render();
+    const form = this.shadowRoot.querySelector("details.chore-form");
+    if (form) {
+      form.open = true;
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  _renderTemplates() {
+    const lang = this._lang();
+    const groups = [[0, 99], [4, 6], [7, 9], [10, 12], [13, 99]];
+    const [lo, hi] = groups[this._tplAge] || groups[0];
+    const chips = groups
+      .map(([a, b], i) => {
+        const label = i === 0 ? this._t("ageAll") : b === 99 ? this._t("ageFrom", { n: a }) : this._t("ageGroup", { from: a, to: b });
+        return `<button class="tab ${this._tplAge === i ? "on" : ""}" data-action="tpl-age" data-id="${i}">${esc(label)}</button>`;
+      })
+      .join("");
+    // Routinen passen für alle Altersgruppen ab ihrem Mindestalter.
+    const items = TEMPLATES.map((t, i) => [t, i])
+      .filter(([t]) => this._tplAge === 0 || (t.age >= lo && t.age <= hi) || (t.steps && t.age <= hi))
+      .map(
+        ([t, i]) => `<button class="tpl" data-action="tpl" data-id="${i}">
+          <span class="tpl-emoji">${t.emoji}</span>
+          <span class="tpl-name">${esc(t.name[lang])}</span>
+          <span class="muted small">⭐ ${t.points} · ${esc(this._t("rec")[t.rec])}${t.steps ? " · " + esc(this._t("stepsShort", { n: t.steps[lang].length })) : ""}</span>
+        </button>`,
+      )
+      .join("");
+    return `
+      <details class="form templates" ${this._tplOpen ?? !this._data.chores.length ? "open" : ""}>
+        <summary data-action="tpl-toggle">${this._t("templates")}</summary>
+        <p class="muted small">${this._t("templatesHint")}</p>
+        <nav class="tabs small-tabs">${chips}</nav>
+        <div class="tpl-grid">${items}</div>
+      </details>`;
   }
 
   async _createChore() {
@@ -772,6 +884,7 @@ class SternchenplanCard extends HTMLElement {
         requires_approval: f.approval,
         requires_photo: f.photo,
         min_age: Number(f.minAge) || 0,
+        steps: this._stepList(f.steps),
       });
       this._resetForm();
       this._render();
@@ -786,6 +899,7 @@ class SternchenplanCard extends HTMLElement {
       requires_approval: f.approval,
       requires_photo: f.photo,
       min_age: Number(f.minAge) || 0,
+      steps: this._stepList(f.steps),
     };
     if (f.due) data.due = f.due;
     await this._call("create_chore", data);
@@ -895,10 +1009,16 @@ class SternchenplanCard extends HTMLElement {
     } else if (showClaim && !ro) {
       const label = forName ? this._t("doneShort") : this._t("done");
       const photo = this._photoNeeded(chore);
-      action = `<button class="primary" data-action="claim" data-id="${esc(chore.id)}" data-member="${esc(memberId)}">${
-        photo ? this._t("photoDone") : "✓ " + label
-      }</button>`;
+      const stepsLeft = (chore.steps?.length || 0) - (chore.steps_done?.length || 0);
+      // Bei Routinen meldet der letzte Schritt. Eltern dürfen trotzdem direkt abhaken,
+      // bei Foto-Routinen tippt das Kind nach dem letzten Schritt selbst.
+      if (!stepsLeft || this._data.is_manager || photo) {
+        action = `<button class="primary" data-action="claim" data-id="${esc(chore.id)}" data-member="${esc(memberId)}" ${
+          stepsLeft && !this._data.is_manager ? "disabled" : ""
+        }>${photo ? this._t("photoDone") : "✓ " + label}</button>`;
+      }
     }
+    const steps = chore.steps?.length && chore.state !== "claimed" ? this._steps(chore, memberId, ro || !showClaim) : "";
     return `
       <li class="row task ${chore.state}">
         ${chore.state === "claimed" ? this._thumb(chore) : ""}
@@ -910,7 +1030,18 @@ class SternchenplanCard extends HTMLElement {
         </div>
         <span class="pts-pill">+${chore.points}</span>
         <div class="actions">${action}</div>
+        ${steps}
       </li>`;
+  }
+
+  _steps(chore, memberId, ro) {
+    const done = new Set(chore.steps_done || []);
+    return `<ol class="steps">${chore.steps
+      .map(
+        (text, i) => `<li><button class="step ${done.has(i) ? "on" : ""}" ${ro ? "disabled" : ""} data-action="step" data-id="${esc(chore.id)}" data-member="${esc(memberId)}" data-i="${i}">
+          <span class="tick">${done.has(i) ? "✓" : ""}</span><span>${esc(text)}</span></button></li>`,
+      )
+      .join("")}</ol>`;
   }
 
   _photoNeeded(chore) {
@@ -1467,7 +1598,7 @@ class SternchenplanCard extends HTMLElement {
             <div class="title">${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.requires_photo ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.requires_photo ? " · 📷" : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -1479,7 +1610,8 @@ class SternchenplanCard extends HTMLElement {
       .join("");
     const rec = this._t("rec");
     return `
-      <details class="form" ${this._data.chores.length && !f.editId ? "" : "open"}>
+      ${f.editId ? "" : this._renderTemplates()}
+      <details class="form chore-form" ${this._data.chores.length && !f.editId && !f.name ? "" : "open"}>
         <summary>${f.editId ? this._t("editChore") : "+ " + this._t("newChore")}</summary>
         <label>${this._t("name")}<input data-field="name" value="${esc(f.name)}" maxlength="60"></label>
         <fieldset><legend>${this._t("assignees")}</legend>
@@ -1503,6 +1635,7 @@ class SternchenplanCard extends HTMLElement {
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
         <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""}>${this._t("photo")}</label>
+        <label>${this._t("steps")}<textarea data-field="steps" rows="3" maxlength="800">${esc(f.steps)}</textarea></label>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
       </details>
@@ -1574,6 +1707,42 @@ class SternchenplanCard extends HTMLElement {
     this._cardEl.innerHTML = `${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div>`;
   }
 }
+
+// Vorlagen nach Alter. age = Mindestalter, time = übliche Uhrzeit für die erste Frist.
+const TEMPLATES = [
+  { emoji: "🌅", age: 4, points: 3, rec: "daily", time: "07:30",
+    name: { de: "Morgenroutine", en: "Morning routine" },
+    steps: { de: ["Aufstehen", "Anziehen", "Zähne putzen", "Bett machen"], en: ["Get up", "Get dressed", "Brush teeth", "Make the bed"] } },
+  { emoji: "🌙", age: 4, points: 3, rec: "daily", time: "19:30",
+    name: { de: "Abendroutine", en: "Evening routine" },
+    steps: { de: ["Schlafanzug anziehen", "Zähne putzen", "Kleidung weglegen", "Licht aus"], en: ["Put on pyjamas", "Brush teeth", "Put clothes away", "Lights out"] } },
+  { emoji: "🎒", age: 6, points: 2, rec: "daily", time: "19:00",
+    name: { de: "Schultasche packen", en: "Pack school bag" },
+    steps: { de: ["Hausaufgaben einpacken", "Stundenplan prüfen", "Brotdose", "Trinkflasche"], en: ["Pack homework", "Check timetable", "Lunch box", "Water bottle"] } },
+  { emoji: "📚", age: 7, points: 3, rec: "daily", time: "16:00",
+    name: { de: "Hausaufgaben", en: "Homework" },
+    steps: { de: ["Alles erledigt", "Mama oder Papa zeigen", "Wieder einpacken"], en: ["All done", "Show a parent", "Pack it away"] } },
+  { emoji: "🧸", age: 4, points: 1, rec: "daily", time: "18:30", name: { de: "Spielzeug aufräumen", en: "Tidy up toys" } },
+  { emoji: "🍽️", age: 4, points: 1, rec: "daily", time: "18:00", name: { de: "Tisch decken", en: "Set the table" } },
+  { emoji: "🧦", age: 4, points: 1, rec: "weekly", time: "17:00", name: { de: "Socken sortieren", en: "Sort socks" } },
+  { emoji: "🪴", age: 5, points: 1, rec: "weekly", time: "17:00", name: { de: "Blumen gießen", en: "Water the plants" } },
+  { emoji: "🐹", age: 5, points: 1, rec: "daily", time: "18:00", name: { de: "Haustier füttern", en: "Feed the pet" } },
+  { emoji: "🛏️", age: 6, points: 1, rec: "daily", time: "08:00", name: { de: "Bett machen", en: "Make the bed" } },
+  { emoji: "🍽️", age: 7, points: 2, rec: "daily", time: "19:00", name: { de: "Spülmaschine ausräumen", en: "Empty the dishwasher" } },
+  { emoji: "🗑️", age: 8, points: 1, rec: "daily", time: "19:00", name: { de: "Müll rausbringen", en: "Take out the trash" } },
+  { emoji: "🧹", age: 7, points: 3, rec: "weekly", time: "18:00", photo: true, name: { de: "Zimmer aufräumen", en: "Tidy up room" } },
+  { emoji: "👕", age: 8, points: 2, rec: "weekly", time: "18:00", name: { de: "Wäsche zusammenlegen", en: "Fold laundry" } },
+  { emoji: "🧽", age: 10, points: 2, rec: "weekly", time: "18:00", name: { de: "Waschbecken putzen", en: "Clean the sink" } },
+  { emoji: "🌀", age: 10, points: 3, rec: "weekly", time: "17:00", name: { de: "Staubsaugen", en: "Vacuum" } },
+  { emoji: "📦", age: 10, points: 2, rec: "weekly", time: "18:00", name: { de: "Altpapier wegbringen", en: "Take out paper recycling" } },
+  { emoji: "🧺", age: 10, points: 2, rec: "weekly", time: "18:00", name: { de: "Wäsche aufhängen", en: "Hang up laundry" } },
+  { emoji: "🛒", age: 11, points: 2, rec: "weekly", time: "17:00", name: { de: "Beim Einkaufen helfen", en: "Help with shopping" } },
+  { emoji: "🛁", age: 12, points: 5, rec: "weekly", time: "18:00", photo: true, name: { de: "Bad putzen", en: "Clean the bathroom" } },
+  { emoji: "🍳", age: 12, points: 4, rec: "weekly", time: "18:00", name: { de: "Beim Kochen helfen", en: "Help with cooking" } },
+  { emoji: "🛌", age: 12, points: 3, rec: "biweekly", time: "18:00", name: { de: "Bettwäsche wechseln", en: "Change bed sheets" } },
+  { emoji: "🌱", age: 13, points: 5, rec: "weekly", time: "17:00", name: { de: "Rasen mähen", en: "Mow the lawn" } },
+  { emoji: "🚗", age: 14, points: 4, rec: "biweekly", time: "17:00", name: { de: "Auto aussaugen", en: "Vacuum the car" } },
+];
 
 // Kräftige Farben, die auf hell und dunkel funktionieren (weiße Schrift darauf).
 const PALETTE = ["#4f7cff", "#ff7a45", "#22a565", "#a259ff", "#e5a100", "#f0508c", "#13a8b8"];
@@ -1768,6 +1937,28 @@ const STYLE = `
   .money-row label { display: flex; flex-direction: column; gap: 2px; font-size: 0.8em; width: 110px; }
   .money-row .primary { margin-left: auto; }
   .money-settings label span { font-size: 0.8em; }
+  ol.steps { list-style: none; margin: 8px 0 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  button.step { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; min-height: 40px; padding: 6px 12px;
+                border-radius: 12px; background: var(--card-background-color); color: var(--primary-text-color); }
+  button.step .tick { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--kid, var(--primary-color));
+                      display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: 800; color: #fff; }
+  button.step.on .tick { background: var(--kid, var(--primary-color)); animation: popin .25s ease-out; }
+  button.step.on span:last-child { text-decoration: line-through; color: var(--secondary-text-color); }
+  button.step[disabled] { cursor: default; }
+  .row.task { flex-wrap: wrap; }
+  .templates .small-tabs { margin: 6px 0; }
+  .small-tabs .tab { font-size: 0.85em; min-height: 30px; }
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  button.tpl { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px;
+               border-radius: 14px; background: var(--card-background-color); color: var(--primary-text-color); min-height: 76px;
+               box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  button.tpl:hover { box-shadow: 0 0 0 2px var(--primary-color); }
+  .tpl-emoji { font-size: 1.5em; }
+  .tpl-name { font-weight: 600; }
+  .form textarea { font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--divider-color, #ccc);
+                   background: var(--card-background-color); color: var(--primary-text-color); resize: vertical; }
+  button.primary[disabled] { opacity: .45; cursor: default; }
+  @keyframes popin { from { transform: scale(.4); } }
   .party { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
            background: rgba(0,0,0,.45); animation: fade .25s ease-out; cursor: pointer; }
   .party-card { text-align: center; padding: 26px 34px; border-radius: 24px; background: var(--card-background-color);

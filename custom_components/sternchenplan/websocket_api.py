@@ -111,6 +111,8 @@ def snapshot(
                 "claimed_by": c.claimed_by,
                 "last_completed_by": c.last_completed_by,
                 "last_completed_at": iso(c.last_completed_at),
+                "steps": list(c.steps),
+                "steps_done": list(c.steps_done),
             }
             for c in family.chores.values()
         ],

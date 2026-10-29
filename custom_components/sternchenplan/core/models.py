@@ -143,6 +143,9 @@ class Chore:
     last_completed_by: str | None = None
     last_completed_at: datetime | None = None
     history: list[dict[str, Any]] = field(default_factory=list)
+    # Routine: Teilschritte, die das Kind einzeln abhakt (z. B. Morgenroutine)
+    steps: list[str] = field(default_factory=list)
+    steps_done: list[int] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -167,6 +170,8 @@ class Chore:
                 self.last_completed_at.isoformat() if self.last_completed_at else None
             ),
             "history": list(self.history),
+            "steps": list(self.steps),
+            "steps_done": list(self.steps_done),
         }
 
     @classmethod
@@ -191,6 +196,8 @@ class Chore:
             last_completed_by=data.get("last_completed_by"),
             last_completed_at=_parse_dt(data.get("last_completed_at")),
             history=list(data.get("history", [])),
+            steps=list(data.get("steps", [])),
+            steps_done=[int(i) for i in data.get("steps_done", [])],
         )
 
 

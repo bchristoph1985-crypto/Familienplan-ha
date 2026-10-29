@@ -44,6 +44,10 @@ create_chore:
       default: false
       selector:
         boolean:
+    steps:
+      selector:
+        text:
+          multiple: true
 delete_chore:
   fields: &chore
     chore_id:
@@ -129,6 +133,10 @@ update_chore:
     requires_photo:
       selector:
         boolean:
+    steps:
+      selector:
+        text:
+          multiple: true
 set_devices:
   fields:
     member:
@@ -342,5 +350,24 @@ adjust_money:
           mode: box
           unit_of_measurement: "€"
     note:
+      selector:
+        text:
+check_step:
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    index:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 11
+          mode: box
+    done:
+      selector:
+        boolean:
+    member:
       selector:
         text:
