@@ -6,7 +6,7 @@ Stand: Version 0.14.1. Noch nicht für den Alltag gedacht.
 
 ## Umstieg vom Arbeitstitel „Familienplan“
 
-Bis Version 0.13.0 hieß die Integration `familienplan`. Ab 0.14.1 heißt sie `sternchenplan`. Daten werden nicht übernommen, weil es noch keine echten Nutzer gibt:
+Bis Version 0.13.0 hieß die Integration `familienplan`. Ab 0.14.0 heißt sie `sternchenplan`. Daten werden nicht übernommen, weil es noch keine echten Nutzer gibt:
 
 1. Unter Einstellungen → Geräte & Dienste die Integration „Familienplan“ löschen.
 2. Den Ordner `custom_components/familienplan` löschen und `custom_components/sternchenplan` hineinkopieren.
@@ -71,8 +71,8 @@ Pro endet nur, wenn Polar den Schlüssel ablehnt (z. B. nach Erstattung). Dann
 gibt Sternchenplan gesperrte Geräte sofort frei, Fotoaufgaben gehen ohne Foto,
 Einstellungen bleiben erhalten.
 
-Vor dem Verkauf muss in `const.py` die `POLAR_ORGANIZATION_ID` des Shops
-eingetragen werden.
+Der Shop läuft über Polar (Organisation `sternchenplan`). Die Organisations-ID
+steht in `const.py` (`POLAR_ORGANIZATION_ID`).
 
 ## Seitenleiste und Dashboard-Karte
 
