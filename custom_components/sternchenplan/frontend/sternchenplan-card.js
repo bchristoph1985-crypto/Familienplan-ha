@@ -10,12 +10,12 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.14.1";
+const VERSION = "0.22.0";
 
 const T = {
   de: {
     hello: "Hallo {name}",
-    points: "{n} Punkte",
+    points: "{n} Sterne",
     done: "Erledigt",
     allDone: "Alles erledigt 🎉",
     waiting: "Wartet auf Freigabe",
@@ -60,8 +60,18 @@ const T = {
     locked: "🔒 Internet gesperrt",
     pass: "Freikarte bis {time}",
     givePass: "Freikarte",
+    starsBtn: "± Sterne",
+    starsTitle: "Bonus oder Abzug für {name}",
+    starsCustom: "Eigener Grund",
+    starsAmount: "Sterne",
+    starsGive: "Buchen",
+    starsLog: "Bonus und Abzug",
+    starsHint: "Abzug geht nie unter null und kostet kein Level.",
+    presets: "Schnellknöpfe für Bonus und Abzug",
+    presetAdd: "Hinzufügen",
+    presetName: "Name",
     takePass: "Freikarte weg",
-    pointsLabel: "Punkte",
+    pointsLabel: "Sterne",
     photo: "Fotonachweis (Foto sehen nur Eltern)",
     photoDone: "📷 Foto & erledigt",
     photoOf: "Foto ansehen",
@@ -72,8 +82,8 @@ const T = {
     tabRewards: "Belohnungen",
     rewards: "Belohnungen",
     redeem: "Einlösen",
-    missing: "noch {n} Punkte",
-    confirmRedeem: "„{name}“ für {n} Punkte einlösen?",
+    missing: "noch {n} Sterne",
+    confirmRedeem: "„{name}“ für {n} Sterne einlösen?",
     waitingParents: "Wartet auf die Eltern",
     wantsReward: "möchte einlösen",
     give: "Bekommt es",
@@ -83,14 +93,14 @@ const T = {
     forWhom: "Für wen",
     allChildren: "alle Kinder",
     forWhomHint: "nichts angehakt = alle Kinder",
-    cost: "Punkte",
+    cost: "Sterne",
     noRewards: "Noch keine Belohnungen. Lege oben die erste an.",
     uploading: "Foto wird hochgeladen …",
     helpOthers: "Geschwistern helfen",
-    helpHint: "Übernimm eine Aufgabe und hol dir die Punkte.",
+    helpHint: "Übernimm eine Aufgabe und hol dir die Sterne.",
     takeOver: "Übernehmen",
     takenFrom: "übernommen für {name}",
-    double: "doppelte Punkte",
+    double: "doppelte Sterne",
     donate: "Sternchenplan ist kostenlos. Gefällt er euch? ☕ Trinkgeld geben",
     whoAreYou: "Wer bist du?",
     leftToday: "Noch {n} für heute",
@@ -102,10 +112,107 @@ const T = {
     openCount: "{n} offen",
     finished: "Fertig",
     rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen" },
+    level: "Level {n}",
+    levelTitles: ["Starter", "Helfer", "Macher", "Profi", "Experte", "Meister", "Champion", "Held", "Superheld", "Legende"],
+    toNext: "noch {n} ⭐ bis Level {next}",
+    streakDays: "{n} Tage in Folge",
+    streakOne: "1 Tag",
+    streakKeep: "Heute etwas erledigen, dann wächst deine Serie!",
+    streakStart: "Erledige heute etwas und starte eine Serie",
+    streakDone: "Serie für heute gesichert",
+    best: "Rekord {n}",
+    badges: "Abzeichen",
+    badgeNames: {
+      first: "Erster Stern", done10: "Fleißige Biene", done50: "Arbeitstier", done100: "Haushaltsheld",
+      done250: "Königlich", streak3: "Am Ball", streak7: "Eine ganze Woche", streak30: "Unaufhaltsam",
+      helper1: "Retter in der Not", helper10: "Superhelfer", early5: "Frühaufsteher", photo10: "Fotoprofi",
+      reward1: "Erste Belohnung", stars100: "100 Sterne", stars500: "500 Sterne",
+    },
+    badgeHow: {
+      done: "{n} Aufgaben erledigen", best_streak: "{n} Tage in Folge etwas erledigen",
+      taken_over: "{n}× Geschwistern helfen", early: "{n} Aufgaben vor 9 Uhr",
+      photos: "{n} Aufgaben mit Foto", redeemed: "{n} Belohnung einlösen", earned: "{n} Sterne sammeln",
+    },
+    badgeEarned: "geschafft am {date}",
+    newBadge: "Neues Abzeichen!",
+    levelUp: "Level {n}!",
+    youAre: "Du bist jetzt {title}",
+    tapClose: "Tippen zum Weitermachen",
+    goal: "Mein Sparziel",
+    goalMissing: "noch {n} Sterne",
+    goalReady: "Geschafft! Du kannst es einlösen.",
+    setGoal: "🎯 Als Ziel",
+    isGoal: "🎯 Mein Ziel",
+    familyGoal: "Familienziel",
+    together: "{n} von {t} ⭐, alle zusammen",
+    familyReached: "Geschafft! 🎉",
+    fgName: "Wofür spart ihr gemeinsam?",
+    fgTarget: "Sterne zusammen",
+    fgStart: "Familienziel starten",
+    fgClear: "Familienziel beenden",
+    fgHint: "Alle Kinder sammeln gemeinsam. Niemandem wird etwas abgezogen.",
+    fgConfirm: "Familienziel „{name}“ beenden?",
+    tabMoney: "Geld",
+    money: "Taschengeld",
+    weekly: "{amount} Wochengeld, jeden {day}",
+    exchange: "{stars} ⭐ → 1 € tauschen",
+    confirmExchange: "{stars} Sterne gegen 1 € tauschen?",
+    rate: "Sterne pro Euro",
+    rateHint: "0 = Sterne lassen sich nicht in Geld tauschen",
+    payday: "Zahltag fürs Wochengeld",
+    perWeek: "€ pro Woche",
+    payout: "Auszahlen",
+    confirmPayout: "{amount} an {name} auszahlen? Gib das Geld bar oder überweise es.",
+    book: "Buchen",
+    bookPrompt: "Betrag in Euro (minus zieht ab), z. B. 2,50",
+    notePrompt: "Wofür? (optional)",
+    history: "Verlauf",
+    noHistory: "Noch keine Buchungen.",
+    kinds: { allowance: "Wochengeld", exchange: "Sterne getauscht", payout: "ausgezahlt", adjust: "gebucht" },
+    days: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+    steps: "Schritte (einer pro Zeile, leer = normale Aufgabe)",
+    stepsShort: "{n} Schritte",
+    templates: "📚 Vorlagen",
+    templatesHint: "Tippe auf eine Vorlage, dann wähle unten, wer sie machen soll.",
+    ageAll: "Alle",
+    ageGroup: "{from}–{to} J.",
+    ageFrom: "ab {n} J.",
+    pauseTitle: "Ferien-Pause",
+    pauseHint: "In den Ferien ist nichts fällig, nichts wird gesperrt und Serien reißen nicht. Danach geht es normal weiter.",
+    pauseFrom: "Von",
+    pauseUntil: "Bis einschließlich",
+    pauseStart: "🏖️ Ferien starten",
+    pauseEnd: "Ferien beenden",
+    pauseActive: "🏖️ Ferien! Bis {date} ist nichts zu tun.",
+    pausePlanned: "🏖️ Ferien geplant: {from} bis {date}",
+    weekdays: "Nur an diesen Tagen (leer = jeden Tag)",
+    dayShort: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+    schoolDays: "Mo–Fr",
+    icon: "Symbol (für den Bilder-Modus)",
+    pictureOn: "🖼️ Bilder-Modus",
+    pictureOff: "🔤 Text-Modus",
+    outdoor: "🌦️ Draußen: bei Regen einen Tag später",
+    outdoorShort: "🌦️ draußen",
+    rainWait: "🌧️ wegen Regen verschoben",
+    rainBanner: "🌧️ Es regnet. Draußen-Aufgaben warten auf trockenes Wetter.",
+    weekTitle: "📊 Diese Woche",
+    weekRow: "{done} erledigt · {missed} verpasst",
+    weekBest: "Am fleißigsten",
+    weekEmpty: "Diese Woche ist noch nichts passiert.",
+    sendReport: "Bericht jetzt aufs Handy",
+    settings: "⚙️ Einstellungen: Wetter, Wochenbericht, Schnellknöpfe",
+    weatherEntity: "Wetter für Draußen-Aufgaben",
+    weatherNone: "aus",
+    weatherNow: "gerade: {state}",
+    reportDay: "Wochenbericht an Eltern",
+    reportOff: "aus",
+    reportHour: "Uhrzeit",
+    readAloud: "Vorlesen",
+    moneyHint: "Das Geld liegt nicht wirklich hier. Sternchenplan führt nur das Konto. Auszahlen tut ihr selbst, bar oder per Überweisung.",
   },
   en: {
     hello: "Hi {name}",
-    points: "{n} points",
+    points: "{n} stars",
     done: "Done",
     allDone: "All done 🎉",
     waiting: "Waiting for approval",
@@ -150,8 +257,18 @@ const T = {
     locked: "🔒 Internet locked",
     pass: "Free pass until {time}",
     givePass: "Free pass",
+    starsBtn: "± Stars",
+    starsTitle: "Bonus or deduction for {name}",
+    starsCustom: "Own reason",
+    starsAmount: "Stars",
+    starsGive: "Book",
+    starsLog: "Bonus and deductions",
+    starsHint: "A deduction never goes below zero and never costs a level.",
+    presets: "Quick buttons for bonus and deduction",
+    presetAdd: "Add",
+    presetName: "Name",
     takePass: "Remove pass",
-    pointsLabel: "Points",
+    pointsLabel: "Stars",
     photo: "Photo proof (only parents see it)",
     photoDone: "📷 Photo & done",
     photoOf: "View photo",
@@ -162,8 +279,8 @@ const T = {
     tabRewards: "Rewards",
     rewards: "Rewards",
     redeem: "Redeem",
-    missing: "{n} points to go",
-    confirmRedeem: "Redeem “{name}” for {n} points?",
+    missing: "{n} stars to go",
+    confirmRedeem: "Redeem “{name}” for {n} stars?",
     waitingParents: "Waiting for a parent",
     wantsReward: "wants to redeem",
     give: "Give it",
@@ -173,14 +290,14 @@ const T = {
     forWhom: "For whom",
     allChildren: "all children",
     forWhomHint: "none ticked = all children",
-    cost: "Points",
+    cost: "Stars",
     noRewards: "No rewards yet. Create the first one above.",
     uploading: "Uploading photo …",
     helpOthers: "Help your siblings",
-    helpHint: "Take over a chore and earn the points.",
+    helpHint: "Take over a chore and earn the stars.",
     takeOver: "Take over",
     takenFrom: "taken over for {name}",
-    double: "double points",
+    double: "double stars",
     donate: "Sternchenplan is free. Like it? ☕ Leave a tip",
     whoAreYou: "Who are you?",
     leftToday: "{n} left for today",
@@ -192,6 +309,103 @@ const T = {
     openCount: "{n} open",
     finished: "Done",
     rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks" },
+    level: "Level {n}",
+    levelTitles: ["Starter", "Helper", "Doer", "Pro", "Expert", "Master", "Champion", "Hero", "Superhero", "Legend"],
+    toNext: "{n} ⭐ to level {next}",
+    streakDays: "{n} days in a row",
+    streakOne: "1 day",
+    streakKeep: "Do something today to keep your streak!",
+    streakStart: "Do something today to start a streak",
+    streakDone: "Streak saved for today",
+    best: "Best {n}",
+    badges: "Badges",
+    badgeNames: {
+      first: "First star", done10: "Busy bee", done50: "Workhorse", done100: "Household hero",
+      done250: "Royal", streak3: "On a roll", streak7: "A whole week", streak30: "Unstoppable",
+      helper1: "Lifesaver", helper10: "Super helper", early5: "Early bird", photo10: "Photographer",
+      reward1: "First reward", stars100: "100 stars", stars500: "500 stars",
+    },
+    badgeHow: {
+      done: "Finish {n} chores", best_streak: "Do something {n} days in a row",
+      taken_over: "Help your siblings {n}×", early: "{n} chores before 9 am",
+      photos: "{n} chores with a photo", redeemed: "Redeem {n} reward", earned: "Collect {n} stars",
+    },
+    badgeEarned: "earned on {date}",
+    newBadge: "New badge!",
+    levelUp: "Level {n}!",
+    youAre: "You are now {title}",
+    tapClose: "Tap to continue",
+    goal: "My savings goal",
+    goalMissing: "{n} stars to go",
+    goalReady: "Done! You can redeem it.",
+    setGoal: "🎯 Set as goal",
+    isGoal: "🎯 My goal",
+    familyGoal: "Family goal",
+    together: "{n} of {t} ⭐, all together",
+    familyReached: "Done! 🎉",
+    fgName: "What are you saving for together?",
+    fgTarget: "Stars together",
+    fgStart: "Start family goal",
+    fgClear: "End family goal",
+    fgHint: "All children collect together. Nothing is deducted from anyone.",
+    fgConfirm: "End family goal “{name}”?",
+    tabMoney: "Money",
+    money: "Pocket money",
+    weekly: "{amount} allowance, every {day}",
+    exchange: "Exchange {stars} ⭐ → 1 €",
+    confirmExchange: "Exchange {stars} stars for 1 €?",
+    rate: "Stars per euro",
+    rateHint: "0 = stars can't be exchanged for money",
+    payday: "Payday for the allowance",
+    perWeek: "€ per week",
+    payout: "Pay out",
+    confirmPayout: "Pay {amount} to {name}? Hand over cash or transfer it.",
+    book: "Book",
+    bookPrompt: "Amount in euros (minus subtracts), e.g. 2.50",
+    notePrompt: "What for? (optional)",
+    history: "History",
+    noHistory: "No entries yet.",
+    kinds: { allowance: "Allowance", exchange: "Stars exchanged", payout: "paid out", adjust: "booked" },
+    days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    steps: "Steps (one per line, empty = normal chore)",
+    stepsShort: "{n} steps",
+    templates: "📚 Templates",
+    templatesHint: "Tap a template, then choose below who should do it.",
+    ageAll: "All",
+    ageGroup: "{from}–{to} yrs",
+    ageFrom: "{n}+ yrs",
+    pauseTitle: "Holiday pause",
+    pauseHint: "During holidays nothing is due, nothing gets locked and streaks don't break. Afterwards everything continues as usual.",
+    pauseFrom: "From",
+    pauseUntil: "Until (inclusive)",
+    pauseStart: "🏖️ Start holidays",
+    pauseEnd: "End holidays",
+    pauseActive: "🏖️ Holidays! Nothing to do until {date}.",
+    pausePlanned: "🏖️ Holidays planned: {from} to {date}",
+    weekdays: "Only on these days (empty = every day)",
+    dayShort: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+    schoolDays: "Mon–Fri",
+    icon: "Symbol (for picture mode)",
+    pictureOn: "🖼️ Picture mode",
+    pictureOff: "🔤 Text mode",
+    outdoor: "🌦️ Outdoors: one day later if it rains",
+    outdoorShort: "🌦️ outdoors",
+    rainWait: "🌧️ moved because of rain",
+    rainBanner: "🌧️ It's raining. Outdoor chores wait for dry weather.",
+    weekTitle: "📊 This week",
+    weekRow: "{done} done · {missed} missed",
+    weekBest: "Hardest worker",
+    weekEmpty: "Nothing has happened this week yet.",
+    sendReport: "Send report to my phone",
+    settings: "⚙️ Settings: weather, weekly report, quick buttons",
+    weatherEntity: "Weather for outdoor chores",
+    weatherNone: "off",
+    weatherNow: "now: {state}",
+    reportDay: "Weekly report to parents",
+    reportOff: "off",
+    reportHour: "Time",
+    readAloud: "Read aloud",
+    moneyHint: "The money isn't really kept here. Sternchenplan only keeps the account. You pay out yourselves, in cash or by transfer.",
   },
 };
 
@@ -208,6 +422,12 @@ class SternchenplanCard extends HTMLElement {
     this._form = this._emptyForm();
     this._awayForm = {};
     this._rewardForm = this._emptyReward();
+    this._fgForm = { name: "", target: 300 };
+    this._tplAge = 0;
+    this._pauseForm = { from: "", until: "" };
+    this._starsOpen = null;
+    this._starsForm = { stars: "", reason: "" };
+    this._presetForm = { name: "", stars: "" };
     this._busy = false;
     // Familientablet: welches Kind gerade dran ist
     this._actingAs = null;
@@ -253,6 +473,7 @@ class SternchenplanCard extends HTMLElement {
     this._unsub = this._hass.connection
       .subscribeMessage(
         (data) => {
+          this._spotNews(this._data, data);
           this._data = data;
           this._error = null;
           this._render();
@@ -456,6 +677,126 @@ class SternchenplanCard extends HTMLElement {
         }
         break;
       }
+      case "step": {
+        const chore = this._data.chores.find((c) => c.id === id);
+        const i = Number(el.dataset.i);
+        const done = !(chore?.steps_done || []).includes(i);
+        if (chore) {
+          // Sofort zeigen, der Server bestätigt gleich.
+          chore.steps_done = done ? [...chore.steps_done, i] : chore.steps_done.filter((x) => x !== i);
+          if (done && chore.steps_done.length === chore.steps.length) this._celebrate(el);
+          this._render();
+        }
+        this._hass
+          .callService("sternchenplan", "check_step", { chore_id: id, index: i, done, member })
+          .catch((err) => this._notify(err.message));
+        break;
+      }
+      case "say":
+        this._say(el.dataset.text);
+        break;
+      case "picture":
+        this._call("set_picture_mode", { member: id, enabled: !!el.dataset.on });
+        break;
+      case "pause-start": {
+        const f = this._pauseForm;
+        if (!f.until) break;
+        const end = new Date(`${f.until}T00:00`);
+        end.setDate(end.getDate() + 1); // „bis einschließlich“
+        const data = { until: end.toISOString() };
+        if (f.from) data.start = new Date(`${f.from}T00:00`).toISOString();
+        this._call("set_pause", data);
+        this._pauseForm = { from: "", until: "" };
+    this._starsOpen = null;
+    this._starsForm = { stars: "", reason: "" };
+    this._presetForm = { name: "", stars: "" };
+        break;
+      }
+      case "pause-end":
+        this._call("end_pause", {});
+        break;
+      case "stars-open":
+        this._starsOpen = this._starsOpen === id ? null : id;
+        this._starsForm = { stars: "", reason: "" };
+        this._render();
+        break;
+      case "stars-give": {
+        const stars = el.dataset.stars ? Number(el.dataset.stars) : parseInt(this._starsForm.stars, 10);
+        const reason = el.dataset.stars ? el.dataset.reason : this._starsForm.reason.trim();
+        if (!stars) break;
+        this._starsForm = { stars: "", reason: "" };
+        this._call("give_stars", { member: id, stars, reason });
+        if (stars > 0) this._celebrate(el);
+        break;
+      }
+      case "preset-add": {
+        const stars = parseInt(this._presetForm.stars, 10);
+        const name = this._presetForm.name.trim();
+        if (!stars || !name) break;
+        this._presetForm = { name: "", stars: "" };
+        this._call("add_preset", { name, stars });
+        break;
+      }
+      case "preset-del":
+        this._call("delete_preset", { preset_id: id });
+        break;
+      case "send-report":
+        this._call("send_report", {});
+        this._notify(this._t("sendReport") + " ✓");
+        break;
+      case "tpl":
+        this._useTemplate(Number(id));
+        break;
+      case "tpl-toggle":
+        // Klick kommt vor dem Umschalten: merken, damit ein neuer Stand es nicht zuklappt.
+        this._tplOpen = !el.parentElement.open;
+        break;
+      case "tpl-age":
+        this._tplOpen = true;
+        this._tplAge = Number(id);
+        this._render();
+        break;
+      case "exchange": {
+        const rate = this._data.money?.rate;
+        if (rate && confirm(this._t("confirmExchange", { stars: rate }))) {
+          const data = { euros: 1 };
+          if (this._data.tablet) data.member = this._actingAs;
+          this._call("exchange_stars", data);
+        }
+        break;
+      }
+      case "payout": {
+        const k = this._member(id);
+        if (k && confirm(this._t("confirmPayout", { amount: this._euro(k.money), name: k.name }))) {
+          this._call("payout", { member: id });
+        }
+        break;
+      }
+      case "book": {
+        const raw = prompt(this._t("bookPrompt"));
+        const amount = parseFloat(String(raw || "").replace(",", "."));
+        if (amount) this._call("adjust_money", { member: id, amount, note: prompt(this._t("notePrompt")) || "" });
+        break;
+      }
+      case "goal": {
+        const data = { reward_id: id || null };
+        if (this._data.tablet) data.member = this._actingAs;
+        this._call("set_goal", data);
+        break;
+      }
+      case "fgoal-save": {
+        const target = parseInt(this._fgForm.target, 10);
+        if (this._fgForm.name.trim() && target > 0) {
+          this._call("set_family_goal", { name: this._fgForm.name.trim(), target });
+          this._fgForm = { name: "", target: 300 };
+        }
+        break;
+      }
+      case "fgoal-clear": {
+        const g = this._data.family_goal;
+        if (g && confirm(this._t("fgConfirm", { name: g.name }))) this._call("clear_family_goal", {});
+        break;
+      }
       case "give":
         this._call("approve_redemption", { redemption_id: id });
         break;
@@ -505,6 +846,46 @@ class SternchenplanCard extends HTMLElement {
       this._awayForm[memberId] = { ...(this._awayForm[memberId] || {}), [key]: el.value };
       return;
     }
+    if (field.startsWith("stars.")) {
+      this._starsForm[field.slice(6)] = el.value;
+      return;
+    }
+    if (field.startsWith("preset.")) {
+      this._presetForm[field.slice(7)] = el.value;
+      return;
+    }
+    if (field.startsWith("set.")) {
+      if (ev.type !== "change") return;
+      const call = (service, data) =>
+        this._hass.callService("sternchenplan", service, data).catch((err) => this._notify(err.message));
+      if (field === "set.weather") call("set_weather", { entity: el.value });
+      else {
+        const r = { ...(this._data.report || { day: 6, hour: 18 }) };
+        r[field.slice(4)] = parseInt(el.value, 10);
+        call("set_report", r);
+      }
+      return;
+    }
+    if (field.startsWith("money.") || field.startsWith("allow.")) {
+      if (ev.type !== "change") return;
+      // Einstellungen nicht über _call: der sperrt bei schnellen Folgeänderungen.
+      const send = (service, data) =>
+        this._hass.callService("sternchenplan", service, data).catch((err) => this._notify(err.message));
+      if (el.value === "") return;
+      if (field.startsWith("allow.")) {
+        const amount = Math.max(0, parseFloat(String(el.value).replace(",", ".")) || 0);
+        send("set_allowance", { member: field.slice(6), amount });
+      } else {
+        const m = { ...(this._data.money || { rate: 0, payday: 6 }) };
+        m[field.slice(6)] = parseInt(el.value, 10) || 0;
+        send("set_money", { rate: m.rate, payday: m.payday });
+      }
+      return;
+    }
+    if (field.startsWith("fg.")) {
+      this._fgForm[field.slice(3)] = el.value;
+      return;
+    }
     if (field.startsWith("reward.")) {
       const key = field.slice(7);
       if (key === "member") {
@@ -514,6 +895,16 @@ class SternchenplanCard extends HTMLElement {
       } else {
         this._rewardForm[key] = el.value;
       }
+      return;
+    }
+    if (field === "weekday") {
+      const set = new Set(this._form.weekdays);
+      el.checked ? set.add(Number(el.value)) : set.delete(Number(el.value));
+      this._form.weekdays = [...set].sort();
+      return;
+    }
+    if (field.startsWith("pause.")) {
+      this._pauseForm[field.slice(6)] = el.value;
       return;
     }
     if (field === "assignee") {
@@ -543,7 +934,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _emptyForm() {
-    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, editId: null };
+    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, steps: "", weekdays: [], icon: "", outdoor: false, editId: null };
   }
 
   _resetForm() {
@@ -570,10 +961,319 @@ class SternchenplanCard extends HTMLElement {
       approval: c.requires_approval,
       photo: c.requires_photo,
       minAge: c.min_age || 0,
+      steps: (c.steps || []).join("\n"),
+      weekdays: [...(c.weekdays || [])],
+      icon: c.icon || "",
+      outdoor: !!c.outdoor,
       editId: c.id,
     };
     this._render();
     this.shadowRoot.querySelector("details.form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  _dayList(days) {
+    if (days.join() === "0,1,2,3,4") return this._t("schoolDays");
+    const short = this._t("dayShort");
+    return days.map((d) => short[d]).join(", ");
+  }
+
+  _date(iso) {
+    return new Date(iso).toLocaleDateString(this._locale(), { day: "numeric", month: "numeric" });
+  }
+
+  _pauseBanner() {
+    const p = this._data.pause;
+    if (!p?.active) return "";
+    // Das Ende ist exklusiv gespeichert: als „bis einschließlich“ den Tag davor zeigen.
+    const last = new Date(new Date(p.until).getTime() - 1);
+    return `<div class="pause-banner">${esc(this._t("pauseActive", { date: this._date(last.toISOString()) }))}</div>`;
+  }
+
+  _weatherText(entity, state) {
+    const obj = this._hass?.states?.[entity];
+    try {
+      if (obj && this._hass.formatEntityState) return this._hass.formatEntityState(obj);
+    } catch (e) {
+      /* ältere HA-Versionen: Rohwert zeigen */
+    }
+    return state;
+  }
+
+  // Bonus oder Abzug: Schnellknöpfe plus eigener Grund.
+  _renderStarsPanel(m) {
+    const f = this._starsForm;
+    const chips = (this._data.presets || [])
+      .map(
+        (p) => `<button class="star-chip ${p.stars > 0 ? "plus" : "minus"}" data-action="stars-give" data-id="${esc(m.id)}" data-stars="${p.stars}" data-reason="${esc(p.name)}">
+          ${p.stars > 0 ? "+" : "−"}${Math.abs(p.stars)} ⭐ ${esc(p.name)}</button>`,
+      )
+      .join("");
+    return `
+      <div class="stars-panel">
+        <div class="small"><strong>${esc(this._t("starsTitle", { name: m.name }))}</strong></div>
+        <div class="star-chips">${chips}</div>
+        <div class="stars-custom">
+          <input type="number" min="-100" max="100" step="1" placeholder="±" aria-label="${this._t("starsAmount")}" data-field="stars.stars" value="${esc(f.stars)}">
+          <input placeholder="${this._t("starsCustom")}" maxlength="60" aria-label="${this._t("starsCustom")}" data-field="stars.reason" value="${esc(f.reason)}">
+          <button class="primary" data-action="stars-give" data-id="${esc(m.id)}">${this._t("starsGive")}</button>
+        </div>
+        <p class="muted small">${this._t("starsHint")}</p>
+        ${this._starLog(m, 3)}
+      </div>`;
+  }
+
+  _starLog(member, limit = 5) {
+    const log = (member.star_log || []).slice(0, limit);
+    if (!log.length) return "";
+    return `<ul class="ledger">${log
+      .map(
+        (e) => `<li><span>${esc(e.reason || (e.stars > 0 ? "Bonus" : "−"))}<span class="muted small"> · ${new Date(e.at).toLocaleDateString(this._locale())}</span></span>
+          <b class="${e.stars < 0 ? "minus" : "plus"}">${e.stars > 0 ? "+" : ""}${e.stars} ⭐</b></li>`,
+      )
+      .join("")}</ul>`;
+  }
+
+  _renderChildStarLog(member) {
+    const list = this._starLog(member, 5);
+    if (!list) return "";
+    return `<section class="star-log"><div class="section-title">⭐ ${this._t("starsLog")}</div>${list}</section>`;
+  }
+
+  _renderPresetAdmin() {
+    const f = this._presetForm;
+    const list = (this._data.presets || [])
+      .map(
+        (p) => `<span class="star-chip ${p.stars > 0 ? "plus" : "minus"}">${p.stars > 0 ? "+" : "−"}${Math.abs(p.stars)} ${esc(p.name)}
+          <button class="x" data-action="preset-del" data-id="${esc(p.id)}" aria-label="${this._t("delete")}">×</button></span>`,
+      )
+      .join("");
+    return `
+      <div class="preset-admin">
+        <div class="small"><strong>${this._t("presets")}</strong></div>
+        <div class="star-chips">${list}</div>
+        <div class="stars-custom">
+          <input type="number" min="-100" max="100" placeholder="±" aria-label="${this._t("starsAmount")}" data-field="preset.stars" value="${esc(f.stars)}">
+          <input placeholder="${this._t("presetName")}" maxlength="40" aria-label="${this._t("presetName")}" data-field="preset.name" value="${esc(f.name)}">
+          <button class="link" data-action="preset-add">+ ${this._t("presetAdd")}</button>
+        </div>
+      </div>`;
+  }
+
+  _rainBanner() {
+    const w = this._data.weather;
+    if (!w?.bad || !this._data.chores.some((c) => c.outdoor)) return "";
+    return `<div class="pause-banner rain-banner">${this._t("rainBanner")}</div>`;
+  }
+
+  // Wochenbilanz für Eltern: erledigt gegen verpasst, wer am meisten geschafft hat.
+  _renderWeek() {
+    const rows = this._data.week || [];
+    if (!rows.length) return "";
+    const best = rows.reduce((a, b) => (b.stars > a.stars || (b.stars === a.stars && b.done > a.done) ? b : a));
+    const active = rows.some((r) => r.done || r.missed);
+    const list = rows
+      .map((r) => {
+        const m = this._member(r.member);
+        if (!m) return "";
+        const total = r.done + r.missed;
+        const pct = total ? Math.round((r.done / total) * 100) : 0;
+        const crown = active && best.done && r.member === best.member;
+        return `
+          <li class="week-row" style="--kid:${this._color(m.id)}">
+            ${this._avatar(m, 32)}
+            <div class="week-main">
+              <div class="week-head"><strong>${esc(m.name)}</strong>${crown ? ` <span class="chip best">🏆 ${this._t("weekBest")}</span>` : ""}
+                <span class="week-stars">⭐ ${r.stars}</span></div>
+              <div class="week-bar ${total ? "" : "nil"}" role="img" aria-label="${esc(this._t("weekRow", r))}"><span style="width:${pct}%"></span></div>
+              <div class="muted small">${esc(this._t("weekRow", r))}${r.streak ? ` · 🔥 ${r.streak}` : ""}</div>
+            </div>
+          </li>`;
+      })
+      .join("");
+    return `
+      <section class="week">
+        <div class="week-title"><strong>${this._t("weekTitle")}</strong>
+          ${this._config.readonly ? "" : `<button class="link" data-action="send-report">${this._t("sendReport")}</button>`}</div>
+        ${active ? `<ul class="week-list">${list}</ul>` : `<p class="muted small">${this._t("weekEmpty")}</p>`}
+      </section>`;
+  }
+
+  // Einstellungen für Wetter und Wochenbericht, oben im Aufgaben-Reiter.
+  _renderSettings() {
+    const d = this._data;
+    const weathers = Object.keys(this._hass?.states || {}).filter((id) => id.startsWith("weather."));
+    const current = d.weather?.entity || "";
+    if (current && !weathers.includes(current)) weathers.push(current);
+    const r = d.report || { day: 6, hour: 18 };
+    const days = this._t("days");
+    const name = (id) => this._hass?.states?.[id]?.attributes?.friendly_name || id;
+    return `
+      <details class="form settings-box">
+        <summary>${this._t("settings")}</summary>
+        <div class="grid">
+          <label>${this._t("weatherEntity")}<select data-field="set.weather">
+            <option value="">${this._t("weatherNone")}</option>
+            ${weathers.map((id) => `<option value="${esc(id)}" ${id === current ? "selected" : ""}>${esc(name(id))}</option>`).join("")}
+          </select>${d.weather?.state ? `<span class="muted small">${esc(this._t("weatherNow", { state: this._weatherText(current, d.weather.state) }))}</span>` : ""}</label>
+          <label>${this._t("reportDay")}<select data-field="set.day">
+            <option value="-1" ${r.day === -1 ? "selected" : ""}>${this._t("reportOff")}</option>
+            ${days.map((dn, i) => `<option value="${i}" ${i === r.day ? "selected" : ""}>${esc(dn)}</option>`).join("")}
+          </select></label>
+          <label>${this._t("reportHour")}<select data-field="set.hour" ${r.day === -1 ? "disabled" : ""}>
+            ${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${h === r.hour ? "selected" : ""}>${String(h).padStart(2, "0")}:00</option>`).join("")}
+          </select></label>
+        </div>
+        ${this._renderPresetAdmin()}
+      </details>`;
+  }
+
+  _renderPause() {
+    const p = this._data.pause;
+    if (p) {
+      const last = new Date(new Date(p.until).getTime() - 1).toISOString();
+      const text = p.active ? this._t("pauseActive", { date: this._date(last) }) : this._t("pausePlanned", { from: this._date(p.from), date: this._date(last) });
+      return `<div class="pause-box"><div class="pause-banner">${esc(text)}</div>
+        <button class="link bad" data-action="pause-end">${this._t("pauseEnd")}</button></div>`;
+    }
+    const f = this._pauseForm;
+    return `
+      <details class="form pause-form">
+        <summary>${this._t("pauseStart")}</summary>
+        <p class="muted small">${this._t("pauseHint")}</p>
+        <div class="grid">
+          <label>${this._t("pauseFrom")}<input type="date" data-field="pause.from" value="${esc(f.from)}"></label>
+          <label>${this._t("pauseUntil")}<input type="date" data-field="pause.until" value="${esc(f.until)}"></label>
+        </div>
+        <button class="primary" data-action="pause-start">${this._t("pauseStart")}</button>
+      </details>`;
+  }
+
+  _choreIcon(chore) {
+    if (chore.icon) return chore.icon;
+    const n = chore.name.toLowerCase();
+    for (const [words, emoji] of CHORE_EMOJI) if (words.some((w) => n.includes(w))) return emoji;
+    return "⭐";
+  }
+
+  _say(text) {
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = this._lang() === "de" ? "de-DE" : "en-US";
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) {
+      /* Kein Vorlesen verfügbar: einfach nichts tun. */
+    }
+  }
+
+  // Bilder-Modus: große Kacheln mit Symbol, wenig Text, Vorlesen per Tipp.
+  _renderPictureChild(member) {
+    const chores = this._openFor(member.id);
+    const color = this._color(member.id);
+    const ro = this._config.readonly || member.id !== this._me();
+    const tiles = chores
+      .map((c) => {
+        const waiting = c.state === "claimed";
+        const left = (c.steps?.length || 0) - (c.steps_done?.length || 0);
+        const photo = this._photoNeeded(c);
+        const canTap = !ro && !waiting && !left;
+        return `
+          <div class="pic ${waiting ? "wait" : ""} ${c.state}">
+            <button class="pic-main" ${canTap ? "" : "disabled"} data-action="claim" data-id="${esc(c.id)}" data-member="${esc(member.id)}">
+              <span class="pic-icon">${esc(this._choreIcon(c))}</span>
+              <span class="pic-stars">${"⭐".repeat(Math.min(c.points, 5))}</span>
+              ${waiting ? `<span class="pic-state">⏳</span>` : photo ? `<span class="pic-state">📷</span>` : ""}
+            </button>
+            <button class="pic-say" data-action="say" data-text="${esc(c.name)}" aria-label="${this._t("readAloud")}">🔊 ${esc(c.name)}</button>
+            ${c.steps?.length && !waiting ? this._steps(c, member.id, ro) : ""}
+          </div>`;
+      })
+      .join("");
+    return `
+      <div class="kid picture" style="--kid:${color}">
+        <div class="hero">
+          ${this._avatar(member, 64)}
+          <div class="hero-text"><div class="hello">${esc(member.name)}</div><div class="star big-star">⭐ ${member.points}</div></div>
+          ${member.progress ? `<span class="level-badge">${member.progress.level}</span>` : ""}
+        </div>
+        ${this._pauseBanner()}${this._rainBanner()}
+        ${chores.length ? `<div class="pic-grid">${tiles}</div>` : `<div class="done-big">🎉</div>`}
+        ${this._renderChildRewards(member)}
+        ${this._renderBadges(member)}
+        ${this._renderChildStarLog(member)}
+      </div>`;
+  }
+
+  _stepList(text) {
+    return String(text || "")
+      .split("\n")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  }
+
+  _lang() {
+    return this._t("rec") === T.de.rec ? "de" : "en";
+  }
+
+  // Vorlage ins Formular übernehmen. Wer sie macht, wählen die Eltern selbst.
+  _useTemplate(index) {
+    const t = TEMPLATES[index];
+    if (!t) return;
+    const lang = this._lang();
+    const due = new Date();
+    const [h, m] = t.time.split(":").map(Number);
+    due.setHours(h, m, 0, 0);
+    if (due < new Date()) due.setDate(due.getDate() + 1);
+    this._form = {
+      ...this._emptyForm(),
+      assignees: this._form.assignees,
+      name: t.name[lang],
+      points: t.points,
+      recurrence: t.rec,
+      minAge: t.age,
+      photo: !!t.photo,
+      steps: (t.steps?.[lang] || []).join("\n"),
+      icon: t.emoji,
+      weekdays: t.school ? [0, 1, 2, 3, 4] : [],
+      outdoor: !!t.outdoor,
+      due: this._toLocalInput(due.toISOString()),
+    };
+    this._render();
+    const form = this.shadowRoot.querySelector("details.chore-form");
+    if (form) {
+      form.open = true;
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  _renderTemplates() {
+    const lang = this._lang();
+    const groups = [[0, 99], [4, 6], [7, 9], [10, 12], [13, 99]];
+    const [lo, hi] = groups[this._tplAge] || groups[0];
+    const chips = groups
+      .map(([a, b], i) => {
+        const label = i === 0 ? this._t("ageAll") : b === 99 ? this._t("ageFrom", { n: a }) : this._t("ageGroup", { from: a, to: b });
+        return `<button class="tab ${this._tplAge === i ? "on" : ""}" data-action="tpl-age" data-id="${i}">${esc(label)}</button>`;
+      })
+      .join("");
+    // Routinen passen für alle Altersgruppen ab ihrem Mindestalter.
+    const items = TEMPLATES.map((t, i) => [t, i])
+      .filter(([t]) => this._tplAge === 0 || (t.age >= lo && t.age <= hi) || (t.steps && t.age <= hi))
+      .map(
+        ([t, i]) => `<button class="tpl" data-action="tpl" data-id="${i}">
+          <span class="tpl-emoji">${t.emoji}</span>
+          <span class="tpl-name">${esc(t.name[lang])}</span>
+          <span class="muted small">⭐ ${t.points} · ${esc(this._t("rec")[t.rec])}${t.steps ? " · " + esc(this._t("stepsShort", { n: t.steps[lang].length })) : ""}</span>
+        </button>`,
+      )
+      .join("");
+    return `
+      <details class="form templates" ${this._tplOpen ?? !this._data.chores.length ? "open" : ""}>
+        <summary data-action="tpl-toggle">${this._t("templates")}</summary>
+        <p class="muted small">${this._t("templatesHint")}</p>
+        <nav class="tabs small-tabs">${chips}</nav>
+        <div class="tpl-grid">${items}</div>
+      </details>`;
   }
 
   async _createChore() {
@@ -591,6 +1291,10 @@ class SternchenplanCard extends HTMLElement {
         requires_approval: f.approval,
         requires_photo: f.photo,
         min_age: Number(f.minAge) || 0,
+        steps: this._stepList(f.steps),
+        weekdays: f.weekdays,
+        icon: f.icon || "",
+        outdoor: !!f.outdoor,
       });
       this._resetForm();
       this._render();
@@ -605,6 +1309,10 @@ class SternchenplanCard extends HTMLElement {
       requires_approval: f.approval,
       requires_photo: f.photo,
       min_age: Number(f.minAge) || 0,
+      steps: this._stepList(f.steps),
+      weekdays: f.weekdays,
+      icon: f.icon || "",
+      outdoor: !!f.outdoor,
     };
     if (f.due) data.due = f.due;
     await this._call("create_chore", data);
@@ -689,6 +1397,7 @@ class SternchenplanCard extends HTMLElement {
 
   _dueLabel(chore) {
     if (chore.state === "overdue") return `<span class="chip bad">${this._t("overdue")}</span>`;
+    if (chore.weather_shift > 0) return `<span class="chip rain">${this._t("rainWait")}</span>`;
     if (!chore.due) return `<span class="muted">${this._t("noDue")}</span>`;
     const due = new Date(chore.due);
     const now = new Date();
@@ -714,10 +1423,16 @@ class SternchenplanCard extends HTMLElement {
     } else if (showClaim && !ro) {
       const label = forName ? this._t("doneShort") : this._t("done");
       const photo = this._photoNeeded(chore);
-      action = `<button class="primary" data-action="claim" data-id="${esc(chore.id)}" data-member="${esc(memberId)}">${
-        photo ? this._t("photoDone") : "✓ " + label
-      }</button>`;
+      const stepsLeft = (chore.steps?.length || 0) - (chore.steps_done?.length || 0);
+      // Bei Routinen meldet der letzte Schritt. Eltern dürfen trotzdem direkt abhaken,
+      // bei Foto-Routinen tippt das Kind nach dem letzten Schritt selbst.
+      if (!stepsLeft || this._data.is_manager || photo) {
+        action = `<button class="primary" data-action="claim" data-id="${esc(chore.id)}" data-member="${esc(memberId)}" ${
+          stepsLeft && !this._data.is_manager ? "disabled" : ""
+        }>${photo ? this._t("photoDone") : "✓ " + label}</button>`;
+      }
     }
+    const steps = chore.steps?.length && chore.state !== "claimed" ? this._steps(chore, memberId, ro || !showClaim) : "";
     return `
       <li class="row task ${chore.state}">
         ${chore.state === "claimed" ? this._thumb(chore) : ""}
@@ -729,7 +1444,18 @@ class SternchenplanCard extends HTMLElement {
         </div>
         <span class="pts-pill">+${chore.points}</span>
         <div class="actions">${action}</div>
+        ${steps}
       </li>`;
+  }
+
+  _steps(chore, memberId, ro) {
+    const done = new Set(chore.steps_done || []);
+    return `<ol class="steps">${chore.steps
+      .map(
+        (text, i) => `<li><button class="step ${done.has(i) ? "on" : ""}" ${ro ? "disabled" : ""} data-action="step" data-id="${esc(chore.id)}" data-member="${esc(memberId)}" data-i="${i}">
+          <span class="tick">${done.has(i) ? "✓" : ""}</span><span>${esc(text)}</span></button></li>`,
+      )
+      .join("")}</ol>`;
   }
 
   _photoNeeded(chore) {
@@ -829,13 +1555,18 @@ class SternchenplanCard extends HTMLElement {
             ? `<button class="primary" data-action="redeem" data-id="${esc(r.id)}">${this._t("redeem")}</button>`
             : `<span class="muted small">${esc(this._t("missing", { n: r.cost - member.points }))}</span>`;
         const pct = Math.min(100, Math.round((member.points / r.cost) * 100));
+        const isGoal = member.goal === r.id;
+        const goalBtn = ro
+          ? isGoal ? `<span class="chip">${this._t("isGoal")}</span>` : ""
+          : `<button class="link goal-btn ${isGoal ? "on" : ""}" data-action="goal" data-id="${isGoal ? "" : esc(r.id)}">${this._t(isGoal ? "isGoal" : "setGoal")}</button>`;
         return `
-        <div class="reward ${enough ? "ready" : ""}">
+        <div class="reward ${enough ? "ready" : ""} ${isGoal ? "is-goal" : ""}">
           <div class="reward-emoji">${this._rewardEmoji(r.name)}</div>
           <div class="reward-name">${esc(r.name)}</div>
           <div class="reward-cost">⭐ ${r.cost}</div>
           <div class="bar"><span style="width:${pct}%"></span></div>
           <div class="reward-action">${action}</div>
+          ${goalBtn}
         </div>`;
       })
       .join("");
@@ -857,7 +1588,7 @@ class SternchenplanCard extends HTMLElement {
       .map(
         (r) => `
         <li class="row">
-          <div class="main"><div class="title">${esc(r.name)}</div><div class="sub muted">${r.cost} P · ${esc(names(r.members))}</div></div>
+          <div class="main"><div class="title">${esc(r.name)}</div><div class="sub muted">⭐ ${r.cost} · ${esc(names(r.members))}</div></div>
           <div class="actions">
             <button class="link" data-action="reward-edit" data-id="${esc(r.id)}">${this._t("edit")}</button>
             <button class="link bad" data-action="reward-delete" data-id="${esc(r.id)}">${this._t("delete")}</button>
@@ -883,7 +1614,25 @@ class SternchenplanCard extends HTMLElement {
         <button class="primary" data-action="reward-save">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="reward-cancel">${this._t("cancel")}</button>` : ""}
       </details>
-      ${rows ? `<ul>${rows}</ul>` : `<p class="empty muted">${this._t("noRewards")}</p>`}`;
+      ${rows ? `<ul>${rows}</ul>` : `<p class="empty muted">${this._t("noRewards")}</p>`}
+      ${this._renderFamilyGoalAdmin()}`;
+  }
+
+  _renderFamilyGoalAdmin() {
+    const g = this._data.family_goal;
+    const f = this._fgForm;
+    return `
+      <div class="section-title">🏰 ${this._t("familyGoal")}</div>
+      ${g ? `${this._renderFamilyGoal()}<button class="link bad" data-action="fgoal-clear">${this._t("fgClear")}</button>` : ""}
+      <details class="form" ${g ? "" : "open"}>
+        <summary>+ ${this._t("fgStart")}</summary>
+        <p class="muted small">${this._t("fgHint")}</p>
+        <div class="grid">
+          <label>${this._t("fgName")}<input data-field="fg.name" value="${esc(f.name)}" maxlength="60" placeholder="Freizeitpark"></label>
+          <label>${this._t("fgTarget")}<input type="number" min="1" data-field="fg.target" value="${esc(f.target)}"></label>
+        </div>
+        <button class="primary" data-action="fgoal-save">${this._t("fgStart")}</button>
+      </details>`;
   }
 
   _openFor(memberId) {
@@ -913,7 +1662,7 @@ class SternchenplanCard extends HTMLElement {
           <button class="tile" style="--kid:${this._color(m.id)}" data-action="pick" data-id="${esc(m.id)}">
             <span class="tile-avatar">${esc(m.name.trim().charAt(0).toUpperCase())}</span>
             <span class="tile-name">${esc(m.name)}</span>
-            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}</span>
+            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}${m.progress?.streak ? ` · 🔥 ${m.progress.streak}` : ""}</span>
           </button>`;
       })
       .join("");
@@ -921,6 +1670,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderChild(member) {
+    if (member.picture_mode) return this._renderPictureChild(member);
     const chores = this._openFor(member.id);
     const color = this._color(member.id);
     const { done, open, total } = this._todayStats(member.id);
@@ -940,12 +1690,208 @@ class SternchenplanCard extends HTMLElement {
           </div>
           ${this._ring(done, total || open, color, 72)}
         </div>
+        ${this._renderLevel(member)}
+        ${this._pauseBanner()}${this._rainBanner()}
+        ${this._renderGoal(member)}
+        ${this._renderFamilyGoal()}
         ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
         <div class="section-title">${this._t("todayTitle")}</div>
         ${list}
         ${this._renderTakeOver(member)}
         ${this._renderChildRewards(member)}
+        ${this._renderMoney(member)}
+        ${this._renderBadges(member)}
+        ${this._renderChildStarLog(member)}
       </div>`;
+  }
+
+  _renderGoal(member) {
+    const reward = member.goal && (this._data.rewards || []).find((r) => r.id === member.goal);
+    if (!reward) return "";
+    const pct = Math.min(100, Math.round((member.points / reward.cost) * 100));
+    const ready = member.points >= reward.cost;
+    const ro = this._config.readonly || member.id !== this._me();
+    return `
+      <div class="goal ${ready ? "ready" : ""}">
+        <div class="goal-emoji">${this._rewardEmoji(reward.name)}</div>
+        <div class="goal-main">
+          <div class="muted small">🎯 ${this._t("goal")}</div>
+          <strong>${esc(reward.name)}</strong>
+          <div class="xp"><i style="width:${pct}%"></i></div>
+          <div class="muted small">⭐ ${member.points} / ${reward.cost} · ${esc(ready ? this._t("goalReady") : this._t("goalMissing", { n: reward.cost - member.points }))}</div>
+        </div>
+        ${ready && !ro ? `<button class="primary" data-action="redeem" data-id="${esc(reward.id)}">${this._t("redeem")}</button>` : ""}
+      </div>`;
+  }
+
+  _euro(cents) {
+    return new Intl.NumberFormat(this._locale(), { style: "currency", currency: "EUR" }).format(cents / 100);
+  }
+
+  _moneyLog(member) {
+    const log = member.money_log || [];
+    if (!log.length) return `<p class="muted small">${this._t("noHistory")}</p>`;
+    const kinds = this._t("kinds");
+    return `<ul class="ledger">${log
+      .slice(0, 10)
+      .map(
+        (e) => `<li><span>${esc(e.note || kinds[e.kind] || e.kind)}${e.stars ? ` · ${e.stars} ⭐` : ""}<span class="muted small"> · ${new Date(e.at).toLocaleDateString(this._locale())}</span></span>
+          <b class="${e.cents < 0 ? "minus" : "plus"}">${e.cents > 0 ? "+" : ""}${esc(this._euro(e.cents))}</b></li>`,
+      )
+      .join("")}</ul>`;
+  }
+
+  _renderMoney(member) {
+    const m = this._data.money || {};
+    if (!m.rate && !member.allowance && !member.money) return "";
+    const ro = this._config.readonly || member.id !== this._me();
+    const can = m.rate && member.points >= m.rate;
+    return `
+      <section class="money">
+        <div class="section-title">💶 ${this._t("money")}</div>
+        <div class="wallet">
+          <div class="wallet-sum">${esc(this._euro(member.money || 0))}</div>
+          ${member.allowance ? `<div class="muted small">${esc(this._t("weekly", { amount: this._euro(member.allowance), day: this._t("days")[m.payday ?? 6] }))}</div>` : ""}
+          ${m.rate && !ro ? `<button class="primary" data-action="exchange" ${can ? "" : "disabled"}>${esc(this._t("exchange", { stars: m.rate }))}</button>` : ""}
+        </div>
+        <details class="ledger-box"><summary class="muted small">${this._t("history")}</summary>${this._moneyLog(member)}</details>
+      </section>`;
+  }
+
+  _renderMoneyAdmin() {
+    const m = this._data.money || { rate: 0, payday: 6 };
+    const days = this._t("days");
+    const rows = this._children()
+      .map(
+        (k) => `
+        <section class="kidcard money-kid" style="--kid:${this._color(k.id)}">
+          <div class="kidcard-head">
+            ${this._avatar(k, 40)}
+            <div class="kidcard-name"><strong>${esc(k.name)}</strong><span class="muted small">⭐ ${k.points}</span></div>
+            <div class="wallet-sum small-sum">${esc(this._euro(k.money || 0))}</div>
+          </div>
+          <div class="money-row">
+            <label>${this._t("perWeek")}<input type="number" min="0" step="0.5" data-field="allow.${esc(k.id)}" value="${(k.allowance || 0) / 100}"></label>
+            <button class="link" data-action="book" data-id="${esc(k.id)}">± ${this._t("book")}</button>
+            <button class="primary" data-action="payout" data-id="${esc(k.id)}" ${k.money > 0 ? "" : "disabled"}>${this._t("payout")}</button>
+          </div>
+          <details class="ledger-box"><summary class="muted small">${this._t("history")}</summary>${this._moneyLog(k)}</details>
+        </section>`,
+      )
+      .join("");
+    return `
+      <div class="form money-settings">
+        <div class="grid">
+          <label>${this._t("rate")}<input type="number" min="0" data-field="money.rate" value="${m.rate}"><span class="muted small">${this._t("rateHint")}</span></label>
+          <label>${this._t("payday")}<select data-field="money.payday">${days
+            .map((d, i) => `<option value="${i}" ${i === m.payday ? "selected" : ""}>${esc(d)}</option>`)
+            .join("")}</select></label>
+        </div>
+      </div>
+      <div class="kidgrid">${rows}</div>
+      <p class="muted small">${this._t("moneyHint")}</p>`;
+  }
+
+  _renderFamilyGoal() {
+    const g = this._data.family_goal;
+    if (!g) return "";
+    const pct = Math.min(100, Math.round((g.progress / g.target) * 100));
+    return `
+      <div class="fgoal ${g.reached_at ? "ready" : ""}">
+        <div class="fgoal-top"><span class="fgoal-icon">🏰</span>
+          <div class="goal-main"><div class="muted small">${this._t("familyGoal")}</div><strong>${esc(g.name)}</strong></div>
+          <div class="fgoal-kids">${this._children().map((m) => this._avatar(m, 26)).join("")}</div>
+        </div>
+        <div class="xp fgoal-bar"><i style="width:${pct}%"></i></div>
+        <div class="muted small">${esc(g.reached_at ? this._t("familyReached") : this._t("together", { n: g.progress, t: g.target }))}</div>
+      </div>`;
+  }
+
+  _levelTitle(level) {
+    const titles = this._t("levelTitles");
+    return titles[Math.min(level, titles.length) - 1];
+  }
+
+  _renderLevel(member) {
+    const p = member.progress;
+    if (!p) return "";
+    const span = Math.max(1, p.level_to - p.level_from);
+    const pct = Math.min(100, Math.round(((p.earned - p.level_from) / span) * 100));
+    const streak = p.streak
+      ? `<span class="streak ${p.streak_today ? "hot" : "cold"}" title="${esc(this._t("best", { n: p.best_streak }))}">🔥 ${esc(
+          p.streak === 1 ? this._t("streakOne") : this._t("streakDays", { n: p.streak }),
+        )}</span>`
+      : "";
+    const hint = p.streak_today ? "streakDone" : p.streak ? "streakKeep" : "streakStart";
+    return `
+      <div class="level">
+        <div class="level-top">
+          <span class="level-badge">${p.level}</span>
+          <div class="level-name"><strong>${esc(this._levelTitle(p.level))}</strong>
+            <span class="muted small">${esc(this._t("toNext", { n: p.level_to - p.earned, next: p.level + 1 }))}</span></div>
+          ${streak}
+        </div>
+        <div class="xp" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+        <div class="muted small streak-hint">${esc(this._t(hint))}</div>
+      </div>`;
+  }
+
+  _renderBadges(member) {
+    const list = member.progress?.badges;
+    if (!list) return "";
+    const names = this._t("badgeNames");
+    const how = this._t("badgeHow");
+    const got = list.filter((b) => b.earned_at).length;
+    const items = list
+      .map((b) => {
+        const name = names[b.id] || b.id;
+        const sub = b.earned_at
+          ? this._t("badgeEarned", { date: new Date(b.earned_at).toLocaleDateString(this._locale()) })
+          : `${(how[b.counter] || "{n}").replace("{n}", b.target)} · ${b.value}/${b.target}`;
+        const pct = Math.round((b.value / b.target) * 100);
+        return `
+          <li class="bdg ${b.earned_at ? "got" : ""}" title="${esc(name)}: ${esc(sub)}">
+            <span class="badge-emoji">${b.earned_at ? b.emoji : "🔒"}</span>
+            <span class="badge-name">${esc(name)}</span>
+            ${b.earned_at ? "" : `<span class="badge-bar"><i style="width:${pct}%"></i></span>`}
+            <span class="badge-sub">${esc(sub)}</span>
+          </li>`;
+      })
+      .join("");
+    return `
+      <details class="badges">
+        <summary class="section-title">🏆 ${this._t("badges")} <span class="muted small">${got}/${list.length}</span></summary>
+        <ul class="badge-grid">${items}</ul>
+      </details>`;
+  }
+
+  // Neues Level oder Abzeichen für das Kind, das gerade zu sehen ist: groß feiern.
+  _spotNews(before, after) {
+    if (!before || !after) return;
+    const id = this._shownChild();
+    if (!id) return;
+    const old = before.members.find((m) => m.id === id)?.progress;
+    const now = after.members.find((m) => m.id === id)?.progress;
+    if (!old || !now) return;
+    if (now.level > old.level) {
+      this._party("⭐", this._t("levelUp", { n: now.level }), this._t("youAre", { title: this._levelTitle(now.level) }));
+      return;
+    }
+    const had = new Set(old.badges.filter((b) => b.earned_at).map((b) => b.id));
+    const fresh = now.badges.find((b) => b.earned_at && !had.has(b.id));
+    if (fresh) this._party(fresh.emoji, this._t("newBadge"), this._t("badgeNames")[fresh.id] || fresh.id);
+  }
+
+  _party(emoji, title, text) {
+    this.shadowRoot.querySelector(".party")?.remove();
+    const box = document.createElement("div");
+    box.className = "party";
+    box.setAttribute("role", "dialog");
+    box.innerHTML = `<div class="party-card"><div class="party-emoji">${esc(emoji)}</div><div class="party-title">${esc(title)}</div><div class="party-text">${esc(text)}</div><div class="muted small">${esc(this._t("tapClose"))}</div></div>`;
+    box.addEventListener("click", () => box.remove());
+    this.shadowRoot.appendChild(box);
+    setTimeout(() => box.remove(), 6000);
+    requestAnimationFrame(() => this._celebrate(box.querySelector(".party-emoji")));
   }
 
   _renderParent() {
@@ -957,12 +1903,14 @@ class SternchenplanCard extends HTMLElement {
       ["approve", `${this._t("tabApprove")}${open ? ` <span class="count">${open}</span>` : ""}`],
       ["chores", this._t("tabChores")],
       ["rewards", this._t("tabRewards")],
+      ["money", this._t("tabMoney")],
       ["away", this._t("tabAway")],
     ];
     let body = "";
     if (this._tab === "approve") body = this._renderApprovals(waiting);
     else if (this._tab === "chores") body = this._renderChores();
     else if (this._tab === "rewards") body = this._renderRewardAdmin();
+    else if (this._tab === "money") body = this._renderMoneyAdmin();
     else if (this._tab === "away") body = this._renderAway();
     else body = this._renderToday();
     return `
@@ -978,7 +1926,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderToday() {
-    return `<div class="kidgrid">${this._renderTodayCards()}</div>`;
+    return `${this._pauseBanner()}${this._rainBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>${this._renderWeek()}`;
   }
 
   _renderTodayCards() {
@@ -992,8 +1940,16 @@ class SternchenplanCard extends HTMLElement {
           status += ` <span class="chip">${esc(this._t("pass", { time }))}</span>`;
         }
         let passBtn = "";
+        if (!this._config.readonly) {
+          passBtn += `<button class="link" data-action="picture" data-id="${esc(m.id)}" data-on="${m.picture_mode ? "" : "1"}">${
+            m.picture_mode ? this._t("pictureOff") : this._t("pictureOn")
+          }</button>`;
+        }
+        if (!this._config.readonly) {
+          passBtn += `<button class="link" data-action="stars-open" data-id="${esc(m.id)}">${this._t("starsBtn")}</button>`;
+        }
         if (m.has_devices && !this._config.readonly) {
-          passBtn = m.pass_until
+          passBtn += m.pass_until
             ? `<button class="link" data-action="revoke-pass" data-id="${esc(m.id)}">${this._t("takePass")}</button>`
             : `<button class="link" data-action="pass" data-id="${esc(m.id)}">${this._t("givePass")}</button>`;
         }
@@ -1005,10 +1961,13 @@ class SternchenplanCard extends HTMLElement {
           <section class="kidcard" style="--kid:${this._color(m.id)}">
             <div class="kidcard-head">
               ${this._avatar(m, 40)}
-              <div class="kidcard-name"><strong>${esc(m.name)}</strong><span class="muted small">⭐ ${m.points}</span></div>
+              <div class="kidcard-name"><strong>${esc(m.name)}</strong><span class="muted small">⭐ ${m.points}${
+                m.progress ? ` · ${esc(this._t("level", { n: m.progress.level }))}${m.progress.streak ? ` · 🔥 ${m.progress.streak}` : ""}` : ""
+              }</span></div>
               ${this._ring(done, total || open, this._color(m.id), 44)}
             </div>
             ${status || passBtn ? `<div class="kidcard-status">${status}${passBtn}</div>` : ""}
+            ${this._starsOpen === m.id ? this._renderStarsPanel(m) : ""}
             ${list}
           </section>`;
       })
@@ -1025,7 +1984,7 @@ class SternchenplanCard extends HTMLElement {
           <span class="gift">${this._rewardEmoji(r.reward_name)}</span>
           <div class="main">
             <div class="title">${esc(r.reward_name)}</div>
-            <div class="sub muted">${esc(this._member(r.member_id)?.name)} ${this._t("wantsReward")} · ${r.cost} P</div>
+            <div class="sub muted">${esc(this._member(r.member_id)?.name)} ${this._t("wantsReward")} · ⭐ ${r.cost}</div>
           </div>
           <div class="actions">
             <button class="primary" data-action="give" data-id="${esc(r.id)}">✓ ${this._t("give")}</button>
@@ -1041,7 +2000,7 @@ class SternchenplanCard extends HTMLElement {
           ${this._thumb(c) || this._avatar(this._member(c.claimed_by), 36)}
           <div class="main">
             <div class="title">${esc(c.name)}</div>
-            <div class="sub muted">${esc(this._member(c.claimed_by)?.name)} · ${c.points * (c.claim_multiplier || 1)} P${this._takenInfo(c)}</div>
+            <div class="sub muted">${esc(this._member(c.claimed_by)?.name)} · ⭐ ${c.points * (c.claim_multiplier || 1)}${this._takenInfo(c)}</div>
           </div>
           <div class="actions">
             <button class="primary" data-action="approve" data-id="${esc(c.id)}">✓ ${this._t("approve")}</button>
@@ -1062,10 +2021,10 @@ class SternchenplanCard extends HTMLElement {
         (c) => `
         <li class="row">
           <div class="main">
-            <div class="title">${esc(c.name)}</div>
+            <div class="title">${c.icon ? esc(c.icon) + " " : ""}${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.requires_photo ? " · 📷" : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.weekdays?.length ? " · " + esc(this._dayList(c.weekdays)) : ""}${c.requires_photo ? " · 📷" : ""}${c.outdoor ? " · " + this._t("outdoorShort") : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -1077,7 +2036,8 @@ class SternchenplanCard extends HTMLElement {
       .join("");
     const rec = this._t("rec");
     return `
-      <details class="form" ${this._data.chores.length && !f.editId ? "" : "open"}>
+      ${f.editId ? "" : this._renderSettings() + this._renderTemplates()}
+      <details class="form chore-form" ${this._data.chores.length && !f.editId && !f.name ? "" : "open"}>
         <summary>${f.editId ? this._t("editChore") : "+ " + this._t("newChore")}</summary>
         <label>${this._t("name")}<input data-field="name" value="${esc(f.name)}" maxlength="60"></label>
         <fieldset><legend>${this._t("assignees")}</legend>
@@ -1101,6 +2061,12 @@ class SternchenplanCard extends HTMLElement {
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
         <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""}>${this._t("photo")}</label>
+        <label class="check"><input type="checkbox" data-field="outdoor" ${f.outdoor ? "checked" : ""}>${this._t("outdoor")}</label>
+        <fieldset><legend>${this._t("weekdays")}</legend>${this._t("dayShort")
+          .map((d, i) => `<label class="check day"><input type="checkbox" data-field="weekday" value="${i}" ${f.weekdays.includes(i) ? "checked" : ""}>${d}</label>`)
+          .join("")}</fieldset>
+        <label>${this._t("icon")}<input data-field="icon" value="${esc(f.icon)}" maxlength="8" placeholder="🧹" class="icon-input"></label>
+        <label>${this._t("steps")}<textarea data-field="steps" rows="3" maxlength="800">${esc(f.steps)}</textarea></label>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
       </details>
@@ -1115,7 +2081,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderAway() {
-    return `<ul>${this._children()
+    return `${this._renderPause()}<ul>${this._children()
       .map((m) => {
         const form = this._awayForm[m.id] || {};
         const others = this._data.members.filter((o) => o.id !== m.id);
@@ -1136,6 +2102,17 @@ class SternchenplanCard extends HTMLElement {
           </li>`;
       })
       .join("")}</ul>`;
+  }
+
+  // Welches Kind die Karte gerade zeigt (null in der Elternansicht). Wie in _render.
+  _shownChild() {
+    if (!this._data) return null;
+    if (this._config.member) return this._memberByConfig()?.id ?? null;
+    if (this._data.tablet && !this._data.is_manager) return this._actingAs;
+    const me = this._member(this._data.me);
+    const mode = this._config.mode;
+    if (mode === "eltern" || (mode === "auto" && this._data.is_manager && (!me || me.role === "parent"))) return null;
+    return me?.role === "child" ? me.id : null;
   }
 
   _render() {
@@ -1162,6 +2139,73 @@ class SternchenplanCard extends HTMLElement {
   }
 }
 
+// Vorlagen nach Alter. age = Mindestalter, time = übliche Uhrzeit für die erste Frist.
+const TEMPLATES = [
+  { emoji: "🌅", age: 4, points: 3, rec: "daily", time: "07:30",
+    name: { de: "Morgenroutine", en: "Morning routine" },
+    steps: { de: ["Aufstehen", "Anziehen", "Zähne putzen", "Bett machen"], en: ["Get up", "Get dressed", "Brush teeth", "Make the bed"] } },
+  { emoji: "🌙", age: 4, points: 3, rec: "daily", time: "19:30",
+    name: { de: "Abendroutine", en: "Evening routine" },
+    steps: { de: ["Schlafanzug anziehen", "Zähne putzen", "Kleidung weglegen", "Licht aus"], en: ["Put on pyjamas", "Brush teeth", "Put clothes away", "Lights out"] } },
+  { emoji: "🎒", age: 6, points: 2, rec: "daily", time: "19:00",
+    school: true,
+    name: { de: "Schultasche packen", en: "Pack school bag" },
+    steps: { de: ["Hausaufgaben einpacken", "Stundenplan prüfen", "Brotdose", "Trinkflasche"], en: ["Pack homework", "Check timetable", "Lunch box", "Water bottle"] } },
+  { emoji: "📚", age: 7, points: 3, rec: "daily", time: "16:00",
+    school: true,
+    name: { de: "Hausaufgaben", en: "Homework" },
+    steps: { de: ["Alles erledigt", "Mama oder Papa zeigen", "Wieder einpacken"], en: ["All done", "Show a parent", "Pack it away"] } },
+  { emoji: "🧸", age: 4, points: 1, rec: "daily", time: "18:30", name: { de: "Spielzeug aufräumen", en: "Tidy up toys" } },
+  { emoji: "🍽️", age: 4, points: 1, rec: "daily", time: "18:00", name: { de: "Tisch decken", en: "Set the table" } },
+  { emoji: "🧦", age: 4, points: 1, rec: "weekly", time: "17:00", name: { de: "Socken sortieren", en: "Sort socks" } },
+  { emoji: "🪴", age: 5, points: 1, rec: "weekly", time: "17:00", name: { de: "Blumen gießen", en: "Water the plants" } },
+  { emoji: "🐹", age: 5, points: 1, rec: "daily", time: "18:00", name: { de: "Haustier füttern", en: "Feed the pet" } },
+  { emoji: "🛏️", age: 6, points: 1, rec: "daily", time: "08:00", name: { de: "Bett machen", en: "Make the bed" } },
+  { emoji: "🍽️", age: 7, points: 2, rec: "daily", time: "19:00", name: { de: "Spülmaschine ausräumen", en: "Empty the dishwasher" } },
+  { emoji: "🗑️", age: 8, points: 1, rec: "daily", time: "19:00", name: { de: "Müll rausbringen", en: "Take out the trash" } },
+  { emoji: "🧹", age: 7, points: 3, rec: "weekly", time: "18:00", photo: true, name: { de: "Zimmer aufräumen", en: "Tidy up room" } },
+  { emoji: "👕", age: 8, points: 2, rec: "weekly", time: "18:00", name: { de: "Wäsche zusammenlegen", en: "Fold laundry" } },
+  { emoji: "🧽", age: 10, points: 2, rec: "weekly", time: "18:00", name: { de: "Waschbecken putzen", en: "Clean the sink" } },
+  { emoji: "🌀", age: 10, points: 3, rec: "weekly", time: "17:00", name: { de: "Staubsaugen", en: "Vacuum" } },
+  { emoji: "📦", age: 10, points: 2, rec: "weekly", time: "18:00", name: { de: "Altpapier wegbringen", en: "Take out paper recycling" } },
+  { emoji: "🧺", age: 10, points: 2, rec: "weekly", time: "18:00", name: { de: "Wäsche aufhängen", en: "Hang up laundry" } },
+  { emoji: "🛒", age: 11, points: 2, rec: "weekly", time: "17:00", name: { de: "Beim Einkaufen helfen", en: "Help with shopping" } },
+  { emoji: "🛁", age: 12, points: 5, rec: "weekly", time: "18:00", photo: true, name: { de: "Bad putzen", en: "Clean the bathroom" } },
+  { emoji: "🍳", age: 12, points: 4, rec: "weekly", time: "18:00", name: { de: "Beim Kochen helfen", en: "Help with cooking" } },
+  { emoji: "🛌", age: 12, points: 3, rec: "biweekly", time: "18:00", name: { de: "Bettwäsche wechseln", en: "Change bed sheets" } },
+  { emoji: "🌱", age: 13, points: 5, rec: "weekly", time: "17:00", outdoor: true, name: { de: "Rasen mähen", en: "Mow the lawn" } },
+  { emoji: "🍂", age: 8, points: 3, rec: "weekly", time: "16:00", outdoor: true, name: { de: "Laub rechen", en: "Rake leaves" } },
+  { emoji: "🚲", age: 9, points: 3, rec: "biweekly", time: "16:00", outdoor: true, name: { de: "Fahrrad putzen", en: "Clean the bike" } },
+  { emoji: "🌻", age: 6, points: 1, rec: "daily", time: "18:00", outdoor: true, name: { de: "Blumen gießen", en: "Water the plants" } },
+  { emoji: "🚗", age: 14, points: 4, rec: "biweekly", time: "17:00", name: { de: "Auto aussaugen", en: "Vacuum the car" } },
+];
+
+// Symbol raten, wenn die Aufgabe keins hat (Bilder-Modus).
+const CHORE_EMOJI = [
+  [["rasen", "lawn"], "🌱"],
+  [["laub", "leaves"], "🍂"],
+  [["fahrrad", "bike"], "🚲"],
+  [["gieß", "blumen", "water the", "plants"], "🌻"],
+  [["müll", "trash", "abfall"], "🗑️"],
+  [["spülmaschine", "geschirr", "dishwasher", "dishes"], "🍽️"],
+  [["tisch", "table"], "🍴"],
+  [["zimmer", "aufräumen", "room", "tidy"], "🧹"],
+  [["zähne", "teeth"], "🪥"],
+  [["bett", "bed"], "🛏️"],
+  [["anzieh", "dress", "kleidung", "clothes"], "👕"],
+  [["wäsche", "laundry"], "🧺"],
+  [["staub", "sauge", "vacuum"], "🌀"],
+  [["bad", "bath", "toilette"], "🛁"],
+  [["hund", "katze", "hamster", "füttern", "feed", "pet"], "🐾"],
+  [["blume", "pflanze", "gießen", "plant", "water"], "🪴"],
+  [["hausaufgabe", "homework", "lesen", "read"], "📚"],
+  [["schul", "school", "ranzen"], "🎒"],
+  [["spielzeug", "toys"], "🧸"],
+  [["duschen", "shower"], "🚿"],
+  [["kochen", "cook"], "🍳"],
+  [["einkauf", "shopping"], "🛒"],
+];
+
 // Kräftige Farben, die auf hell und dunkel funktionieren (weiße Schrift darauf).
 const PALETTE = ["#4f7cff", "#ff7a45", "#22a565", "#a259ff", "#e5a100", "#f0508c", "#13a8b8"];
 
@@ -1184,6 +2228,7 @@ const STYLE = `
   .row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
   .row:last-child { border-bottom: none; }
   .row.wrap { flex-wrap: wrap; }
+  .row.wrap > .main { min-width: 140px; }
   .row.overdue .title { color: var(--error-color, #db4437); }
   .main { flex: 1; min-width: 0; }
   .title { font-weight: 500; overflow-wrap: anywhere; }
@@ -1209,6 +2254,8 @@ const STYLE = `
   .thumb img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; display: block; }
   p.small { font-size: 0.85em; margin: 0 0 4px; }
   p.pro { margin-top: 12px; text-align: center; }
+  p.pro a { color: var(--secondary-text-color); text-decoration: none; }
+  p.pro a:hover { color: var(--primary-color); }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
   button.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 110px; border-radius: 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); }
   .tile-name { font-size: 1.5em; font-weight: 500; }
@@ -1292,6 +2339,153 @@ const STYLE = `
                    to { transform: translate(var(--dx), calc(var(--dy) + 60px)) rotate(var(--rot)); opacity: 0; } }
   @keyframes rise { from { opacity: 0; transform: translate(-50%, 0) scale(.6); } 30% { opacity: 1; transform: translate(-50%, -12px) scale(1.1); }
                     to { opacity: 0; transform: translate(-50%, -40px) scale(1); } }
+  /* -- Level, Serie, Abzeichen (0.16) -- */
+  .level { margin: 0 0 10px; padding: 10px 14px 8px; border-radius: 16px; background: var(--secondary-background-color); }
+  .level-top { display: flex; align-items: center; gap: 10px; }
+  .level-badge { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+                 font-weight: 800; font-size: 1.15em; color: #fff; transform: rotate(-6deg);
+                 background: linear-gradient(135deg, var(--kid), color-mix(in srgb, var(--kid) 70%, #fff)); box-shadow: 0 3px 8px color-mix(in srgb, var(--kid) 40%, transparent); }
+  .level-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .streak { flex: 0 0 auto; font-weight: 700; font-size: 0.85em; padding: 4px 10px; border-radius: 14px; white-space: nowrap; }
+  .streak.hot { background: linear-gradient(135deg, #ff7a45, #ffb03a); color: #fff; box-shadow: 0 2px 8px rgba(255,122,69,.45); animation: flame 1.6s ease-in-out infinite; }
+  .streak.cold { background: var(--card-background-color); color: var(--secondary-text-color); border: 1px dashed #ff7a45; }
+  .xp { height: 10px; border-radius: 5px; margin: 10px 0 4px; overflow: hidden; background: color-mix(in srgb, var(--kid) 14%, var(--card-background-color)); }
+  .xp i { display: block; height: 100%; border-radius: 5px; transition: width .8s cubic-bezier(.2,.8,.2,1);
+          background: linear-gradient(90deg, color-mix(in srgb, var(--kid) 75%, #fff), var(--kid)); }
+  .streak-hint { font-size: 0.8em; }
+  details.badges summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  details.badges summary::-webkit-details-marker { display: none; }
+  details.badges summary::after { content: "▾"; margin-left: auto; color: var(--secondary-text-color); transition: transform .2s; }
+  details.badges[open] summary::after { transform: rotate(180deg); }
+  .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .bdg { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; padding: 10px 6px;
+         border-radius: 14px; background: var(--secondary-background-color); }
+  .bdg .badge-emoji { font-size: 1.9em; filter: grayscale(1); opacity: .45; }
+  .bdg.got { background: linear-gradient(160deg, color-mix(in srgb, var(--kid) 20%, var(--card-background-color)), var(--secondary-background-color));
+             box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--kid) 45%, transparent); }
+  .bdg.got .badge-emoji { filter: none; opacity: 1; }
+  .badge-name { font-weight: 600; font-size: 0.82em; overflow-wrap: anywhere; }
+  .badge-sub { font-size: 0.72em; color: var(--secondary-text-color); }
+  .badge-bar { width: 80%; height: 4px; border-radius: 2px; background: var(--divider-color, #e0e0e0); overflow: hidden; }
+  .badge-bar i { display: block; height: 100%; background: var(--kid); }
+  .goal, .fgoal { margin: 0 0 10px; padding: 12px 14px; border-radius: 16px; background: var(--secondary-background-color); }
+  .goal { display: flex; align-items: center; gap: 12px; }
+  .goal.ready { box-shadow: inset 0 0 0 2px var(--kid); }
+  .goal-emoji { font-size: 2.2em; }
+  .goal-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .goal .xp { margin: 6px 0 4px; }
+  .fgoal { background: linear-gradient(135deg, color-mix(in srgb, #a259ff 16%, var(--card-background-color)), color-mix(in srgb, #4f7cff 12%, var(--card-background-color))); }
+  .fgoal-top { display: flex; align-items: center; gap: 10px; }
+  .fgoal-icon { font-size: 1.9em; }
+  .fgoal-kids { display: flex; }
+  .fgoal-kids .avatar { margin-left: -6px; border: 2px solid var(--card-background-color); }
+  .fgoal-bar i { background: linear-gradient(90deg, #a259ff, #4f7cff, #22a565); }
+  .fgoal.ready .fgoal-bar i { background: linear-gradient(90deg, #22a565, #e5a100); }
+  .fgoal .xp { background: color-mix(in srgb, #a259ff 14%, var(--card-background-color)); margin: 10px 0 4px; }
+  .reward.is-goal { box-shadow: inset 0 0 0 2px #e5a100; }
+  button.goal-btn { min-height: 28px; font-size: 0.8em; }
+  button.goal-btn.on { color: #e5a100; font-weight: 600; }
+  .wallet { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; border-radius: 16px;
+            background: linear-gradient(135deg, color-mix(in srgb, #22a565 18%, var(--card-background-color)), var(--secondary-background-color)); }
+  .wallet-sum { font-size: 2em; font-weight: 800; letter-spacing: -.5px; }
+  .wallet-sum.small-sum { font-size: 1.3em; }
+  .wallet button.primary { background: #22a565; }
+  .wallet button[disabled], .money-row button[disabled] { opacity: .45; cursor: default; }
+  .ledger-box summary { cursor: pointer; padding: 6px 0 2px; }
+  ul.ledger li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); font-size: 0.9em; }
+  ul.ledger li:last-child { border-bottom: none; }
+  .ledger .plus { color: var(--success-color, #22a565); }
+  .ledger .minus { color: var(--secondary-text-color); }
+  .money-row { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .money-row label { display: flex; flex-direction: column; gap: 2px; font-size: 0.8em; width: 110px; }
+  .money-row .primary { margin-left: auto; }
+  .money-settings label span { font-size: 0.8em; }
+  ol.steps { list-style: none; margin: 8px 0 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  button.step { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; min-height: 40px; padding: 6px 12px;
+                border-radius: 12px; background: var(--card-background-color); color: var(--primary-text-color); }
+  button.step .tick { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--kid, var(--primary-color));
+                      display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: 800; color: #fff; }
+  button.step.on .tick { background: var(--kid, var(--primary-color)); animation: popin .25s ease-out; }
+  button.step.on span:last-child { text-decoration: line-through; color: var(--secondary-text-color); }
+  button.step[disabled] { cursor: default; }
+  .row.task { flex-wrap: wrap; }
+  .templates .small-tabs { margin: 6px 0; }
+  .small-tabs .tab { font-size: 0.85em; min-height: 30px; }
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  button.tpl { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px;
+               border-radius: 14px; background: var(--card-background-color); color: var(--primary-text-color); min-height: 76px;
+               box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  button.tpl:hover { box-shadow: 0 0 0 2px var(--primary-color); }
+  .tpl-emoji { font-size: 1.5em; }
+  .tpl-name { font-weight: 600; }
+  .form textarea { font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--divider-color, #ccc);
+                   background: var(--card-background-color); color: var(--primary-text-color); resize: vertical; }
+  button.primary[disabled] { opacity: .45; cursor: default; }
+  @keyframes popin { from { transform: scale(.4); } }
+  .pause-banner { margin: 0 0 10px; padding: 12px 14px; border-radius: 16px; font-weight: 600;
+                  background: linear-gradient(135deg, color-mix(in srgb, #13a8b8 22%, var(--card-background-color)), color-mix(in srgb, #e5a100 16%, var(--card-background-color))); }
+  .rain-banner { background: linear-gradient(120deg, rgba(96, 125, 139, 0.18), rgba(33, 150, 243, 0.14)); }
+  .chip.rain { background: rgba(33, 150, 243, 0.14); color: var(--primary-text-color); }
+  .chip.best { background: rgba(255, 193, 7, 0.22); color: var(--primary-text-color); }
+  section.week { margin-top: 16px; padding: 14px 16px; border-radius: 16px; background: var(--secondary-background-color); }
+  .week-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .week-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .week-row { display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .week-main { flex: 1; min-width: 0; }
+  .week-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .week-stars { margin-left: auto; font-weight: 600; }
+  .week-bar { height: 8px; margin: 6px 0 4px; border-radius: 99px; overflow: hidden;
+    background: color-mix(in srgb, var(--error-color, #db4437) 30%, transparent); }
+  .week-bar.nil { background: var(--divider-color, #e0e0e0); }
+  .week-bar span { display: block; height: 100%; border-radius: 99px; background: var(--kid); }
+  .settings-box { margin-bottom: 12px; }
+  .stars-panel { margin: 8px 0 4px; padding: 12px; border-radius: 14px; background: var(--card-background-color, #fff);
+    border: 1px solid var(--divider-color, #e0e0e0); display: grid; gap: 8px; }
+  .star-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .star-chip { display: inline-flex; align-items: center; gap: 4px; border: none; border-radius: 99px; padding: 6px 12px;
+    font: inherit; font-size: 0.9em; cursor: pointer; color: var(--primary-text-color); }
+  span.star-chip { cursor: default; padding-right: 6px; }
+  .star-chip.plus { background: color-mix(in srgb, var(--success-color, #22a565) 18%, transparent); }
+  .star-chip.minus { background: color-mix(in srgb, var(--error-color, #db4437) 14%, transparent); }
+  .star-chip .x { border: none; background: none; cursor: pointer; font-size: 1.1em; padding: 0 4px; color: var(--secondary-text-color); }
+  .stars-custom { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .stars-custom input[type="number"] { width: 72px; }
+  .stars-custom input:not([type]) { flex: 1; min-width: 120px; }
+  .preset-admin { display: grid; gap: 8px; margin-top: 12px; }
+  section.star-log { margin-top: 12px; }
+  .pause-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .pause-box .pause-banner { flex: 1; margin: 0; }
+  label.check.day { margin-right: 6px; }
+  input.icon-input { width: 80px; font-size: 1.3em; text-align: center; }
+  .kid.picture .hero .hello { font-size: 1.6em; }
+  .big-star { font-size: 1.3em; }
+  .kid.picture .hero .level-badge { width: 48px; height: 48px; font-size: 1.4em; }
+  .pic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 8px 0; }
+  .pic { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 22px; background: var(--secondary-background-color); }
+  .pic.overdue { box-shadow: inset 0 0 0 3px var(--error-color, #db4437); }
+  button.pic-main { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+                    min-height: 140px; border-radius: 18px; background: var(--card-background-color); color: var(--primary-text-color);
+                    box-shadow: 0 3px 0 color-mix(in srgb, var(--kid) 45%, transparent); transition: transform .1s; }
+  button.pic-main:active { transform: scale(.96); }
+  button.pic-main[disabled] { cursor: default; }
+  .pic.wait button.pic-main { opacity: .6; }
+  .pic-icon { font-size: 4em; line-height: 1; }
+  .pic-stars { font-size: 0.9em; letter-spacing: -2px; }
+  .pic-state { position: absolute; top: 8px; right: 10px; font-size: 1.4em; }
+  button.pic-say { background: none; color: var(--primary-text-color); font-weight: 600; min-height: 32px; padding: 0 6px; text-align: center; }
+  .pic ol.steps { margin-top: 0; }
+  .party { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
+           background: rgba(0,0,0,.45); animation: fade .25s ease-out; cursor: pointer; }
+  .party-card { text-align: center; padding: 26px 34px; border-radius: 24px; background: var(--card-background-color);
+                box-shadow: 0 12px 40px rgba(0,0,0,.35); animation: zoom .45s cubic-bezier(.2,1.4,.4,1); max-width: 80vw; }
+  .party-emoji { font-size: 4.2em; line-height: 1.1; animation: wiggle 1s ease-in-out .4s 2; }
+  .party-title { font-size: 1.6em; font-weight: 800; margin-top: 6px; }
+  .party-text { font-size: 1.1em; margin: 4px 0 12px; }
+  @keyframes flame { 50% { transform: scale(1.06); } }
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes zoom { from { transform: scale(.4); opacity: 0; } }
+  @keyframes wiggle { 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+  @media (prefers-reduced-motion: reduce) { .streak.hot, .party-card, .party-emoji, .xp i { animation: none; transition: none; } }
   @media (max-width: 420px) { .row { flex-wrap: wrap; } .actions { width: 100%; justify-content: flex-start; }
     ul.tasks .actions { width: auto; } .hero { padding: 12px; } .hero .hello { font-size: 1.2em; } }
 `;

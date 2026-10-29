@@ -125,3 +125,66 @@ async def test_optionen_erinnerungen(hass: HomeAssistant, entry) -> None:
     await hass.async_block_till_done()
     assert entry.options["reminder_times"] == "16:00, 18:00"
     assert entry.options["parent_summary_time"] == ""
+
+
+async def test_level_und_abzeichen_feiern(hass: HomeAssistant, entry) -> None:
+    lucas_calls = async_mock_service(hass, "notify", "lucas_handy")
+    badges = []
+    levels = []
+    hass.bus.async_listen("sternchenplan_badge", badges.append)
+    hass.bus.async_listen("sternchenplan_level_up", levels.append)
+    family = entry.runtime_data.family
+    chore = next(c for c in family.chores.values() if c.name == "Müll")
+    chore.points = 5
+    await hass.services.async_call(
+        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Lucas"}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert levels[0].data["level"] == 2
+    assert levels[0].data["title"] == "Helfer"
+    assert badges[0].data["name"] == "Erster Stern"
+    messages = [c.data["message"] for c in lucas_calls]
+    assert "🎉 Level 2 geschafft! Du bist jetzt Helfer." in messages
+    assert "🌟 Neues Abzeichen: Erster Stern" in messages
+
+
+async def test_familienziel_per_dienst(hass: HomeAssistant, entry) -> None:
+    papa_calls = async_mock_service(hass, "notify", "papa_handy")
+    reached = []
+    hass.bus.async_listen("sternchenplan_family_goal", reached.append)
+    await hass.services.async_call(
+        DOMAIN, "set_family_goal", {"name": "Zoo", "target": 1}, blocking=True
+    )
+    family = entry.runtime_data.family
+    chore = next(c for c in family.chores.values() if c.name == "Müll")
+    await hass.services.async_call(
+        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Lucas"}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert reached[0].data["name"] == "Zoo"
+    assert any("Familienziel geschafft: Zoo" in c.data["message"] for c in papa_calls)
+    await hass.services.async_call(DOMAIN, "clear_family_goal", {}, blocking=True)
+    assert family.goal is None
+
+
+async def test_taschengeld_per_dienst(hass: HomeAssistant, entry, freezer) -> None:
+    lucas_calls = async_mock_service(hass, "notify", "lucas_handy")
+    await hass.services.async_call(DOMAIN, "set_money", {"rate": 10, "payday": 0}, blocking=True)
+    await hass.services.async_call(
+        DOMAIN, "set_allowance", {"member": "Lucas", "amount": 2.5}, blocking=True
+    )
+    family = entry.runtime_data.family
+    lucas = next(m for m in family.members.values() if m.name == "Lucas")
+    lucas.points = 30
+    await hass.services.async_call(
+        DOMAIN, "exchange_stars", {"member": "Lucas", "euros": 3}, blocking=True
+    )
+    assert lucas.money == 300 and lucas.points == 0
+    # nächster Montag: Wochengeld per Takt
+    freezer.move_to("2026-11-09 00:01:00+00:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert lucas.money == 550
+    assert any("2,50 € Taschengeld" in c.data["message"] for c in lucas_calls)
+    await hass.services.async_call(DOMAIN, "payout", {"member": "Lucas"}, blocking=True)
+    assert lucas.money == 0

@@ -56,8 +56,46 @@ from .const import (
     SERVICE_SET_AGE,
     SERVICE_UNDO_CLAIM,
     SERVICE_UPDATE_CHORE,
+    SERVICE_CLEAR_FAMILY_GOAL,
+    SERVICE_SET_FAMILY_GOAL,
+    SERVICE_SET_GOAL,
+    ATTR_TARGET,
+    ATTR_AMOUNT,
+    ATTR_EUROS,
+    ATTR_NOTE,
+    ATTR_PAYDAY,
+    ATTR_RATE,
+    ATTR_DONE,
+    ATTR_INDEX,
+    ATTR_STEPS,
+    SERVICE_CHECK_STEP,
+    SERVICE_END_PAUSE,
+    SERVICE_SET_PAUSE,
+    SERVICE_SET_PICTURE_MODE,
+    ATTR_ENABLED,
+    ATTR_ICON,
+    ATTR_OUTDOOR,
+    ATTR_ENTITY,
+    ATTR_DAY,
+    ATTR_HOUR,
+    SERVICE_SET_WEATHER,
+    SERVICE_SET_REPORT,
+    SERVICE_SEND_REPORT,
+    SERVICE_GIVE_STARS,
+    SERVICE_ADD_PRESET,
+    SERVICE_DELETE_PRESET,
+    ATTR_STARS,
+    ATTR_REASON,
+    ATTR_PRESET_ID,
+    ATTR_WEEKDAYS,
+    SERVICE_ADJUST_MONEY,
+    SERVICE_EXCHANGE_STARS,
+    SERVICE_PAYOUT,
+    SERVICE_SET_ALLOWANCE,
+    SERVICE_SET_MONEY,
 )
 from .consequences import next_release
+from .reminders import async_send_week_report, weather_is_bad
 from .takeover import takeover_terms
 from .core import Actor, FamilyError, PermissionDenied, Recurrence
 
@@ -79,6 +117,10 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_REQUIRES_APPROVAL, default=False): cv.boolean,
         vol.Optional(ATTR_REQUIRES_PHOTO, default=False): cv.boolean,
         vol.Optional(ATTR_MIN_AGE, default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=18)),
+        vol.Optional(ATTR_STEPS, default=[]): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional(ATTR_WEEKDAYS, default=[]): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
+        vol.Optional(ATTR_ICON, default=""): cv.string,
+        vol.Optional(ATTR_OUTDOOR, default=False): cv.boolean,
     }
 )
 
@@ -94,10 +136,18 @@ UPDATE_SCHEMA = CHORE_SCHEMA.extend(
         vol.Optional(ATTR_REQUIRES_APPROVAL): cv.boolean,
         vol.Optional(ATTR_REQUIRES_PHOTO): cv.boolean,
         vol.Optional(ATTR_MIN_AGE): vol.All(vol.Coerce(int), vol.Range(min=0, max=18)),
+        vol.Optional(ATTR_STEPS): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional(ATTR_WEEKDAYS): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
+        vol.Optional(ATTR_ICON): cv.string,
+        vol.Optional(ATTR_OUTDOOR): cv.boolean,
     }
 )
 
 CLAIM_SCHEMA = CHORE_SCHEMA.extend({vol.Optional(ATTR_MEMBER): cv.string})
+STEP_SCHEMA = CLAIM_SCHEMA.extend(
+    {vol.Required(ATTR_INDEX): vol.All(vol.Coerce(int), vol.Range(min=0)),
+     vol.Optional(ATTR_DONE, default=True): cv.boolean}
+)
 
 ABSENCE_SCHEMA = vol.Schema(
     {
@@ -150,6 +200,58 @@ UPDATE_REWARD_SCHEMA = vol.Schema(
 REWARD_SCHEMA = vol.Schema({vol.Required(ATTR_REWARD_ID): cv.string})
 REDEEM_SCHEMA = REWARD_SCHEMA.extend({vol.Optional(ATTR_MEMBER): cv.string})
 REDEMPTION_SCHEMA = vol.Schema({vol.Required(ATTR_REDEMPTION_ID): cv.string})
+# Ohne reward_id (oder leer) wird das Sparziel gelöscht.
+GOAL_SCHEMA = vol.Schema(
+    {vol.Optional(ATTR_REWARD_ID): vol.Any(None, cv.string), vol.Optional(ATTR_MEMBER): cv.string}
+)
+FAMILY_GOAL_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_NAME): cv.string, vol.Required(ATTR_TARGET): _COST}
+)
+EMPTY_SCHEMA = vol.Schema({})
+PAUSE_SCHEMA = vol.Schema({vol.Optional(ATTR_START): cv.datetime, vol.Required(ATTR_UNTIL): cv.datetime})
+WEATHER_SCHEMA = vol.Schema({vol.Optional(ATTR_ENTITY, default=""): vol.Any("", cv.entity_domain("weather"))})
+REPORT_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_DAY): vol.All(vol.Coerce(int), vol.Range(min=-1, max=6)),
+        vol.Optional(ATTR_HOUR, default=18): vol.All(vol.Coerce(int), vol.Range(min=0, max=23)),
+    }
+)
+_STARS = vol.All(vol.Coerce(int), vol.Range(min=-100, max=100))
+GIVE_STARS_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_MEMBER): cv.string,
+        vol.Required(ATTR_STARS): _STARS,
+        vol.Optional(ATTR_REASON, default=""): cv.string,
+    }
+)
+ADD_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, vol.Required(ATTR_STARS): _STARS})
+DELETE_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_PRESET_ID): cv.string})
+PICTURE_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_ENABLED): cv.boolean})
+_EURO = vol.All(vol.Coerce(float), vol.Range(min=-10000, max=10000))
+MONEY_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_RATE): vol.All(vol.Coerce(int), vol.Range(min=0, max=10000)),
+        vol.Optional(ATTR_PAYDAY, default=6): vol.All(vol.Coerce(int), vol.Range(min=0, max=6)),
+    }
+)
+ALLOWANCE_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_AMOUNT): vol.All(_EURO, vol.Range(min=0))}
+)
+EXCHANGE_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_EUROS): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)),
+     vol.Optional(ATTR_MEMBER): cv.string}
+)
+PAYOUT_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_AMOUNT): vol.All(_EURO, vol.Range(min=0.01))}
+)
+ADJUST_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_AMOUNT): _EURO,
+     vol.Optional(ATTR_NOTE, default=""): cv.string}
+)
+
+
+def _cents(euros: float) -> int:
+    return round(euros * 100)
 
 
 def _runtime(hass: HomeAssistant) -> SternchenplanData:
@@ -220,6 +322,10 @@ async def _create(hass, call, data, actor) -> None:
         requires_approval=call.data[ATTR_REQUIRES_APPROVAL],
         requires_photo=call.data[ATTR_REQUIRES_PHOTO],
         min_age=call.data[ATTR_MIN_AGE],
+        steps=call.data[ATTR_STEPS],
+        weekdays=call.data[ATTR_WEEKDAYS],
+        icon=call.data[ATTR_ICON],
+        outdoor=call.data[ATTR_OUTDOOR],
     )
 
 
@@ -242,6 +348,10 @@ async def _update(hass, call, data, actor) -> None:
         requires_approval=d.get(ATTR_REQUIRES_APPROVAL),
         requires_photo=d.get(ATTR_REQUIRES_PHOTO),
         min_age=d.get(ATTR_MIN_AGE),
+        steps=d.get(ATTR_STEPS),
+        weekdays=d.get(ATTR_WEEKDAYS),
+        icon=d.get(ATTR_ICON),
+        outdoor=d.get(ATTR_OUTDOOR),
     )
 
 
@@ -406,6 +516,97 @@ async def _revoke_pass(hass, call, data, actor) -> None:
 
 
 @callback
+async def _set_goal(hass, call, data, actor) -> None:
+    data.family.set_goal(actor, _who(data, call, actor), call.data.get(ATTR_REWARD_ID) or None)
+
+
+async def _set_family_goal(hass, call, data, actor) -> None:
+    data.family.set_family_goal(actor, call.data[ATTR_NAME], call.data[ATTR_TARGET], dt_util.utcnow())
+
+
+async def _clear_family_goal(hass, call, data, actor) -> None:
+    data.family.clear_family_goal(actor)
+
+
+async def _set_money(hass, call, data, actor) -> None:
+    data.family.set_money(actor, call.data[ATTR_RATE], call.data[ATTR_PAYDAY])
+
+
+async def _set_allowance(hass, call, data, actor) -> None:
+    data.family.set_allowance(
+        actor, _member_id(data, call.data[ATTR_MEMBER]), _cents(call.data[ATTR_AMOUNT]), dt_util.utcnow()
+    )
+
+
+async def _exchange(hass, call, data, actor) -> None:
+    data.family.exchange(actor, _who(data, call, actor), call.data[ATTR_EUROS], dt_util.utcnow())
+
+
+async def _payout(hass, call, data, actor) -> None:
+    amount = call.data.get(ATTR_AMOUNT)
+    data.family.payout(
+        actor, _member_id(data, call.data[ATTR_MEMBER]),
+        None if amount is None else _cents(amount), dt_util.utcnow(),
+    )
+
+
+async def _adjust_money(hass, call, data, actor) -> None:
+    data.family.adjust_money(
+        actor, _member_id(data, call.data[ATTR_MEMBER]), _cents(call.data[ATTR_AMOUNT]),
+        call.data[ATTR_NOTE], dt_util.utcnow(),
+    )
+
+
+async def _check_step(hass, call, data, actor) -> None:
+    d = call.data
+    data.family.check_step(
+        actor, d[ATTR_CHORE_ID], _who(data, call, actor), d[ATTR_INDEX], d[ATTR_DONE], dt_util.utcnow()
+    )
+
+
+async def _set_pause(hass, call, data, actor) -> None:
+    start = _utc(call.data.get(ATTR_START)) or dt_util.utcnow()
+    data.family.set_pause(actor, start, _utc(call.data[ATTR_UNTIL]))
+
+
+async def _end_pause(hass, call, data, actor) -> None:
+    data.family.end_pause(actor, dt_util.utcnow())
+
+
+async def _set_picture_mode(hass, call, data, actor) -> None:
+    data.family.set_picture_mode(actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_ENABLED])
+
+
+async def _set_weather(hass, call, data, actor) -> None:
+    data.family.set_weather(actor, call.data[ATTR_ENTITY])
+    data.family.bad_weather = weather_is_bad(hass, data.family.weather_entity)
+
+
+async def _set_report(hass, call, data, actor) -> None:
+    data.family.set_report(actor, call.data[ATTR_DAY], call.data[ATTR_HOUR])
+
+
+async def _send_report(hass, call, data, actor) -> None:
+    if not actor.is_manager:
+        raise PermissionDenied("Nur Eltern.")
+    await async_send_week_report(hass, data.family, dt_util.utcnow())
+
+
+async def _give_stars(hass, call, data, actor) -> None:
+    d = call.data
+    data.family.give_stars(
+        actor, _member_id(data, d[ATTR_MEMBER]), d[ATTR_STARS], d[ATTR_REASON], dt_util.utcnow()
+    )
+
+
+async def _add_preset(hass, call, data, actor) -> None:
+    data.family.add_preset(actor, call.data[ATTR_NAME], call.data[ATTR_STARS])
+
+
+async def _delete_preset(hass, call, data, actor) -> None:
+    data.family.delete_preset(actor, call.data[ATTR_PRESET_ID])
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -429,5 +630,23 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_REDEEM_REWARD, _redeem, REDEEM_SCHEMA),
         (SERVICE_APPROVE_REDEMPTION, _approve_redemption, REDEMPTION_SCHEMA),
         (SERVICE_REJECT_REDEMPTION, _reject_redemption, REDEMPTION_SCHEMA),
+        (SERVICE_SET_GOAL, _set_goal, GOAL_SCHEMA),
+        (SERVICE_SET_FAMILY_GOAL, _set_family_goal, FAMILY_GOAL_SCHEMA),
+        (SERVICE_CLEAR_FAMILY_GOAL, _clear_family_goal, EMPTY_SCHEMA),
+        (SERVICE_SET_MONEY, _set_money, MONEY_SCHEMA),
+        (SERVICE_CHECK_STEP, _check_step, STEP_SCHEMA),
+        (SERVICE_SET_PAUSE, _set_pause, PAUSE_SCHEMA),
+        (SERVICE_END_PAUSE, _end_pause, EMPTY_SCHEMA),
+        (SERVICE_SET_PICTURE_MODE, _set_picture_mode, PICTURE_SCHEMA),
+        (SERVICE_SET_WEATHER, _set_weather, WEATHER_SCHEMA),
+        (SERVICE_SET_REPORT, _set_report, REPORT_SCHEMA),
+        (SERVICE_SEND_REPORT, _send_report, EMPTY_SCHEMA),
+        (SERVICE_GIVE_STARS, _give_stars, GIVE_STARS_SCHEMA),
+        (SERVICE_ADD_PRESET, _add_preset, ADD_PRESET_SCHEMA),
+        (SERVICE_DELETE_PRESET, _delete_preset, DELETE_PRESET_SCHEMA),
+        (SERVICE_SET_ALLOWANCE, _set_allowance, ALLOWANCE_SCHEMA),
+        (SERVICE_EXCHANGE_STARS, _exchange, EXCHANGE_SCHEMA),
+        (SERVICE_PAYOUT, _payout, PAYOUT_SCHEMA),
+        (SERVICE_ADJUST_MONEY, _adjust_money, ADJUST_SCHEMA),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

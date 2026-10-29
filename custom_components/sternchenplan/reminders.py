@@ -12,6 +12,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    BAD_WEATHER,
     CONF_ANNOUNCE_NOTIFY,
     CONF_ANNOUNCE_TIMES,
     CONF_PARENT_SUMMARY_TIME,
@@ -41,6 +42,17 @@ _TEXT = {
         "say_and": "und",
         "say_done": "Alle Aufgaben für heute sind erledigt.",
         "redeemed": "{name} möchte eine Belohnung einlösen: {reward}",
+        "level_up": "🎉 Level {level} geschafft! Du bist jetzt {title}.",
+        "badge": "{emoji} Neues Abzeichen: {badge}",
+        "goal_ready": "🎯 Du hast genug Sterne für „{reward}“. Jetzt einlösen?",
+        "family_goal": "🎉 Familienziel geschafft: {name}! Danke an alle.",
+        "allowance": "💶 {amount} Taschengeld sind da!",
+        "week_title": "📊 Wochenbericht",
+        "week_row": "{name}: {done} erledigt, {missed} verpasst, ⭐ {stars}",
+        "week_best": "🏆 Am fleißigsten: {name}",
+        "week_empty": "Diese Woche wurde nichts erledigt.",
+        "bonus": "⭐ +{stars} Bonus: {reason}",
+        "penalty": "⚠️ {stars} Sterne: {reason}",
     },
     "en": {
         "title": "Sternchenplan",
@@ -53,8 +65,108 @@ _TEXT = {
         "say_and": "and",
         "say_done": "All chores for today are done.",
         "redeemed": "{name} wants to redeem a reward: {reward}",
+        "level_up": "🎉 Level {level} reached! You are now {title}.",
+        "badge": "{emoji} New badge: {badge}",
+        "goal_ready": "🎯 You have enough stars for “{reward}”. Redeem it now?",
+        "family_goal": "🎉 Family goal reached: {name}! Thanks, everyone.",
+        "allowance": "💶 {amount} pocket money has arrived!",
+        "week_title": "📊 Weekly report",
+        "week_row": "{name}: {done} done, {missed} missed, ⭐ {stars}",
+        "week_best": "🏆 Hardest worker: {name}",
+        "week_empty": "Nothing was done this week.",
+        "bonus": "⭐ +{stars} bonus: {reason}",
+        "penalty": "⚠️ {stars} stars: {reason}",
     },
 }
+
+
+LEVEL_TITLES = {
+    "de": ["Starter", "Helfer", "Macher", "Profi", "Experte", "Meister", "Champion",
+           "Held", "Superheld", "Legende"],
+    "en": ["Starter", "Helper", "Doer", "Pro", "Expert", "Master", "Champion",
+           "Hero", "Superhero", "Legend"],
+}
+
+BADGE_NAMES = {
+    "de": {
+        "first": "Erster Stern", "done10": "Fleißige Biene", "done50": "Arbeitstier",
+        "done100": "Haushaltsheld", "done250": "Königlich", "streak3": "Am Ball",
+        "streak7": "Eine ganze Woche", "streak30": "Unaufhaltsam",
+        "helper1": "Retter in der Not", "helper10": "Superhelfer",
+        "early5": "Frühaufsteher", "photo10": "Fotoprofi", "reward1": "Erste Belohnung",
+        "stars100": "100 Sterne", "stars500": "500 Sterne",
+    },
+    "en": {
+        "first": "First star", "done10": "Busy bee", "done50": "Workhorse",
+        "done100": "Household hero", "done250": "Royal", "streak3": "On a roll",
+        "streak7": "A whole week", "streak30": "Unstoppable",
+        "helper1": "Lifesaver", "helper10": "Super helper",
+        "early5": "Early bird", "photo10": "Photographer", "reward1": "First reward",
+        "stars100": "100 stars", "stars500": "500 stars",
+    },
+}
+
+
+def _lang(hass: HomeAssistant) -> str:
+    return "de" if (hass.config.language or "").startswith("de") else "en"
+
+
+def level_title(hass: HomeAssistant, level: int) -> str:
+    titles = LEVEL_TITLES[_lang(hass)]
+    return titles[min(level, len(titles)) - 1]
+
+
+async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict]) -> None:
+    """Neue Level und Abzeichen: Ereignis für eigene Automationen und Push ans Kind."""
+    text = _text(hass)
+    for event in events:
+        if event["type"] == "family_goal":
+            hass.bus.async_fire("sternchenplan_family_goal", {"name": event["name"]})
+            message = text["family_goal"].format(name=event["name"])
+            for m in family.members.values():
+                if m.notify_service:
+                    await _notify(hass, m.notify_service, text["title"], message)
+            continue
+        member = family.members.get(event["member"])
+        if member is None:
+            continue
+        if event["type"] == "level":
+            title = level_title(hass, event["level"])
+            message = text["level_up"].format(level=event["level"], title=title)
+            hass.bus.async_fire(
+                "sternchenplan_level_up",
+                {"member": member.name, "member_id": member.id,
+                 "level": event["level"], "title": title},
+            )
+        elif event["type"] == "allowance":
+            amount = f"{event['cents'] / 100:.2f} €"
+            if _lang(hass) == "de":
+                amount = amount.replace(".", ",")
+            message = text["allowance"].format(amount=amount)
+        elif event["type"] == "stars":
+            key = "bonus" if event["stars"] > 0 else "penalty"
+            message = text[key].format(stars=event["stars"], reason=event["reason"] or "–")
+            hass.bus.async_fire(
+                "sternchenplan_stars",
+                {"member": member.name, "member_id": member.id,
+                 "stars": event["stars"], "reason": event["reason"]},
+            )
+        elif event["type"] == "goal_ready":
+            message = text["goal_ready"].format(reward=event["reward"])
+            hass.bus.async_fire(
+                "sternchenplan_goal_ready",
+                {"member": member.name, "member_id": member.id, "reward": event["reward"]},
+            )
+        else:
+            name = BADGE_NAMES[_lang(hass)].get(event["badge"], event["badge"])
+            message = text["badge"].format(emoji=event["emoji"], badge=name)
+            hass.bus.async_fire(
+                "sternchenplan_badge",
+                {"member": member.name, "member_id": member.id,
+                 "badge": event["badge"], "name": name, "emoji": event["emoji"]},
+            )
+        if member.notify_service:
+            await _notify(hass, member.notify_service, text["title"], message)
 
 
 def parse_times(value: str) -> list[time]:
@@ -68,7 +180,7 @@ def parse_times(value: str) -> list[time]:
 
 
 def _text(hass: HomeAssistant) -> dict[str, str]:
-    return _TEXT["de" if (hass.config.language or "").startswith("de") else "en"]
+    return _TEXT[_lang(hass)]
 
 
 def _end_of_day(now: datetime) -> datetime:
@@ -89,8 +201,10 @@ def child_message(hass: HomeAssistant, family: Family, member_id: str, now: date
     return text["open"].format(list=", ".join(names))
 
 
-def parent_message(hass: HomeAssistant, family: Family, now: datetime) -> str:
+def parent_message(hass: HomeAssistant, family: Family, now: datetime) -> str | None:
     text = _text(hass)
+    if family.is_paused(now):
+        return None
     until = _end_of_day(now)
     lines = []
     for member in family.members.values():
@@ -185,6 +299,33 @@ async def _notify(hass: HomeAssistant, service: str, title: str, message: str) -
     )
 
 
+def weather_is_bad(hass: HomeAssistant, entity_id: str | None) -> bool:
+    if not entity_id or (state := hass.states.get(entity_id)) is None:
+        return False
+    return state.state in BAD_WEATHER
+
+
+def week_message(hass: HomeAssistant, family: Family, now: datetime) -> str:
+    text = _text(hass)
+    rows = family.week_report(now)
+    if not any(r["done"] or r["missed"] for r in rows):
+        return text["week_empty"]
+    lines = [text["week_row"].format(**r) for r in rows]
+    best = max(rows, key=lambda r: (r["stars"], r["done"]))
+    if best["done"]:
+        lines.append(text["week_best"].format(name=best["name"]))
+    return "\n".join(lines)
+
+
+async def async_send_week_report(hass: HomeAssistant, family: Family, now: datetime) -> None:
+    text = _text(hass)
+    message = week_message(hass, family, now)
+    hass.bus.async_fire("sternchenplan_week_report", {"report": family.week_report(now)})
+    for member in family.members.values():
+        if member.role is Role.PARENT and member.notify_service:
+            await _notify(hass, member.notify_service, text["week_title"], message)
+
+
 @callback
 def async_setup_reminders(
     hass: HomeAssistant, entry: SternchenplanConfigEntry
@@ -216,6 +357,8 @@ def async_setup_reminders(
         family = entry.runtime_data.family
         now = dt_util.utcnow()
         message = parent_message(hass, family, now)
+        if message is None:
+            return
         for member in family.members.values():
             if member.role is Role.PARENT and member.notify_service:
                 await _notify(hass, member.notify_service, _text(hass)["title"], message)
@@ -225,7 +368,14 @@ def async_setup_reminders(
         if message := announcement(hass, entry.runtime_data.family, now):
             await async_announce(hass, entry, message)
 
-    unsubs = [
+    async def week_report(now: datetime) -> None:
+        family = entry.runtime_data.family
+        local = dt_util.now()
+        if family.report_day == local.weekday() and family.report_hour == local.hour:
+            await async_send_week_report(hass, family, dt_util.utcnow())
+
+    unsubs = [async_track_time_change(hass, week_report, minute=0, second=0)]
+    unsubs += [
         async_track_time_change(hass, remind_children, hour=t.hour, minute=t.minute, second=0)
         for t in child_times
     ]

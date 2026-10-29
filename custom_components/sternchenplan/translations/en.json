@@ -277,6 +277,22 @@
         "min_age": {
           "name": "Minimum age",
           "description": "Only children of this age or older take part. 0 = everyone."
+        },
+        "steps": {
+          "name": "Steps",
+          "description": "Turns the chore into a routine: the child ticks off each step."
+        },
+        "weekdays": {
+          "name": "Weekdays",
+          "description": "Only on these days (0 = Monday). Empty = every day. For daily chores."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Emoji shown in picture mode."
+        },
+        "outdoor": {
+          "name": "Outdoors",
+          "description": "Only in dry weather. If it rains at the deadline, it moves one day."
         }
       }
     },
@@ -323,6 +339,22 @@
         "min_age": {
           "name": "Minimum age",
           "description": "Only children of this age or older take part. 0 = everyone."
+        },
+        "steps": {
+          "name": "Steps",
+          "description": "Turns the chore into a routine: the child ticks off each step."
+        },
+        "weekdays": {
+          "name": "Weekdays",
+          "description": "Only on these days (0 = Monday). Empty = every day. For daily chores."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Emoji shown in picture mode."
+        },
+        "outdoor": {
+          "name": "Outdoors",
+          "description": "Only in dry weather. If it rains at the deadline, it moves one day."
         }
       }
     },
@@ -569,6 +601,236 @@
         "redemption_id": {
           "name": "Redemption ID",
           "description": "ID of the redemption."
+        }
+      }
+    },
+    "set_goal": {
+      "name": "Set savings goal",
+      "description": "A child picks a reward to save up for. Without a reward the goal is removed.",
+      "fields": {
+        "reward_id": {
+          "name": "Reward ID",
+          "description": "ID of the reward. Empty removes the goal."
+        },
+        "member": {
+          "name": "Member",
+          "description": "For whom. Default: the caller."
+        }
+      }
+    },
+    "set_family_goal": {
+      "name": "Set family goal",
+      "description": "All children collect stars together for a shared goal, e.g. a trip. Nothing is deducted from the children.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "What the family is saving for."
+        },
+        "target": {
+          "name": "Stars",
+          "description": "How many stars all children need together."
+        }
+      }
+    },
+    "clear_family_goal": {
+      "name": "Remove family goal",
+      "description": "Removes the current family goal."
+    },
+    "set_money": {
+      "name": "Pocket money settings",
+      "description": "Exchange rate for stars and the weekly payday.",
+      "fields": {
+        "rate": {
+          "name": "Stars per euro",
+          "description": "How many stars a child exchanges for 1 €. 0 turns exchanging off."
+        },
+        "payday": {
+          "name": "Payday",
+          "description": "Weekday for the weekly allowance: 0 = Monday … 6 = Sunday."
+        }
+      }
+    },
+    "set_allowance": {
+      "name": "Set weekly allowance",
+      "description": "Fixed amount a child gets every week on payday.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Euros per week. 0 turns it off."
+        }
+      }
+    },
+    "exchange_stars": {
+      "name": "Exchange stars",
+      "description": "A child exchanges stars for pocket money at the family's rate.",
+      "fields": {
+        "euros": {
+          "name": "Euros",
+          "description": "How many whole euros."
+        },
+        "member": {
+          "name": "Child",
+          "description": "For whom. Default: the caller."
+        }
+      }
+    },
+    "payout": {
+      "name": "Pay out",
+      "description": "Parents hand over the money. The balance goes down.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Euros. Empty pays out everything."
+        }
+      }
+    },
+    "adjust_money": {
+      "name": "Book money",
+      "description": "Add or subtract an amount, e.g. a bonus.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Euros, negative subtracts."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Shown in the history."
+        }
+      }
+    },
+    "check_step": {
+      "name": "Tick off routine step",
+      "description": "Ticks off one step of a routine. When all steps are done, the chore counts as reported.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID of the routine."
+        },
+        "index": {
+          "name": "Step",
+          "description": "Number of the step, starting at 0."
+        },
+        "done": {
+          "name": "Done",
+          "description": "Off unticks the step."
+        },
+        "member": {
+          "name": "Member",
+          "description": "For whom. Default: the caller."
+        }
+      }
+    },
+    "set_pause": {
+      "name": "Holiday pause",
+      "description": "Nothing is due and nothing is locked during this time. Afterwards due dates move forward and streaks continue.",
+      "fields": {
+        "start": {
+          "name": "Start",
+          "description": "Default: now."
+        },
+        "until": {
+          "name": "Until",
+          "description": "End of the pause."
+        }
+      }
+    },
+    "end_pause": {
+      "name": "End holiday pause",
+      "description": "Ends the holiday pause now."
+    },
+    "set_picture_mode": {
+      "name": "Picture mode",
+      "description": "Large pictures instead of text for a child who can't read yet.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "enabled": {
+          "name": "On",
+          "description": "Switch picture mode on or off."
+        }
+      }
+    },
+    "set_weather": {
+      "name": "Weather",
+      "description": "Which weather entity decides about outdoor chores. Empty = off.",
+      "fields": {
+        "entity": {
+          "name": "Weather entity",
+          "description": "For example weather.home."
+        }
+      }
+    },
+    "set_report": {
+      "name": "Weekly report",
+      "description": "When parents get the weekly report.",
+      "fields": {
+        "day": {
+          "name": "Day",
+          "description": "0 = Monday … 6 = Sunday, -1 = off."
+        },
+        "hour": {
+          "name": "Hour",
+          "description": "0–23."
+        }
+      }
+    },
+    "send_report": {
+      "name": "Send weekly report now",
+      "description": "Sends the report of the last 7 days to the parents."
+    },
+    "give_stars": {
+      "name": "Bonus or deduction",
+      "description": "Give extra stars or take some away. A deduction never goes below zero and never lowers a level.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "stars": {
+          "name": "Stars",
+          "description": "Positive = bonus, negative = deduction."
+        },
+        "reason": {
+          "name": "Reason",
+          "description": "Shown to the child, e.g. “Helped with shopping”."
+        }
+      }
+    },
+    "add_preset": {
+      "name": "Add quick button",
+      "description": "A ready-made bonus or deduction for the parent view.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "For example “Argued”."
+        },
+        "stars": {
+          "name": "Stars",
+          "description": "Negative for a deduction."
+        }
+      }
+    },
+    "delete_preset": {
+      "name": "Remove quick button",
+      "description": "Remove quick button",
+      "fields": {
+        "preset_id": {
+          "name": "ID",
+          "description": "From the card."
         }
       }
     }

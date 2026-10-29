@@ -18,9 +18,25 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, DONATE_URL, SIGNAL_UPDATED
-from .core import Family
+from .core import Family, Member, badge_status, level_floor
 from .photos import signed_url
 from .takeover import takeover_terms
+
+
+def _progress(member: Member, today) -> dict[str, Any]:
+    p = member.progress
+    level = p.level
+    return {
+        "level": level,
+        "earned": p.earned,
+        "level_from": level_floor(level),
+        "level_to": level_floor(level + 1),
+        "streak": p.current_streak(today),
+        "streak_today": p.streak_day == today,
+        "best_streak": p.best_streak,
+        "done": p.done,
+        "badges": badge_status(p),
+    }
 
 
 def snapshot(
@@ -43,6 +59,21 @@ def snapshot(
         "tablet": actor.tablet and not actor.is_manager,
         "donate_url": DONATE_URL if actor.is_manager else None,
         "takeover": {"allowed": allowed, "multiplier": multiplier},
+        "family_goal": family.goal.to_dict() if family.goal else None,
+        "money": {"rate": family.money_rate, "payday": family.payday},
+        "pause": (
+            {"from": iso(family.pause_from), "until": iso(family.pause_until),
+             "active": family.is_paused(now)}
+            if family.pause_until else None
+        ),
+        "weather": (
+            {"entity": family.weather_entity, "bad": family.bad_weather,
+             "state": (st.state if (st := hass.states.get(family.weather_entity)) else None)}
+            if family.weather_entity else None
+        ),
+        "report": {"day": family.report_day, "hour": family.report_hour},
+        "week": family.week_report(now) if actor.is_manager else [],
+        "presets": [dict(p) for p in family.presets] if actor.is_manager else [],
         "members": [
             {
                 "id": m.id,
@@ -57,6 +88,23 @@ def snapshot(
                 "locked": bool(family.locked.get(m.id)),
                 "pass_until": iso(m.pass_until) if m.has_pass(now) else None,
                 "age": m.age(now),
+                "progress": _progress(m, now.astimezone(family.tz).date()),
+                "goal": m.goal_reward_id if m.goal_reward_id in family.rewards else None,
+                "money": m.money,
+                "picture_mode": m.picture_mode,
+                # Bonus und Abzug sehen Eltern und das Kind selbst
+                "star_log": (
+                    family.star_history(m.id, 10)
+                    if actor.is_manager or actor.tablet or (actor.member and actor.member.id == m.id)
+                    else []
+                ),
+                "allowance": m.allowance,
+                # Kontoauszug sehen Eltern und das Kind selbst
+                "money_log": (
+                    family.money_history(m.id)
+                    if actor.is_manager or actor.tablet or (actor.member and actor.member.id == m.id)
+                    else []
+                ),
             }
             for m in family.members.values()
         ],
@@ -83,6 +131,12 @@ def snapshot(
                 "claimed_by": c.claimed_by,
                 "last_completed_by": c.last_completed_by,
                 "last_completed_at": iso(c.last_completed_at),
+                "steps": list(c.steps),
+                "steps_done": list(c.steps_done),
+                "weekdays": list(c.weekdays),
+                "icon": c.icon,
+                "outdoor": c.outdoor,
+                "weather_shift": c.weather_shift,
             }
             for c in family.chores.values()
         ],

@@ -32,7 +32,7 @@ from .const import (
 from .consequences import async_apply
 from .core import Family
 from .photos import PhotoUploadView, PhotoView, cleanup, forget_missing
-from .reminders import async_setup_reminders
+from .reminders import async_celebrate, async_setup_reminders, weather_is_bad
 from .services import async_register_services
 from .websocket_api import async_register_websocket
 
@@ -57,8 +57,11 @@ class SternchenplanData:
     async def _async_store(self) -> None:
         await self.store.async_save(self.family.to_dict())
         async_dispatcher_send(self.hass, SIGNAL_UPDATED)
+        if events := self.family.pop_events():
+            await async_celebrate(self.hass, self.family, events)
 
     async def async_tick(self, _now=None) -> None:
+        self.family.bad_weather = weather_is_bad(self.hass, self.family.weather_entity)
         changed = self.family.refresh(dt_util.utcnow())
         if await async_apply(self.hass, self.entry) or changed:
             await self._async_store()
@@ -96,6 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SternchenplanConfigEntry
     stored = await store.async_load()
     initial = entry.data.get(DATA_INITIAL_FAMILY)
     data = SternchenplanData(hass, entry, store, Family.from_dict(stored or initial))
+    data.family.tz = dt_util.get_default_time_zone()
     entry.runtime_data = data
     if initial is not None:
         # Ergebnis des Einrichtungsassistenten einmalig übernehmen.

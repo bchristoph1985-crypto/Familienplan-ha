@@ -44,6 +44,35 @@ create_chore:
       default: false
       selector:
         boolean:
+    steps:
+      selector:
+        text:
+          multiple: true
+    weekdays:
+      selector:
+        select:
+          multiple: true
+          options:
+            - label: Mo
+              value: "0"
+            - label: Di
+              value: "1"
+            - label: Mi
+              value: "2"
+            - label: Do
+              value: "3"
+            - label: Fr
+              value: "4"
+            - label: Sa
+              value: "5"
+            - label: So
+              value: "6"
+    icon:
+      selector:
+        text:
+    outdoor:
+      selector:
+        boolean:
 delete_chore:
   fields: &chore
     chore_id:
@@ -127,6 +156,35 @@ update_chore:
       selector:
         boolean:
     requires_photo:
+      selector:
+        boolean:
+    steps:
+      selector:
+        text:
+          multiple: true
+    weekdays:
+      selector:
+        select:
+          multiple: true
+          options:
+            - label: Mo
+              value: "0"
+            - label: Di
+              value: "1"
+            - label: Mi
+              value: "2"
+            - label: Do
+              value: "3"
+            - label: Fr
+              value: "4"
+            - label: Sa
+              value: "5"
+            - label: So
+              value: "6"
+    icon:
+      selector:
+        text:
+    outdoor:
       selector:
         boolean:
 set_devices:
@@ -244,6 +302,195 @@ approve_redemption:
 reject_redemption:
   fields:
     redemption_id:
+      required: true
+      selector:
+        text:
+set_goal:
+  fields:
+    reward_id:
+      selector:
+        text:
+    member:
+      selector:
+        text:
+set_family_goal:
+  fields:
+    name:
+      required: true
+      selector:
+        text:
+    target:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+clear_family_goal:
+set_money:
+  fields:
+    rate:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 10000
+          mode: box
+    payday:
+      selector:
+        number:
+          min: 0
+          max: 6
+          mode: box
+set_allowance:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    amount:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 0.5
+          mode: box
+          unit_of_measurement: "€"
+exchange_stars:
+  fields:
+    euros:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 1000
+          mode: box
+          unit_of_measurement: "€"
+    member:
+      selector:
+        text:
+payout:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    amount:
+      selector:
+        number:
+          min: 0.01
+          max: 10000
+          step: 0.01
+          mode: box
+          unit_of_measurement: "€"
+adjust_money:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    amount:
+      required: true
+      selector:
+        number:
+          min: -10000
+          max: 10000
+          step: 0.01
+          mode: box
+          unit_of_measurement: "€"
+    note:
+      selector:
+        text:
+check_step:
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    index:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 11
+          mode: box
+    done:
+      selector:
+        boolean:
+    member:
+      selector:
+        text:
+set_pause:
+  fields:
+    start:
+      selector:
+        datetime:
+    until:
+      required: true
+      selector:
+        datetime:
+end_pause:
+set_picture_mode:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    enabled:
+      required: true
+      selector:
+        boolean:
+set_weather:
+  fields:
+    entity:
+      selector:
+        entity:
+          domain: weather
+set_report:
+  fields:
+    day:
+      required: true
+      selector:
+        number:
+          min: -1
+          max: 6
+    hour:
+      selector:
+        number:
+          min: 0
+          max: 23
+send_report:
+give_stars:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    stars:
+      required: true
+      selector:
+        number:
+          min: -100
+          max: 100
+    reason:
+      selector:
+        text:
+add_preset:
+  fields:
+    name:
+      required: true
+      selector:
+        text:
+    stars:
+      required: true
+      selector:
+        number:
+          min: -100
+          max: 100
+delete_preset:
+  fields:
+    preset_id:
       required: true
       selector:
         text:

@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.15.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.19.0. Noch nicht für den Alltag gedacht.
 
 ## Umstieg vom Arbeitstitel „Familienplan“
 
@@ -63,6 +63,86 @@ Familientablet, Internetsperre (FRITZ!Box & Co.), Fotonachweis, Aufgaben
 Wer von 0.14 kommt: Ein eingetragener Lizenzschlüssel wird einfach nicht mehr
 gebraucht. Es muss nichts umgestellt werden.
 
+## Level, Serien und Abzeichen
+
+Jeder Stern bringt Kinder im Level weiter (Starter, Helfer, Macher, Profi …).
+Das Level zählt alle jemals verdienten Sterne. Wer Sterne für eine Belohnung
+ausgibt, fällt also nicht zurück.
+
+- **Serie 🔥:** Tage in Folge, an denen das Kind mindestens eine Aufgabe
+  erledigt hat. Sie reißt erst, wenn ein ganzer Tag ohne Erledigtes vergeht.
+- **15 Abzeichen:** z. B. „Fleißige Biene“ (10 Aufgaben), „Am Ball“ (3 Tage in
+  Folge), „Retter in der Not“ (Geschwistern geholfen), „Frühaufsteher“.
+- **Feiern:** Neues Level oder Abzeichen gibt eine große Anzeige in der Karte
+  und eine Push-Nachricht ans Kind.
+
+Für eigene Automationen gibt es die Ereignisse `sternchenplan_level_up`
+(`member`, `level`, `title`) und `sternchenplan_badge` (`member`, `badge`,
+`name`, `emoji`). Der Sterne-Sensor jedes Kindes hat die Attribute `level`,
+`stars_total`, `streak`, `best_streak` und `badges`.
+
+Beim Update von 0.15 schätzt Sternchenplan den bisherigen Stand aus Sternen,
+Einlösungen und dem Verlauf. Abzeichen, die schon verdient sind, gibt es still
+dazu, ohne Feier-Flut.
+
+## Sparziel und Familienziel
+
+- **Sparziel 🎯:** Jedes Kind kann eine Belohnung als Ziel markieren (Knopf
+  „Als Ziel“ unter der Belohnung). Oben in der Kinderansicht steht dann, wie
+  viele Sterne noch fehlen. Sobald es reicht, kommt eine Push-Nachricht.
+- **Familienziel 🏰:** Eltern legen unter *Belohnungen* ein gemeinsames Ziel
+  an, z. B. „Freizeitpark, 500 Sterne“. Alle Sterne, die die Kinder verdienen,
+  zählen dafür. Niemandem wird etwas abgezogen. Ist das Ziel erreicht, gibt es
+  eine Nachricht an alle.
+
+Dienste: `sternchenplan.set_goal`, `sternchenplan.set_family_goal`,
+`sternchenplan.clear_family_goal`. Ereignisse: `sternchenplan_goal_ready`,
+`sternchenplan_family_goal`.
+
+## Taschengeld
+
+Im Eltern-Reiter **Geld** führt Sternchenplan für jedes Kind ein
+Taschengeld-Konto. Das Geld selbst liegt nicht in Sternchenplan: Ihr zahlt bar
+oder per Überweisung aus und tippt dann auf „Auszahlen“.
+
+- **Sterne tauschen:** Mit einem Kurs, z. B. 10 Sterne = 1 €, tauschen Kinder
+  Sterne selbst in Taschengeld. Kurs 0 schaltet das aus.
+- **Wochengeld:** Ein fester Betrag pro Kind, gutgeschrieben am Zahltag
+  (Standard Sonntag). Das Kind bekommt eine Push-Nachricht.
+- **Buchen:** Bonus von Oma oder Abzug für Kaputtes, mit Notiz im Verlauf.
+
+Dienste: `set_money`, `set_allowance`, `exchange_stars`, `payout`,
+`adjust_money`.
+
+## Routinen und Vorlagen
+
+- **Routinen:** Jede Aufgabe kann Schritte haben, z. B. die Morgenroutine mit
+  Aufstehen, Anziehen, Zähne putzen und Bett machen. Das Kind hakt jeden
+  Schritt einzeln ab. Mit dem letzten Schritt gilt die Aufgabe als gemeldet.
+  Bei einer Routine mit Fotonachweis tippt das Kind danach selbst auf
+  „Foto & erledigt“. Dienst: `sternchenplan.check_step`.
+- **Vorlagen nach Alter:** Unter *Aufgaben › 📚 Vorlagen* gibt es 24 fertige
+  Aufgaben und Routinen, sortiert nach Alter (4–6, 7–9, 10–12, ab 13). Ein Tipp
+  füllt das Formular mit Namen, Sternen, Wiederholung, Uhrzeit und
+  Mindestalter. Ihr wählt nur noch, wer sie macht.
+
+## Ferien-Pause, Schultage und Bilder-Modus
+
+- **Ferien-Pause:** Unter „Abwesend“ trägst du Ferien von–bis ein. In der Zeit ist nichts fällig, nichts wird gesperrt und keine Serie reißt. Danach rücken die Fristen automatisch nach. Geht auch per Dienst `sternchenplan.set_pause` / `sternchenplan.end_pause`.
+- **Nur an bestimmten Tagen:** Tägliche Aufgaben kannst du auf Wochentage beschränken, z. B. „Schultasche packen“ nur Mo–Fr. Die Vorlagen für Schulsachen setzen das schon.
+- **Bilder-Modus:** Für Kinder, die noch nicht lesen. Große Bildkacheln statt Text, ein 🔊-Knopf liest die Aufgabe vor (im Browser, ohne Internetdienst). Einschalten in der Elternansicht beim Kind („Bilder-Modus“) oder per `sternchenplan.set_picture_mode`. Jede Aufgabe kann ein eigenes Symbol bekommen.
+
+## Wetter und Wochenbericht
+
+- **Draußen-Aufgaben:** Hak bei einer Aufgabe „Draußen“ an (z. B. Rasen mähen, Laub rechen). Regnet es zur Frist, wird sie nicht überfällig und sperrt nichts, sondern rückt einen Tag weiter. Der Wochentakt bleibt dabei gleich. Welche Wetter-Entität zählt, stellst du im Reiter „Aufgaben“ unter „Einstellungen“ ein (oder per `sternchenplan.set_weather`). Als nass gilt: Regen, Schauer, Schnee, Gewitter, Hagel.
+- **Wochenbericht:** Eltern sehen unter „Heute“, wie die Woche lief: erledigt, verpasst, verdiente Sterne und wer am fleißigsten war. Einmal pro Woche (Standard: Sonntag 18 Uhr) kommt das als Push. Tag und Uhrzeit stellst du an derselben Stelle ein, `-1` schaltet ihn ab. Für eigene Automationen gibt es das Ereignis `sternchenplan_week_report` und den Dienst `sternchenplan.send_report`.
+
+## Bonus und Abzug
+
+In der Elternansicht hat jedes Kind unter „Heute“ den Knopf „± Sterne“. Damit gibst du Extra-Sterne („Oma beim Tragen geholfen“) oder ziehst welche ab („Streit“). Fertige Schnellknöpfe legst du im Reiter „Aufgaben“ unter „Einstellungen“ an. Das Kind bekommt eine Push-Nachricht mit dem Grund und sieht den Verlauf in seiner Ansicht.
+
+Ein Abzug geht nie unter null und kostet kein Level: Was ein Kind erreicht hat, bleibt. Bonus-Sterne zählen dagegen fürs Level und fürs Familienziel. Für Automationen gibt es den Dienst `sternchenplan.give_stars` und das Ereignis `sternchenplan_stars`.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
@@ -114,4 +194,4 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
-- Weitere Funktionen: Level und Abzeichen, Serien, Spar- und Familienziel, Taschengeld, Routinen, Vorlagen nach Alter
+- Weitere Funktionen: weitere Sprachen
