@@ -41,6 +41,8 @@ _TEXT = {
         "say_and": "und",
         "say_done": "Alle Aufgaben für heute sind erledigt.",
         "redeemed": "{name} möchte eine Belohnung einlösen: {reward}",
+        "level_up": "🎉 Level {level} geschafft! Du bist jetzt {title}.",
+        "badge": "{emoji} Neues Abzeichen: {badge}",
     },
     "en": {
         "title": "Sternchenplan",
@@ -53,8 +55,73 @@ _TEXT = {
         "say_and": "and",
         "say_done": "All chores for today are done.",
         "redeemed": "{name} wants to redeem a reward: {reward}",
+        "level_up": "🎉 Level {level} reached! You are now {title}.",
+        "badge": "{emoji} New badge: {badge}",
     },
 }
+
+
+LEVEL_TITLES = {
+    "de": ["Starter", "Helfer", "Macher", "Profi", "Experte", "Meister", "Champion",
+           "Held", "Superheld", "Legende"],
+    "en": ["Starter", "Helper", "Doer", "Pro", "Expert", "Master", "Champion",
+           "Hero", "Superhero", "Legend"],
+}
+
+BADGE_NAMES = {
+    "de": {
+        "first": "Erster Stern", "done10": "Fleißige Biene", "done50": "Arbeitstier",
+        "done100": "Haushaltsheld", "done250": "Königlich", "streak3": "Am Ball",
+        "streak7": "Eine ganze Woche", "streak30": "Unaufhaltsam",
+        "helper1": "Retter in der Not", "helper10": "Superhelfer",
+        "early5": "Frühaufsteher", "photo10": "Fotoprofi", "reward1": "Erste Belohnung",
+        "stars100": "100 Sterne", "stars500": "500 Sterne",
+    },
+    "en": {
+        "first": "First star", "done10": "Busy bee", "done50": "Workhorse",
+        "done100": "Household hero", "done250": "Royal", "streak3": "On a roll",
+        "streak7": "A whole week", "streak30": "Unstoppable",
+        "helper1": "Lifesaver", "helper10": "Super helper",
+        "early5": "Early bird", "photo10": "Photographer", "reward1": "First reward",
+        "stars100": "100 stars", "stars500": "500 stars",
+    },
+}
+
+
+def _lang(hass: HomeAssistant) -> str:
+    return "de" if (hass.config.language or "").startswith("de") else "en"
+
+
+def level_title(hass: HomeAssistant, level: int) -> str:
+    titles = LEVEL_TITLES[_lang(hass)]
+    return titles[min(level, len(titles)) - 1]
+
+
+async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict]) -> None:
+    """Neue Level und Abzeichen: Ereignis für eigene Automationen und Push ans Kind."""
+    text = _text(hass)
+    for event in events:
+        member = family.members.get(event["member"])
+        if member is None:
+            continue
+        if event["type"] == "level":
+            title = level_title(hass, event["level"])
+            message = text["level_up"].format(level=event["level"], title=title)
+            hass.bus.async_fire(
+                "sternchenplan_level_up",
+                {"member": member.name, "member_id": member.id,
+                 "level": event["level"], "title": title},
+            )
+        else:
+            name = BADGE_NAMES[_lang(hass)].get(event["badge"], event["badge"])
+            message = text["badge"].format(emoji=event["emoji"], badge=name)
+            hass.bus.async_fire(
+                "sternchenplan_badge",
+                {"member": member.name, "member_id": member.id,
+                 "badge": event["badge"], "name": name, "emoji": event["emoji"]},
+            )
+        if member.notify_service:
+            await _notify(hass, member.notify_service, text["title"], message)
 
 
 def parse_times(value: str) -> list[time]:
@@ -68,7 +135,7 @@ def parse_times(value: str) -> list[time]:
 
 
 def _text(hass: HomeAssistant) -> dict[str, str]:
-    return _TEXT["de" if (hass.config.language or "").startswith("de") else "en"]
+    return _TEXT[_lang(hass)]
 
 
 def _end_of_day(now: datetime) -> datetime:

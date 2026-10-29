@@ -18,9 +18,25 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, DONATE_URL, SIGNAL_UPDATED
-from .core import Family
+from .core import Family, Member, badge_status, level_floor
 from .photos import signed_url
 from .takeover import takeover_terms
+
+
+def _progress(member: Member, today) -> dict[str, Any]:
+    p = member.progress
+    level = p.level
+    return {
+        "level": level,
+        "earned": p.earned,
+        "level_from": level_floor(level),
+        "level_to": level_floor(level + 1),
+        "streak": p.current_streak(today),
+        "streak_today": p.streak_day == today,
+        "best_streak": p.best_streak,
+        "done": p.done,
+        "badges": badge_status(p),
+    }
 
 
 def snapshot(
@@ -57,6 +73,7 @@ def snapshot(
                 "locked": bool(family.locked.get(m.id)),
                 "pass_until": iso(m.pass_until) if m.has_pass(now) else None,
                 "age": m.age(now),
+                "progress": _progress(m, now.astimezone(family.tz).date()),
             }
             for m in family.members.values()
         ],

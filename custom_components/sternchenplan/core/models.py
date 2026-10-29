@@ -11,6 +11,8 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
+from .progress import Progress
+
 
 class Role(StrEnum):
     PARENT = "parent"
@@ -45,6 +47,7 @@ class Member:
     devices: list[str] = field(default_factory=list)
     pass_until: datetime | None = None
     birth_year: int | None = None
+    progress: Progress = field(default_factory=Progress)
 
     def age(self, now: datetime) -> int | None:
         """Alter in Jahren, auf das Jahr genau. None, wenn nicht bekannt."""
@@ -77,6 +80,7 @@ class Member:
             "devices": list(self.devices),
             "pass_until": self.pass_until.isoformat() if self.pass_until else None,
             "birth_year": self.birth_year,
+            "progress": self.progress.to_dict(),
         }
 
     @classmethod
@@ -94,6 +98,7 @@ class Member:
             devices=list(data.get("devices", [])),
             pass_until=_parse_dt(data.get("pass_until")),
             birth_year=data.get("birth_year"),
+            progress=Progress.from_dict(data.get("progress") or {}),
         )
 
 

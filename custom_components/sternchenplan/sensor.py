@@ -99,6 +99,13 @@ class MemberPointsSensor(_SternchenplanSensor):
             "devices": list(member.devices),
             "internet_locked": bool(self._data.family.locked.get(member.id)),
             "pass_until": member.pass_until.isoformat() if member.has_pass(now) else None,
+            "level": member.progress.level,
+            "stars_total": member.progress.earned,
+            "streak": member.progress.current_streak(
+                now.astimezone(self._data.family.tz).date()
+            ),
+            "best_streak": member.progress.best_streak,
+            "badges": sorted(member.progress.badges),
             "chores": [
                 {"id": c.id, "name": c.name, "state": c.state.value,
                  "due": c.due.isoformat() if c.due else None}

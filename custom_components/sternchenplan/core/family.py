@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta, tzinfo
 from typing import Any
 
 from .models import (
@@ -22,6 +22,7 @@ from .models import (
     Reward,
     Role,
 )
+from .progress import EARLY_HOUR, level_for, new_badges
 
 HISTORY_LIMIT = 50
 REDEMPTION_LIMIT = 100
@@ -89,6 +90,11 @@ class Family:
         # bestätigt werden muss.
         self.tablet_users: list[str] = []
         self.tablet_approval = False
+        # Zeitzone für Serien und „Frühaufsteher“. Home Assistant setzt sie.
+        self.tz: tzinfo = UTC
+        # Level und Abzeichen, die seit dem letzten Abholen neu sind. Wird nicht
+        # gespeichert. Home Assistant feiert damit (Push, Ereignis).
+        self.events: list[dict[str, Any]] = []
 
     # -- Speichern -----------------------------------------------------------
 
@@ -114,7 +120,37 @@ class Family:
         family.redemptions = [Redemption.from_dict(r) for r in data.get("redemptions", [])]
         family.tablet_users = list(data.get("tablet_users", []))
         family.tablet_approval = bool(data.get("tablet_approval", False))
+        for raw in data.get("members", []):
+            if "progress" not in raw:
+                family._estimate_progress(family.members[raw["id"]])
         return family
+
+    def _estimate_progress(self, member: Member) -> None:
+        """Stand vor 0.16: Fortschritt aus Punkten und Verlauf schätzen.
+
+        Abzeichen gibt es dabei still, ohne Feier, damit nach dem Update nicht
+        alle auf einmal aufpoppen.
+        """
+        progress = member.progress
+        spent = sum(
+            r.cost for r in self.redemptions
+            if r.member_id == member.id and r.state is not RedemptionState.REJECTED
+        )
+        progress.earned = max(0, member.points) + spent
+        progress.redeemed = sum(1 for r in self.redemptions if r.member_id == member.id)
+        for chore in self.chores.values():
+            for entry in chore.history:
+                if entry.get("member") != member.id:
+                    continue
+                if entry.get("event") == "completed":
+                    progress.done += 1
+                elif entry.get("event") == "taken_over":
+                    progress.taken_over += 1
+        new_badges(progress, datetime.now(UTC))
+
+    def pop_events(self) -> list[dict[str, Any]]:
+        events, self.events = self.events, []
+        return events
 
     # -- Hilfen --------------------------------------------------------------
 
@@ -723,6 +759,8 @@ class Family:
                 f"Dafür brauchst du {reward.cost} Punkte, du hast {member.points}."
             )
         member.points -= reward.cost
+        member.progress.redeemed += 1
+        self._celebrate(member, now)
         redemption = Redemption(
             uuid.uuid4().hex, reward.id, reward.name, member_id, reward.cost, now
         )
@@ -772,7 +810,10 @@ class Family:
     # -- intern --------------------------------------------------------------
 
     def _complete(self, chore: Chore, member_id: str, now: datetime) -> None:
-        self.member(member_id).points += chore.points * chore.claim_multiplier
+        member = self.member(member_id)
+        earned = chore.points * chore.claim_multiplier
+        member.points += earned
+        self._count(member, chore, earned, now)
         chore.last_completed_by = member_id
         chore.last_completed_at = now
         chore.claimed_by = None
@@ -795,6 +836,32 @@ class Family:
             )
             chore.rotation_index = (start + 1) % len(chore.assignees)
         chore.state = ChoreState.OPEN
+
+    def _count(self, member: Member, chore: Chore, earned: int, now: datetime) -> None:
+        """Fortschritt nachführen. Läuft vor dem Zurücksetzen der Übernahme."""
+        progress = member.progress
+        local = now.astimezone(self.tz)
+        progress.earned += max(0, earned)
+        progress.done += 1
+        if chore.claim_taken_from:
+            progress.taken_over += 1
+        if chore.photo:
+            progress.photos += 1
+        if local.hour < EARLY_HOUR:
+            progress.early += 1
+        progress.count_day(local.date())
+        self._celebrate(member, now, level_before=level_for(progress.earned - max(0, earned)))
+
+    def _celebrate(self, member: Member, now: datetime, *, level_before: int | None = None) -> None:
+        progress = member.progress
+        if level_before is not None and progress.level > level_before:
+            self.events.append(
+                {"type": "level", "member": member.id, "level": progress.level}
+            )
+        for badge in new_badges(progress, now):
+            self.events.append(
+                {"type": "badge", "member": member.id, "badge": badge.id, "emoji": badge.emoji}
+            )
 
     @staticmethod
     def _reset_claim(chore: Chore) -> None:

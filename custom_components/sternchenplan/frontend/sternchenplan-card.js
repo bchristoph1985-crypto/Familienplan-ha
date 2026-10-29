@@ -10,12 +10,12 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.14.1";
+const VERSION = "0.16.0";
 
 const T = {
   de: {
     hello: "Hallo {name}",
-    points: "{n} Punkte",
+    points: "{n} Sterne",
     done: "Erledigt",
     allDone: "Alles erledigt 🎉",
     waiting: "Wartet auf Freigabe",
@@ -61,7 +61,7 @@ const T = {
     pass: "Freikarte bis {time}",
     givePass: "Freikarte",
     takePass: "Freikarte weg",
-    pointsLabel: "Punkte",
+    pointsLabel: "Sterne",
     photo: "Fotonachweis (Foto sehen nur Eltern)",
     photoDone: "📷 Foto & erledigt",
     photoOf: "Foto ansehen",
@@ -72,8 +72,8 @@ const T = {
     tabRewards: "Belohnungen",
     rewards: "Belohnungen",
     redeem: "Einlösen",
-    missing: "noch {n} Punkte",
-    confirmRedeem: "„{name}“ für {n} Punkte einlösen?",
+    missing: "noch {n} Sterne",
+    confirmRedeem: "„{name}“ für {n} Sterne einlösen?",
     waitingParents: "Wartet auf die Eltern",
     wantsReward: "möchte einlösen",
     give: "Bekommt es",
@@ -83,14 +83,14 @@ const T = {
     forWhom: "Für wen",
     allChildren: "alle Kinder",
     forWhomHint: "nichts angehakt = alle Kinder",
-    cost: "Punkte",
+    cost: "Sterne",
     noRewards: "Noch keine Belohnungen. Lege oben die erste an.",
     uploading: "Foto wird hochgeladen …",
     helpOthers: "Geschwistern helfen",
-    helpHint: "Übernimm eine Aufgabe und hol dir die Punkte.",
+    helpHint: "Übernimm eine Aufgabe und hol dir die Sterne.",
     takeOver: "Übernehmen",
     takenFrom: "übernommen für {name}",
-    double: "doppelte Punkte",
+    double: "doppelte Sterne",
     donate: "Sternchenplan ist kostenlos. Gefällt er euch? ☕ Trinkgeld geben",
     whoAreYou: "Wer bist du?",
     leftToday: "Noch {n} für heute",
@@ -102,10 +102,36 @@ const T = {
     openCount: "{n} offen",
     finished: "Fertig",
     rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen" },
+    level: "Level {n}",
+    levelTitles: ["Starter", "Helfer", "Macher", "Profi", "Experte", "Meister", "Champion", "Held", "Superheld", "Legende"],
+    toNext: "noch {n} ⭐ bis Level {next}",
+    streakDays: "{n} Tage in Folge",
+    streakOne: "1 Tag",
+    streakKeep: "Heute etwas erledigen, dann wächst deine Serie!",
+    streakStart: "Erledige heute etwas und starte eine Serie",
+    streakDone: "Serie für heute gesichert",
+    best: "Rekord {n}",
+    badges: "Abzeichen",
+    badgeNames: {
+      first: "Erster Stern", done10: "Fleißige Biene", done50: "Arbeitstier", done100: "Haushaltsheld",
+      done250: "Königlich", streak3: "Am Ball", streak7: "Eine ganze Woche", streak30: "Unaufhaltsam",
+      helper1: "Retter in der Not", helper10: "Superhelfer", early5: "Frühaufsteher", photo10: "Fotoprofi",
+      reward1: "Erste Belohnung", stars100: "100 Sterne", stars500: "500 Sterne",
+    },
+    badgeHow: {
+      done: "{n} Aufgaben erledigen", best_streak: "{n} Tage in Folge etwas erledigen",
+      taken_over: "{n}× Geschwistern helfen", early: "{n} Aufgaben vor 9 Uhr",
+      photos: "{n} Aufgaben mit Foto", redeemed: "{n} Belohnung einlösen", earned: "{n} Sterne sammeln",
+    },
+    badgeEarned: "geschafft am {date}",
+    newBadge: "Neues Abzeichen!",
+    levelUp: "Level {n}!",
+    youAre: "Du bist jetzt {title}",
+    tapClose: "Tippen zum Weitermachen",
   },
   en: {
     hello: "Hi {name}",
-    points: "{n} points",
+    points: "{n} stars",
     done: "Done",
     allDone: "All done 🎉",
     waiting: "Waiting for approval",
@@ -151,7 +177,7 @@ const T = {
     pass: "Free pass until {time}",
     givePass: "Free pass",
     takePass: "Remove pass",
-    pointsLabel: "Points",
+    pointsLabel: "Stars",
     photo: "Photo proof (only parents see it)",
     photoDone: "📷 Photo & done",
     photoOf: "View photo",
@@ -162,8 +188,8 @@ const T = {
     tabRewards: "Rewards",
     rewards: "Rewards",
     redeem: "Redeem",
-    missing: "{n} points to go",
-    confirmRedeem: "Redeem “{name}” for {n} points?",
+    missing: "{n} stars to go",
+    confirmRedeem: "Redeem “{name}” for {n} stars?",
     waitingParents: "Waiting for a parent",
     wantsReward: "wants to redeem",
     give: "Give it",
@@ -173,14 +199,14 @@ const T = {
     forWhom: "For whom",
     allChildren: "all children",
     forWhomHint: "none ticked = all children",
-    cost: "Points",
+    cost: "Stars",
     noRewards: "No rewards yet. Create the first one above.",
     uploading: "Uploading photo …",
     helpOthers: "Help your siblings",
-    helpHint: "Take over a chore and earn the points.",
+    helpHint: "Take over a chore and earn the stars.",
     takeOver: "Take over",
     takenFrom: "taken over for {name}",
-    double: "double points",
+    double: "double stars",
     donate: "Sternchenplan is free. Like it? ☕ Leave a tip",
     whoAreYou: "Who are you?",
     leftToday: "{n} left for today",
@@ -192,6 +218,32 @@ const T = {
     openCount: "{n} open",
     finished: "Done",
     rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks" },
+    level: "Level {n}",
+    levelTitles: ["Starter", "Helper", "Doer", "Pro", "Expert", "Master", "Champion", "Hero", "Superhero", "Legend"],
+    toNext: "{n} ⭐ to level {next}",
+    streakDays: "{n} days in a row",
+    streakOne: "1 day",
+    streakKeep: "Do something today to keep your streak!",
+    streakStart: "Do something today to start a streak",
+    streakDone: "Streak saved for today",
+    best: "Best {n}",
+    badges: "Badges",
+    badgeNames: {
+      first: "First star", done10: "Busy bee", done50: "Workhorse", done100: "Household hero",
+      done250: "Royal", streak3: "On a roll", streak7: "A whole week", streak30: "Unstoppable",
+      helper1: "Lifesaver", helper10: "Super helper", early5: "Early bird", photo10: "Photographer",
+      reward1: "First reward", stars100: "100 stars", stars500: "500 stars",
+    },
+    badgeHow: {
+      done: "Finish {n} chores", best_streak: "Do something {n} days in a row",
+      taken_over: "Help your siblings {n}×", early: "{n} chores before 9 am",
+      photos: "{n} chores with a photo", redeemed: "Redeem {n} reward", earned: "Collect {n} stars",
+    },
+    badgeEarned: "earned on {date}",
+    newBadge: "New badge!",
+    levelUp: "Level {n}!",
+    youAre: "You are now {title}",
+    tapClose: "Tap to continue",
   },
 };
 
@@ -253,6 +305,7 @@ class SternchenplanCard extends HTMLElement {
     this._unsub = this._hass.connection
       .subscribeMessage(
         (data) => {
+          this._spotNews(this._data, data);
           this._data = data;
           this._error = null;
           this._render();
@@ -913,7 +966,7 @@ class SternchenplanCard extends HTMLElement {
           <button class="tile" style="--kid:${this._color(m.id)}" data-action="pick" data-id="${esc(m.id)}">
             <span class="tile-avatar">${esc(m.name.trim().charAt(0).toUpperCase())}</span>
             <span class="tile-name">${esc(m.name)}</span>
-            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}</span>
+            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}${m.progress?.streak ? ` · 🔥 ${m.progress.streak}` : ""}</span>
           </button>`;
       })
       .join("");
@@ -940,12 +993,101 @@ class SternchenplanCard extends HTMLElement {
           </div>
           ${this._ring(done, total || open, color, 72)}
         </div>
+        ${this._renderLevel(member)}
         ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
         <div class="section-title">${this._t("todayTitle")}</div>
         ${list}
         ${this._renderTakeOver(member)}
         ${this._renderChildRewards(member)}
+        ${this._renderBadges(member)}
       </div>`;
+  }
+
+  _levelTitle(level) {
+    const titles = this._t("levelTitles");
+    return titles[Math.min(level, titles.length) - 1];
+  }
+
+  _renderLevel(member) {
+    const p = member.progress;
+    if (!p) return "";
+    const span = Math.max(1, p.level_to - p.level_from);
+    const pct = Math.min(100, Math.round(((p.earned - p.level_from) / span) * 100));
+    const streak = p.streak
+      ? `<span class="streak ${p.streak_today ? "hot" : "cold"}" title="${esc(this._t("best", { n: p.best_streak }))}">🔥 ${esc(
+          p.streak === 1 ? this._t("streakOne") : this._t("streakDays", { n: p.streak }),
+        )}</span>`
+      : "";
+    const hint = p.streak_today ? "streakDone" : p.streak ? "streakKeep" : "streakStart";
+    return `
+      <div class="level">
+        <div class="level-top">
+          <span class="level-badge">${p.level}</span>
+          <div class="level-name"><strong>${esc(this._levelTitle(p.level))}</strong>
+            <span class="muted small">${esc(this._t("toNext", { n: p.level_to - p.earned, next: p.level + 1 }))}</span></div>
+          ${streak}
+        </div>
+        <div class="xp" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+        <div class="muted small streak-hint">${esc(this._t(hint))}</div>
+      </div>`;
+  }
+
+  _renderBadges(member) {
+    const list = member.progress?.badges;
+    if (!list) return "";
+    const names = this._t("badgeNames");
+    const how = this._t("badgeHow");
+    const got = list.filter((b) => b.earned_at).length;
+    const items = list
+      .map((b) => {
+        const name = names[b.id] || b.id;
+        const sub = b.earned_at
+          ? this._t("badgeEarned", { date: new Date(b.earned_at).toLocaleDateString(this._locale()) })
+          : `${(how[b.counter] || "{n}").replace("{n}", b.target)} · ${b.value}/${b.target}`;
+        const pct = Math.round((b.value / b.target) * 100);
+        return `
+          <li class="bdg ${b.earned_at ? "got" : ""}" title="${esc(name)}: ${esc(sub)}">
+            <span class="badge-emoji">${b.earned_at ? b.emoji : "🔒"}</span>
+            <span class="badge-name">${esc(name)}</span>
+            ${b.earned_at ? "" : `<span class="badge-bar"><i style="width:${pct}%"></i></span>`}
+            <span class="badge-sub">${esc(sub)}</span>
+          </li>`;
+      })
+      .join("");
+    return `
+      <details class="badges">
+        <summary class="section-title">🏆 ${this._t("badges")} <span class="muted small">${got}/${list.length}</span></summary>
+        <ul class="badge-grid">${items}</ul>
+      </details>`;
+  }
+
+  // Neues Level oder Abzeichen für das Kind, das gerade zu sehen ist: groß feiern.
+  _spotNews(before, after) {
+    if (!before || !after) return;
+    const id = this._shownChild();
+    if (!id) return;
+    const old = before.members.find((m) => m.id === id)?.progress;
+    const now = after.members.find((m) => m.id === id)?.progress;
+    if (!old || !now) return;
+    if (now.level > old.level) {
+      this._party("⭐", this._t("levelUp", { n: now.level }), this._t("youAre", { title: this._levelTitle(now.level) }));
+      return;
+    }
+    const had = new Set(old.badges.filter((b) => b.earned_at).map((b) => b.id));
+    const fresh = now.badges.find((b) => b.earned_at && !had.has(b.id));
+    if (fresh) this._party(fresh.emoji, this._t("newBadge"), this._t("badgeNames")[fresh.id] || fresh.id);
+  }
+
+  _party(emoji, title, text) {
+    this.shadowRoot.querySelector(".party")?.remove();
+    const box = document.createElement("div");
+    box.className = "party";
+    box.setAttribute("role", "dialog");
+    box.innerHTML = `<div class="party-card"><div class="party-emoji">${esc(emoji)}</div><div class="party-title">${esc(title)}</div><div class="party-text">${esc(text)}</div><div class="muted small">${esc(this._t("tapClose"))}</div></div>`;
+    box.addEventListener("click", () => box.remove());
+    this.shadowRoot.appendChild(box);
+    setTimeout(() => box.remove(), 6000);
+    requestAnimationFrame(() => this._celebrate(box.querySelector(".party-emoji")));
   }
 
   _renderParent() {
@@ -1005,7 +1147,9 @@ class SternchenplanCard extends HTMLElement {
           <section class="kidcard" style="--kid:${this._color(m.id)}">
             <div class="kidcard-head">
               ${this._avatar(m, 40)}
-              <div class="kidcard-name"><strong>${esc(m.name)}</strong><span class="muted small">⭐ ${m.points}</span></div>
+              <div class="kidcard-name"><strong>${esc(m.name)}</strong><span class="muted small">⭐ ${m.points}${
+                m.progress ? ` · ${esc(this._t("level", { n: m.progress.level }))}${m.progress.streak ? ` · 🔥 ${m.progress.streak}` : ""}` : ""
+              }</span></div>
               ${this._ring(done, total || open, this._color(m.id), 44)}
             </div>
             ${status || passBtn ? `<div class="kidcard-status">${status}${passBtn}</div>` : ""}
@@ -1138,6 +1282,17 @@ class SternchenplanCard extends HTMLElement {
       .join("")}</ul>`;
   }
 
+  // Welches Kind die Karte gerade zeigt (null in der Elternansicht). Wie in _render.
+  _shownChild() {
+    if (!this._data) return null;
+    if (this._config.member) return this._memberByConfig()?.id ?? null;
+    if (this._data.tablet && !this._data.is_manager) return this._actingAs;
+    const me = this._member(this._data.me);
+    const mode = this._config.mode;
+    if (mode === "eltern" || (mode === "auto" && this._data.is_manager && (!me || me.role === "parent"))) return null;
+    return me?.role === "child" ? me.id : null;
+  }
+
   _render() {
     if (!this._config) return;
     let body;
@@ -1209,6 +1364,8 @@ const STYLE = `
   .thumb img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; display: block; }
   p.small { font-size: 0.85em; margin: 0 0 4px; }
   p.pro { margin-top: 12px; text-align: center; }
+  p.pro a { color: var(--secondary-text-color); text-decoration: none; }
+  p.pro a:hover { color: var(--primary-color); }
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
   button.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 110px; border-radius: 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); }
   .tile-name { font-size: 1.5em; font-weight: 500; }
@@ -1292,6 +1449,47 @@ const STYLE = `
                    to { transform: translate(var(--dx), calc(var(--dy) + 60px)) rotate(var(--rot)); opacity: 0; } }
   @keyframes rise { from { opacity: 0; transform: translate(-50%, 0) scale(.6); } 30% { opacity: 1; transform: translate(-50%, -12px) scale(1.1); }
                     to { opacity: 0; transform: translate(-50%, -40px) scale(1); } }
+  /* -- Level, Serie, Abzeichen (0.16) -- */
+  .level { margin: 0 0 10px; padding: 10px 14px 8px; border-radius: 16px; background: var(--secondary-background-color); }
+  .level-top { display: flex; align-items: center; gap: 10px; }
+  .level-badge { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+                 font-weight: 800; font-size: 1.15em; color: #fff; transform: rotate(-6deg);
+                 background: linear-gradient(135deg, var(--kid), color-mix(in srgb, var(--kid) 70%, #fff)); box-shadow: 0 3px 8px color-mix(in srgb, var(--kid) 40%, transparent); }
+  .level-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .streak { flex: 0 0 auto; font-weight: 700; font-size: 0.85em; padding: 4px 10px; border-radius: 14px; white-space: nowrap; }
+  .streak.hot { background: linear-gradient(135deg, #ff7a45, #ffb03a); color: #fff; box-shadow: 0 2px 8px rgba(255,122,69,.45); animation: flame 1.6s ease-in-out infinite; }
+  .streak.cold { background: var(--card-background-color); color: var(--secondary-text-color); border: 1px dashed #ff7a45; }
+  .xp { height: 10px; border-radius: 5px; margin: 10px 0 4px; overflow: hidden; background: color-mix(in srgb, var(--kid) 14%, var(--card-background-color)); }
+  .xp i { display: block; height: 100%; border-radius: 5px; transition: width .8s cubic-bezier(.2,.8,.2,1);
+          background: linear-gradient(90deg, color-mix(in srgb, var(--kid) 75%, #fff), var(--kid)); }
+  .streak-hint { font-size: 0.8em; }
+  details.badges summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  details.badges summary::-webkit-details-marker { display: none; }
+  details.badges summary::after { content: "▾"; margin-left: auto; color: var(--secondary-text-color); transition: transform .2s; }
+  details.badges[open] summary::after { transform: rotate(180deg); }
+  .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .bdg { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; padding: 10px 6px;
+         border-radius: 14px; background: var(--secondary-background-color); }
+  .bdg .badge-emoji { font-size: 1.9em; filter: grayscale(1); opacity: .45; }
+  .bdg.got { background: linear-gradient(160deg, color-mix(in srgb, var(--kid) 20%, var(--card-background-color)), var(--secondary-background-color));
+             box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--kid) 45%, transparent); }
+  .bdg.got .badge-emoji { filter: none; opacity: 1; }
+  .badge-name { font-weight: 600; font-size: 0.82em; overflow-wrap: anywhere; }
+  .badge-sub { font-size: 0.72em; color: var(--secondary-text-color); }
+  .badge-bar { width: 80%; height: 4px; border-radius: 2px; background: var(--divider-color, #e0e0e0); overflow: hidden; }
+  .badge-bar i { display: block; height: 100%; background: var(--kid); }
+  .party { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
+           background: rgba(0,0,0,.45); animation: fade .25s ease-out; cursor: pointer; }
+  .party-card { text-align: center; padding: 26px 34px; border-radius: 24px; background: var(--card-background-color);
+                box-shadow: 0 12px 40px rgba(0,0,0,.35); animation: zoom .45s cubic-bezier(.2,1.4,.4,1); max-width: 80vw; }
+  .party-emoji { font-size: 4.2em; line-height: 1.1; animation: wiggle 1s ease-in-out .4s 2; }
+  .party-title { font-size: 1.6em; font-weight: 800; margin-top: 6px; }
+  .party-text { font-size: 1.1em; margin: 4px 0 12px; }
+  @keyframes flame { 50% { transform: scale(1.06); } }
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes zoom { from { transform: scale(.4); opacity: 0; } }
+  @keyframes wiggle { 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+  @media (prefers-reduced-motion: reduce) { .streak.hot, .party-card, .party-emoji, .xp i { animation: none; transition: none; } }
   @media (max-width: 420px) { .row { flex-wrap: wrap; } .actions { width: 100%; justify-content: flex-start; }
     ul.tasks .actions { width: auto; } .hero { padding: 12px; } .hero .hello { font-size: 1.2em; } }
 `;

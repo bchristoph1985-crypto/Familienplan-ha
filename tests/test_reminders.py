@@ -125,3 +125,24 @@ async def test_optionen_erinnerungen(hass: HomeAssistant, entry) -> None:
     await hass.async_block_till_done()
     assert entry.options["reminder_times"] == "16:00, 18:00"
     assert entry.options["parent_summary_time"] == ""
+
+
+async def test_level_und_abzeichen_feiern(hass: HomeAssistant, entry) -> None:
+    lucas_calls = async_mock_service(hass, "notify", "lucas_handy")
+    badges = []
+    levels = []
+    hass.bus.async_listen("sternchenplan_badge", badges.append)
+    hass.bus.async_listen("sternchenplan_level_up", levels.append)
+    family = entry.runtime_data.family
+    chore = next(c for c in family.chores.values() if c.name == "Müll")
+    chore.points = 5
+    await hass.services.async_call(
+        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Lucas"}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert levels[0].data["level"] == 2
+    assert levels[0].data["title"] == "Helfer"
+    assert badges[0].data["name"] == "Erster Stern"
+    messages = [c.data["message"] for c in lucas_calls]
+    assert "🎉 Level 2 geschafft! Du bist jetzt Helfer." in messages
+    assert "🌟 Neues Abzeichen: Erster Stern" in messages
