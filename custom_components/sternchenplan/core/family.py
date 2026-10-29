@@ -103,6 +103,9 @@ class Family:
         self.money_rate = 0
         self.payday = 6
         self.money_log: list[dict[str, Any]] = []
+        # Ferien-Pause für alle: nichts ist fällig, nichts wird gesperrt
+        self.pause_from: datetime | None = None
+        self.pause_until: datetime | None = None
 
     # -- Speichern -----------------------------------------------------------
 
@@ -119,6 +122,8 @@ class Family:
             "money_rate": self.money_rate,
             "payday": self.payday,
             "money_log": list(self.money_log),
+            "pause_from": self.pause_from.isoformat() if self.pause_from else None,
+            "pause_until": self.pause_until.isoformat() if self.pause_until else None,
         }
 
     @classmethod
@@ -137,6 +142,9 @@ class Family:
         family.money_rate = int(data.get("money_rate", 0))
         family.payday = int(data.get("payday", 6))
         family.money_log = list(data.get("money_log", []))
+        if data.get("pause_until"):
+            family.pause_until = datetime.fromisoformat(data["pause_until"])
+            family.pause_from = datetime.fromisoformat(data["pause_from"])
         for raw in data.get("members", []):
             if "progress" not in raw:
                 family._estimate_progress(family.members[raw["id"]])
@@ -238,7 +246,7 @@ class Family:
         Kinder unter dem Mindestalter der Aufgabe sind nie dran.
         Leere Liste heißt: niemand da, die Aufgabe ruht.
         """
-        if not chore.assignees:
+        if not chore.assignees or self.is_paused(now):
             return []
         age = chore.min_age
         if chore.rotation:
@@ -433,6 +441,8 @@ class Family:
         requires_photo: bool = False,
         min_age: int = 0,
         steps: list[str] | None = None,
+        weekdays: list[int] | None = None,
+        icon: str = "",
     ) -> Chore:
         self._require_manager(actor)
         name = name.strip()
@@ -458,7 +468,10 @@ class Family:
             requires_photo=requires_photo,
             min_age=max(0, min_age),
             steps=_clean_steps(steps),
+            weekdays=_clean_weekdays(weekdays),
+            icon=icon.strip()[:8],
         )
+        chore.due = self._allowed_day(chore, chore.due)
         self.chores[chore.id] = chore
         return chore
 
@@ -479,6 +492,8 @@ class Family:
         requires_photo: bool | None = None,
         min_age: int | None = None,
         steps: list[str] | None = None,
+        weekdays: list[int] | None = None,
+        icon: str | None = None,
     ) -> Chore:
         """Nur übergebene Felder ändern. Punkte und Verlauf bleiben erhalten."""
         self._require_manager(actor)
@@ -519,8 +534,12 @@ class Family:
             if new_steps != chore.steps:
                 chore.steps = new_steps
                 chore.steps_done = []
+        if weekdays is not None:
+            chore.weekdays = _clean_weekdays(weekdays)
+        if icon is not None:
+            chore.icon = icon.strip()[:8]
         chore.recurrence = new_recurrence
-        chore.due = new_due
+        chore.due = self._allowed_day(chore, new_due)
         if chore.state is ChoreState.OVERDUE and (chore.due is None or chore.due > now):
             chore.state = ChoreState.OPEN
         if chore.state is ChoreState.DONE and chore.recurrence is not Recurrence.NONE:
@@ -719,7 +738,7 @@ class Family:
         ist da (alle abwesend ohne Vertretung). Abgelaufene Abwesenheiten
         werden gelöscht.
         """
-        changed = False
+        changed = self._end_pause_if_over(now)
         for member in self.members.values():
             if member.away_until is not None and now >= member.away_until:
                 member.away_from = member.away_until = member.substitute_id = None
@@ -884,7 +903,7 @@ class Family:
         if chore.recurrence is Recurrence.NONE:
             chore.state = ChoreState.DONE
             return
-        chore.due = _next_due(chore.due, chore.recurrence, now)
+        chore.due = self._allowed_day(chore, _next_due(chore.due, chore.recurrence, now))
         if chore.rotation and chore.assignees:
             # Nach der Person weiter, die dran war bzw. erledigt hat. So zählt
             # auch ein Einspringen bei Abwesenheit als Runde.
@@ -956,6 +975,72 @@ class Family:
     def clear_family_goal(self, actor: Actor) -> None:
         self._require_manager(actor)
         self.goal = None
+
+    # -- Ferien und Wochentage ---------------------------------------------
+
+    def is_paused(self, now: datetime) -> bool:
+        return (
+            self.pause_until is not None
+            and self.pause_from is not None
+            and self.pause_from <= now < self.pause_until
+        )
+
+    def set_pause(self, actor: Actor, start: datetime, until: datetime) -> None:
+        """Ferien: In diesem Zeitraum ist nichts fällig und nichts wird gesperrt."""
+        self._require_manager(actor)
+        if until <= start:
+            raise FamilyError("Das Ende muss nach dem Anfang liegen.")
+        self.pause_from, self.pause_until = start, until
+
+    def end_pause(self, actor: Actor, now: datetime) -> None:
+        self._require_manager(actor)
+        if self.pause_until is None:
+            raise FamilyError("Es gibt keine Ferien-Pause.")
+        if self.pause_from and self.pause_from <= now:
+            self.pause_until = now
+            self._end_pause_if_over(now)
+        else:
+            self.pause_from = self.pause_until = None
+
+    def _end_pause_if_over(self, now: datetime) -> bool:
+        """Nach den Ferien: Fristen nach vorn schieben, Serien nicht reißen lassen."""
+        if self.pause_until is None or now < self.pause_until or self.pause_from is None:
+            return False
+        start, end = self.pause_from, self.pause_until
+        for chore in self.chores.values():
+            if chore.due is None or chore.due >= end:
+                continue
+            if chore.recurrence is Recurrence.NONE:
+                if chore.due >= start:
+                    chore.due += end - start
+            else:
+                chore.due = self._allowed_day(chore, _next_due(chore.due, chore.recurrence, end))
+            if chore.state is ChoreState.OVERDUE and chore.due > now:
+                chore.state = ChoreState.OPEN
+        start_day = start.astimezone(self.tz).date()
+        end_day = end.astimezone(self.tz).date()
+        for member in self.members.values():
+            p = member.progress
+            if p.streak_day and p.streak_day >= start_day - timedelta(days=1):
+                p.streak_day = max(p.streak_day, end_day - timedelta(days=1))
+        self.pause_from = self.pause_until = None
+        return True
+
+    def _allowed_day(self, chore: Chore, due: datetime | None) -> datetime | None:
+        """Tägliche Aufgaben mit Wochentagen auf den nächsten erlaubten Tag legen."""
+        if due is None or not chore.weekdays or chore.recurrence is not Recurrence.DAILY:
+            return due
+        for _ in range(7):
+            if due.astimezone(self.tz).weekday() in chore.weekdays:
+                break
+            due += timedelta(days=1)
+        return due
+
+    def set_picture_mode(self, actor: Actor, member_id: str, enabled: bool) -> Member:
+        self._require_manager(actor)
+        member = self._child(member_id)
+        member.picture_mode = enabled
+        return member
 
     # -- Taschengeld -------------------------------------------------------
 
@@ -1084,6 +1169,13 @@ def _clean_steps(steps: list[str] | None) -> list[str]:
     if len(cleaned) > MAX_STEPS:
         raise FamilyError(f"Höchstens {MAX_STEPS} Schritte.")
     return cleaned
+
+
+def _clean_weekdays(days: list[int] | None) -> list[int]:
+    cleaned = sorted({int(d) for d in days or []})
+    if any(d < 0 or d > 6 for d in cleaned):
+        raise FamilyError("Wochentage gehen von 0 (Montag) bis 6 (Sonntag).")
+    return [] if len(cleaned) == 7 else cleaned
 
 
 def _next_due(due: datetime | None, recurrence: Recurrence, now: datetime) -> datetime:

@@ -180,8 +180,10 @@ def child_message(hass: HomeAssistant, family: Family, member_id: str, now: date
     return text["open"].format(list=", ".join(names))
 
 
-def parent_message(hass: HomeAssistant, family: Family, now: datetime) -> str:
+def parent_message(hass: HomeAssistant, family: Family, now: datetime) -> str | None:
     text = _text(hass)
+    if family.is_paused(now):
+        return None
     until = _end_of_day(now)
     lines = []
     for member in family.members.values():
@@ -307,6 +309,8 @@ def async_setup_reminders(
         family = entry.runtime_data.family
         now = dt_util.utcnow()
         message = parent_message(hass, family, now)
+        if message is None:
+            return
         for member in family.members.values():
             if member.role is Role.PARENT and member.notify_service:
                 await _notify(hass, member.notify_service, _text(hass)["title"], message)

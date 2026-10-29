@@ -61,6 +61,11 @@ def snapshot(
         "takeover": {"allowed": allowed, "multiplier": multiplier},
         "family_goal": family.goal.to_dict() if family.goal else None,
         "money": {"rate": family.money_rate, "payday": family.payday},
+        "pause": (
+            {"from": iso(family.pause_from), "until": iso(family.pause_until),
+             "active": family.is_paused(now)}
+            if family.pause_until else None
+        ),
         "members": [
             {
                 "id": m.id,
@@ -78,6 +83,7 @@ def snapshot(
                 "progress": _progress(m, now.astimezone(family.tz).date()),
                 "goal": m.goal_reward_id if m.goal_reward_id in family.rewards else None,
                 "money": m.money,
+                "picture_mode": m.picture_mode,
                 "allowance": m.allowance,
                 # Kontoauszug sehen Eltern und das Kind selbst
                 "money_log": (
@@ -113,6 +119,8 @@ def snapshot(
                 "last_completed_at": iso(c.last_completed_at),
                 "steps": list(c.steps),
                 "steps_done": list(c.steps_done),
+                "weekdays": list(c.weekdays),
+                "icon": c.icon,
             }
             for c in family.chores.values()
         ],

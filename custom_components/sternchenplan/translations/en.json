@@ -281,6 +281,14 @@
         "steps": {
           "name": "Steps",
           "description": "Turns the chore into a routine: the child ticks off each step."
+        },
+        "weekdays": {
+          "name": "Weekdays",
+          "description": "Only on these days (0 = Monday). Empty = every day. For daily chores."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Emoji shown in picture mode."
         }
       }
     },
@@ -331,6 +339,14 @@
         "steps": {
           "name": "Steps",
           "description": "Turns the chore into a routine: the child ticks off each step."
+        },
+        "weekdays": {
+          "name": "Weekdays",
+          "description": "Only on these days (0 = Monday). Empty = every day. For daily chores."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Emoji shown in picture mode."
         }
       }
     },
@@ -705,6 +721,38 @@
         "member": {
           "name": "Member",
           "description": "For whom. Default: the caller."
+        }
+      }
+    },
+    "set_pause": {
+      "name": "Holiday pause",
+      "description": "Nothing is due and nothing is locked during this time. Afterwards due dates move forward and streaks continue.",
+      "fields": {
+        "start": {
+          "name": "Start",
+          "description": "Default: now."
+        },
+        "until": {
+          "name": "Until",
+          "description": "End of the pause."
+        }
+      }
+    },
+    "end_pause": {
+      "name": "End holiday pause",
+      "description": "Ends the holiday pause now."
+    },
+    "set_picture_mode": {
+      "name": "Picture mode",
+      "description": "Large pictures instead of text for a child who can't read yet.",
+      "fields": {
+        "member": {
+          "name": "Child",
+          "description": "Name or ID."
+        },
+        "enabled": {
+          "name": "On",
+          "description": "Switch picture mode on or off."
         }
       }
     }

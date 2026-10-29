@@ -126,6 +126,12 @@ Dienste: `set_money`, `set_allowance`, `exchange_stars`, `payout`,
   füllt das Formular mit Namen, Sternen, Wiederholung, Uhrzeit und
   Mindestalter. Ihr wählt nur noch, wer sie macht.
 
+## Ferien-Pause, Schultage und Bilder-Modus
+
+- **Ferien-Pause:** Unter „Abwesend“ trägst du Ferien von–bis ein. In der Zeit ist nichts fällig, nichts wird gesperrt und keine Serie reißt. Danach rücken die Fristen automatisch nach. Geht auch per Dienst `sternchenplan.set_pause` / `sternchenplan.end_pause`.
+- **Nur an bestimmten Tagen:** Tägliche Aufgaben kannst du auf Wochentage beschränken, z. B. „Schultasche packen“ nur Mo–Fr. Die Vorlagen für Schulsachen setzen das schon.
+- **Bilder-Modus:** Für Kinder, die noch nicht lesen. Große Bildkacheln statt Text, ein 🔊-Knopf liest die Aufgabe vor (im Browser, ohne Internetdienst). Einschalten in der Elternansicht beim Kind („Bilder-Modus“) oder per `sternchenplan.set_picture_mode`. Jede Aufgabe kann ein eigenes Symbol bekommen.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
@@ -177,4 +183,4 @@ Getestet mit Home Assistant 2026.2 (Testpaket). Vor einer Veröffentlichung gege
 
 - Erinnerung nur, wenn das Kind zu Hause ist
 - Karten-Editor in der Oberfläche
-- Weitere Funktionen: Bilder-Modus, Ferien-Pause, Wetter, Berichte
+- Weitere Funktionen: Wetter-Aufgaben, Wochenberichte, weitere Sprachen

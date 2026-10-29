@@ -48,6 +48,28 @@ create_chore:
       selector:
         text:
           multiple: true
+    weekdays:
+      selector:
+        select:
+          multiple: true
+          options:
+            - label: Mo
+              value: "0"
+            - label: Di
+              value: "1"
+            - label: Mi
+              value: "2"
+            - label: Do
+              value: "3"
+            - label: Fr
+              value: "4"
+            - label: Sa
+              value: "5"
+            - label: So
+              value: "6"
+    icon:
+      selector:
+        text:
 delete_chore:
   fields: &chore
     chore_id:
@@ -137,6 +159,28 @@ update_chore:
       selector:
         text:
           multiple: true
+    weekdays:
+      selector:
+        select:
+          multiple: true
+          options:
+            - label: Mo
+              value: "0"
+            - label: Di
+              value: "1"
+            - label: Mi
+              value: "2"
+            - label: Do
+              value: "3"
+            - label: Fr
+              value: "4"
+            - label: Sa
+              value: "5"
+            - label: So
+              value: "6"
+    icon:
+      selector:
+        text:
 set_devices:
   fields:
     member:
@@ -371,3 +415,23 @@ check_step:
     member:
       selector:
         text:
+set_pause:
+  fields:
+    start:
+      selector:
+        datetime:
+    until:
+      required: true
+      selector:
+        datetime:
+end_pause:
+set_picture_mode:
+  fields:
+    member:
+      required: true
+      selector:
+        text:
+    enabled:
+      required: true
+      selector:
+        boolean:

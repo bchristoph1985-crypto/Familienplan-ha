@@ -281,6 +281,14 @@
         "steps": {
           "name": "Schritte",
           "description": "Macht die Aufgabe zur Routine: Das Kind hakt jeden Schritt einzeln ab."
+        },
+        "weekdays": {
+          "name": "Wochentage",
+          "description": "Nur an diesen Tagen (0 = Montag). Leer = jeden Tag. Für tägliche Aufgaben."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Emoji für den Bilder-Modus."
         }
       }
     },
@@ -331,6 +339,14 @@
         "steps": {
           "name": "Schritte",
           "description": "Macht die Aufgabe zur Routine: Das Kind hakt jeden Schritt einzeln ab."
+        },
+        "weekdays": {
+          "name": "Wochentage",
+          "description": "Nur an diesen Tagen (0 = Montag). Leer = jeden Tag. Für tägliche Aufgaben."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Emoji für den Bilder-Modus."
         }
       }
     },
@@ -705,6 +721,38 @@
         "member": {
           "name": "Mitglied",
           "description": "Für wen. Standard: wer aufruft."
+        }
+      }
+    },
+    "set_pause": {
+      "name": "Ferien-Pause",
+      "description": "In dieser Zeit ist nichts fällig und nichts wird gesperrt. Danach rücken die Fristen nach, Serien laufen weiter.",
+      "fields": {
+        "start": {
+          "name": "Anfang",
+          "description": "Standard: jetzt."
+        },
+        "until": {
+          "name": "Bis",
+          "description": "Ende der Pause."
+        }
+      }
+    },
+    "end_pause": {
+      "name": "Ferien-Pause beenden",
+      "description": "Beendet die Ferien-Pause sofort."
+    },
+    "set_picture_mode": {
+      "name": "Bilder-Modus",
+      "description": "Große Bilder statt Text, für Kinder, die noch nicht lesen.",
+      "fields": {
+        "member": {
+          "name": "Kind",
+          "description": "Name oder ID."
+        },
+        "enabled": {
+          "name": "An",
+          "description": "Bilder-Modus an oder aus."
         }
       }
     }

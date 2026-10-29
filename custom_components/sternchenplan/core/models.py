@@ -55,6 +55,8 @@ class Member:
     money: int = 0
     allowance: int = 0
     allowance_paid: date | None = None
+    # Große Bilder statt Text, für Kinder, die noch nicht lesen
+    picture_mode: bool = False
 
     def age(self, now: datetime) -> int | None:
         """Alter in Jahren, auf das Jahr genau. None, wenn nicht bekannt."""
@@ -93,6 +95,7 @@ class Member:
             "money": self.money,
             "allowance": self.allowance,
             "allowance_paid": self.allowance_paid.isoformat() if self.allowance_paid else None,
+            "picture_mode": self.picture_mode,
         }
 
     @classmethod
@@ -118,6 +121,7 @@ class Member:
             allowance_paid=(
                 date.fromisoformat(data["allowance_paid"]) if data.get("allowance_paid") else None
             ),
+            picture_mode=bool(data.get("picture_mode", False)),
         )
 
 
@@ -146,6 +150,9 @@ class Chore:
     # Routine: Teilschritte, die das Kind einzeln abhakt (z. B. Morgenroutine)
     steps: list[str] = field(default_factory=list)
     steps_done: list[int] = field(default_factory=list)
+    # Nur an diesen Wochentagen (0 = Montag), leer = jeden Tag. Gilt für täglich.
+    weekdays: list[int] = field(default_factory=list)
+    icon: str = ""  # Symbol für den Bilder-Modus
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -172,6 +179,8 @@ class Chore:
             "history": list(self.history),
             "steps": list(self.steps),
             "steps_done": list(self.steps_done),
+            "weekdays": list(self.weekdays),
+            "icon": self.icon,
         }
 
     @classmethod
@@ -198,6 +207,8 @@ class Chore:
             history=list(data.get("history", [])),
             steps=list(data.get("steps", [])),
             steps_done=[int(i) for i in data.get("steps_done", [])],
+            weekdays=[int(i) for i in data.get("weekdays", [])],
+            icon=data.get("icon", ""),
         )
 
 

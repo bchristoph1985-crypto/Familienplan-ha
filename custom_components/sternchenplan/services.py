@@ -69,6 +69,12 @@ from .const import (
     ATTR_INDEX,
     ATTR_STEPS,
     SERVICE_CHECK_STEP,
+    SERVICE_END_PAUSE,
+    SERVICE_SET_PAUSE,
+    SERVICE_SET_PICTURE_MODE,
+    ATTR_ENABLED,
+    ATTR_ICON,
+    ATTR_WEEKDAYS,
     SERVICE_ADJUST_MONEY,
     SERVICE_EXCHANGE_STARS,
     SERVICE_PAYOUT,
@@ -98,6 +104,8 @@ CREATE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_REQUIRES_PHOTO, default=False): cv.boolean,
         vol.Optional(ATTR_MIN_AGE, default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=18)),
         vol.Optional(ATTR_STEPS, default=[]): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional(ATTR_WEEKDAYS, default=[]): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
+        vol.Optional(ATTR_ICON, default=""): cv.string,
     }
 )
 
@@ -114,6 +122,8 @@ UPDATE_SCHEMA = CHORE_SCHEMA.extend(
         vol.Optional(ATTR_REQUIRES_PHOTO): cv.boolean,
         vol.Optional(ATTR_MIN_AGE): vol.All(vol.Coerce(int), vol.Range(min=0, max=18)),
         vol.Optional(ATTR_STEPS): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional(ATTR_WEEKDAYS): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
+        vol.Optional(ATTR_ICON): cv.string,
     }
 )
 
@@ -182,6 +192,8 @@ FAMILY_GOAL_SCHEMA = vol.Schema(
     {vol.Required(ATTR_NAME): cv.string, vol.Required(ATTR_TARGET): _COST}
 )
 EMPTY_SCHEMA = vol.Schema({})
+PAUSE_SCHEMA = vol.Schema({vol.Optional(ATTR_START): cv.datetime, vol.Required(ATTR_UNTIL): cv.datetime})
+PICTURE_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_ENABLED): cv.boolean})
 _EURO = vol.All(vol.Coerce(float), vol.Range(min=-10000, max=10000))
 MONEY_SCHEMA = vol.Schema(
     {
@@ -278,6 +290,8 @@ async def _create(hass, call, data, actor) -> None:
         requires_photo=call.data[ATTR_REQUIRES_PHOTO],
         min_age=call.data[ATTR_MIN_AGE],
         steps=call.data[ATTR_STEPS],
+        weekdays=call.data[ATTR_WEEKDAYS],
+        icon=call.data[ATTR_ICON],
     )
 
 
@@ -301,6 +315,8 @@ async def _update(hass, call, data, actor) -> None:
         requires_photo=d.get(ATTR_REQUIRES_PHOTO),
         min_age=d.get(ATTR_MIN_AGE),
         steps=d.get(ATTR_STEPS),
+        weekdays=d.get(ATTR_WEEKDAYS),
+        icon=d.get(ATTR_ICON),
     )
 
 
@@ -513,6 +529,19 @@ async def _check_step(hass, call, data, actor) -> None:
     )
 
 
+async def _set_pause(hass, call, data, actor) -> None:
+    start = _utc(call.data.get(ATTR_START)) or dt_util.utcnow()
+    data.family.set_pause(actor, start, _utc(call.data[ATTR_UNTIL]))
+
+
+async def _end_pause(hass, call, data, actor) -> None:
+    data.family.end_pause(actor, dt_util.utcnow())
+
+
+async def _set_picture_mode(hass, call, data, actor) -> None:
+    data.family.set_picture_mode(actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_ENABLED])
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -541,6 +570,9 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_CLEAR_FAMILY_GOAL, _clear_family_goal, EMPTY_SCHEMA),
         (SERVICE_SET_MONEY, _set_money, MONEY_SCHEMA),
         (SERVICE_CHECK_STEP, _check_step, STEP_SCHEMA),
+        (SERVICE_SET_PAUSE, _set_pause, PAUSE_SCHEMA),
+        (SERVICE_END_PAUSE, _end_pause, EMPTY_SCHEMA),
+        (SERVICE_SET_PICTURE_MODE, _set_picture_mode, PICTURE_SCHEMA),
         (SERVICE_SET_ALLOWANCE, _set_allowance, ALLOWANCE_SCHEMA),
         (SERVICE_EXCHANGE_STARS, _exchange, EXCHANGE_SCHEMA),
         (SERVICE_PAYOUT, _payout, PAYOUT_SCHEMA),

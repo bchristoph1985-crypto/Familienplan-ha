@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.19.0";
+const VERSION = "0.20.0";
 
 const T = {
   de: {
@@ -167,6 +167,21 @@ const T = {
     ageAll: "Alle",
     ageGroup: "{from}–{to} J.",
     ageFrom: "ab {n} J.",
+    pauseTitle: "Ferien-Pause",
+    pauseHint: "In den Ferien ist nichts fällig, nichts wird gesperrt und Serien reißen nicht. Danach geht es normal weiter.",
+    pauseFrom: "Von",
+    pauseUntil: "Bis einschließlich",
+    pauseStart: "🏖️ Ferien starten",
+    pauseEnd: "Ferien beenden",
+    pauseActive: "🏖️ Ferien! Bis {date} ist nichts zu tun.",
+    pausePlanned: "🏖️ Ferien geplant: {from} bis {date}",
+    weekdays: "Nur an diesen Tagen (leer = jeden Tag)",
+    dayShort: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+    schoolDays: "Mo–Fr",
+    icon: "Symbol (für den Bilder-Modus)",
+    pictureOn: "🖼️ Bilder-Modus",
+    pictureOff: "🔤 Text-Modus",
+    readAloud: "Vorlesen",
     moneyHint: "Das Geld liegt nicht wirklich hier. Sternchenplan führt nur das Konto. Auszahlen tut ihr selbst, bar oder per Überweisung.",
   },
   en: {
@@ -323,6 +338,21 @@ const T = {
     ageAll: "All",
     ageGroup: "{from}–{to} yrs",
     ageFrom: "{n}+ yrs",
+    pauseTitle: "Holiday pause",
+    pauseHint: "During holidays nothing is due, nothing gets locked and streaks don't break. Afterwards everything continues as usual.",
+    pauseFrom: "From",
+    pauseUntil: "Until (inclusive)",
+    pauseStart: "🏖️ Start holidays",
+    pauseEnd: "End holidays",
+    pauseActive: "🏖️ Holidays! Nothing to do until {date}.",
+    pausePlanned: "🏖️ Holidays planned: {from} to {date}",
+    weekdays: "Only on these days (empty = every day)",
+    dayShort: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+    schoolDays: "Mon–Fri",
+    icon: "Symbol (for picture mode)",
+    pictureOn: "🖼️ Picture mode",
+    pictureOff: "🔤 Text mode",
+    readAloud: "Read aloud",
     moneyHint: "The money isn't really kept here. Sternchenplan only keeps the account. You pay out yourselves, in cash or by transfer.",
   },
 };
@@ -342,6 +372,7 @@ class SternchenplanCard extends HTMLElement {
     this._rewardForm = this._emptyReward();
     this._fgForm = { name: "", target: 300 };
     this._tplAge = 0;
+    this._pauseForm = { from: "", until: "" };
     this._busy = false;
     // Familientablet: welches Kind gerade dran ist
     this._actingAs = null;
@@ -606,6 +637,26 @@ class SternchenplanCard extends HTMLElement {
           .catch((err) => this._notify(err.message));
         break;
       }
+      case "say":
+        this._say(el.dataset.text);
+        break;
+      case "picture":
+        this._call("set_picture_mode", { member: id, enabled: !!el.dataset.on });
+        break;
+      case "pause-start": {
+        const f = this._pauseForm;
+        if (!f.until) break;
+        const end = new Date(`${f.until}T00:00`);
+        end.setDate(end.getDate() + 1); // „bis einschließlich“
+        const data = { until: end.toISOString() };
+        if (f.from) data.start = new Date(`${f.from}T00:00`).toISOString();
+        this._call("set_pause", data);
+        this._pauseForm = { from: "", until: "" };
+        break;
+      }
+      case "pause-end":
+        this._call("end_pause", {});
+        break;
       case "tpl":
         this._useTemplate(Number(id));
         break;
@@ -739,6 +790,16 @@ class SternchenplanCard extends HTMLElement {
       }
       return;
     }
+    if (field === "weekday") {
+      const set = new Set(this._form.weekdays);
+      el.checked ? set.add(Number(el.value)) : set.delete(Number(el.value));
+      this._form.weekdays = [...set].sort();
+      return;
+    }
+    if (field.startsWith("pause.")) {
+      this._pauseForm[field.slice(6)] = el.value;
+      return;
+    }
     if (field === "assignee") {
       const set = new Set(this._form.assignees);
       el.checked ? set.add(el.value) : set.delete(el.value);
@@ -766,7 +827,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _emptyForm() {
-    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, steps: "", editId: null };
+    return { name: "", assignees: [], recurrence: "daily", due: "", points: 1, rotation: false, approval: false, photo: false, minAge: 0, steps: "", weekdays: [], icon: "", editId: null };
   }
 
   _resetForm() {
@@ -794,10 +855,106 @@ class SternchenplanCard extends HTMLElement {
       photo: c.requires_photo,
       minAge: c.min_age || 0,
       steps: (c.steps || []).join("\n"),
+      weekdays: [...(c.weekdays || [])],
+      icon: c.icon || "",
       editId: c.id,
     };
     this._render();
     this.shadowRoot.querySelector("details.form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  _dayList(days) {
+    if (days.join() === "0,1,2,3,4") return this._t("schoolDays");
+    const short = this._t("dayShort");
+    return days.map((d) => short[d]).join(", ");
+  }
+
+  _date(iso) {
+    return new Date(iso).toLocaleDateString(this._locale(), { day: "numeric", month: "numeric" });
+  }
+
+  _pauseBanner() {
+    const p = this._data.pause;
+    if (!p?.active) return "";
+    // Das Ende ist exklusiv gespeichert: als „bis einschließlich“ den Tag davor zeigen.
+    const last = new Date(new Date(p.until).getTime() - 1);
+    return `<div class="pause-banner">${esc(this._t("pauseActive", { date: this._date(last.toISOString()) }))}</div>`;
+  }
+
+  _renderPause() {
+    const p = this._data.pause;
+    if (p) {
+      const last = new Date(new Date(p.until).getTime() - 1).toISOString();
+      const text = p.active ? this._t("pauseActive", { date: this._date(last) }) : this._t("pausePlanned", { from: this._date(p.from), date: this._date(last) });
+      return `<div class="pause-box"><div class="pause-banner">${esc(text)}</div>
+        <button class="link bad" data-action="pause-end">${this._t("pauseEnd")}</button></div>`;
+    }
+    const f = this._pauseForm;
+    return `
+      <details class="form pause-form">
+        <summary>${this._t("pauseStart")}</summary>
+        <p class="muted small">${this._t("pauseHint")}</p>
+        <div class="grid">
+          <label>${this._t("pauseFrom")}<input type="date" data-field="pause.from" value="${esc(f.from)}"></label>
+          <label>${this._t("pauseUntil")}<input type="date" data-field="pause.until" value="${esc(f.until)}"></label>
+        </div>
+        <button class="primary" data-action="pause-start">${this._t("pauseStart")}</button>
+      </details>`;
+  }
+
+  _choreIcon(chore) {
+    if (chore.icon) return chore.icon;
+    const n = chore.name.toLowerCase();
+    for (const [words, emoji] of CHORE_EMOJI) if (words.some((w) => n.includes(w))) return emoji;
+    return "⭐";
+  }
+
+  _say(text) {
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = this._lang() === "de" ? "de-DE" : "en-US";
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) {
+      /* Kein Vorlesen verfügbar: einfach nichts tun. */
+    }
+  }
+
+  // Bilder-Modus: große Kacheln mit Symbol, wenig Text, Vorlesen per Tipp.
+  _renderPictureChild(member) {
+    const chores = this._openFor(member.id);
+    const color = this._color(member.id);
+    const ro = this._config.readonly || member.id !== this._me();
+    const tiles = chores
+      .map((c) => {
+        const waiting = c.state === "claimed";
+        const left = (c.steps?.length || 0) - (c.steps_done?.length || 0);
+        const photo = this._photoNeeded(c);
+        const canTap = !ro && !waiting && !left;
+        return `
+          <div class="pic ${waiting ? "wait" : ""} ${c.state}">
+            <button class="pic-main" ${canTap ? "" : "disabled"} data-action="claim" data-id="${esc(c.id)}" data-member="${esc(member.id)}">
+              <span class="pic-icon">${esc(this._choreIcon(c))}</span>
+              <span class="pic-stars">${"⭐".repeat(Math.min(c.points, 5))}</span>
+              ${waiting ? `<span class="pic-state">⏳</span>` : photo ? `<span class="pic-state">📷</span>` : ""}
+            </button>
+            <button class="pic-say" data-action="say" data-text="${esc(c.name)}" aria-label="${this._t("readAloud")}">🔊 ${esc(c.name)}</button>
+            ${c.steps?.length && !waiting ? this._steps(c, member.id, ro) : ""}
+          </div>`;
+      })
+      .join("");
+    return `
+      <div class="kid picture" style="--kid:${color}">
+        <div class="hero">
+          ${this._avatar(member, 64)}
+          <div class="hero-text"><div class="hello">${esc(member.name)}</div><div class="star big-star">⭐ ${member.points}</div></div>
+          ${member.progress ? `<span class="level-badge">${member.progress.level}</span>` : ""}
+        </div>
+        ${this._pauseBanner()}
+        ${chores.length ? `<div class="pic-grid">${tiles}</div>` : `<div class="done-big">🎉</div>`}
+        ${this._renderChildRewards(member)}
+        ${this._renderBadges(member)}
+      </div>`;
   }
 
   _stepList(text) {
@@ -829,6 +986,8 @@ class SternchenplanCard extends HTMLElement {
       minAge: t.age,
       photo: !!t.photo,
       steps: (t.steps?.[lang] || []).join("\n"),
+      icon: t.emoji,
+      weekdays: t.school ? [0, 1, 2, 3, 4] : [],
       due: this._toLocalInput(due.toISOString()),
     };
     this._render();
@@ -885,6 +1044,8 @@ class SternchenplanCard extends HTMLElement {
         requires_photo: f.photo,
         min_age: Number(f.minAge) || 0,
         steps: this._stepList(f.steps),
+        weekdays: f.weekdays,
+        icon: f.icon || "",
       });
       this._resetForm();
       this._render();
@@ -900,6 +1061,8 @@ class SternchenplanCard extends HTMLElement {
       requires_photo: f.photo,
       min_age: Number(f.minAge) || 0,
       steps: this._stepList(f.steps),
+      weekdays: f.weekdays,
+      icon: f.icon || "",
     };
     if (f.due) data.due = f.due;
     await this._call("create_chore", data);
@@ -1256,6 +1419,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderChild(member) {
+    if (member.picture_mode) return this._renderPictureChild(member);
     const chores = this._openFor(member.id);
     const color = this._color(member.id);
     const { done, open, total } = this._todayStats(member.id);
@@ -1276,6 +1440,7 @@ class SternchenplanCard extends HTMLElement {
           ${this._ring(done, total || open, color, 72)}
         </div>
         ${this._renderLevel(member)}
+        ${this._pauseBanner()}
         ${this._renderGoal(member)}
         ${this._renderFamilyGoal()}
         ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
@@ -1509,7 +1674,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderToday() {
-    return `${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>`;
+    return `${this._pauseBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>`;
   }
 
   _renderTodayCards() {
@@ -1523,8 +1688,13 @@ class SternchenplanCard extends HTMLElement {
           status += ` <span class="chip">${esc(this._t("pass", { time }))}</span>`;
         }
         let passBtn = "";
+        if (!this._config.readonly) {
+          passBtn += `<button class="link" data-action="picture" data-id="${esc(m.id)}" data-on="${m.picture_mode ? "" : "1"}">${
+            m.picture_mode ? this._t("pictureOff") : this._t("pictureOn")
+          }</button>`;
+        }
         if (m.has_devices && !this._config.readonly) {
-          passBtn = m.pass_until
+          passBtn += m.pass_until
             ? `<button class="link" data-action="revoke-pass" data-id="${esc(m.id)}">${this._t("takePass")}</button>`
             : `<button class="link" data-action="pass" data-id="${esc(m.id)}">${this._t("givePass")}</button>`;
         }
@@ -1574,7 +1744,7 @@ class SternchenplanCard extends HTMLElement {
           ${this._thumb(c) || this._avatar(this._member(c.claimed_by), 36)}
           <div class="main">
             <div class="title">${esc(c.name)}</div>
-            <div class="sub muted">${esc(this._member(c.claimed_by)?.name)} · ${c.points * (c.claim_multiplier || 1)} P${this._takenInfo(c)}</div>
+            <div class="sub muted">${esc(this._member(c.claimed_by)?.name)} · ⭐ ${c.points * (c.claim_multiplier || 1)}${this._takenInfo(c)}</div>
           </div>
           <div class="actions">
             <button class="primary" data-action="approve" data-id="${esc(c.id)}">✓ ${this._t("approve")}</button>
@@ -1595,10 +1765,10 @@ class SternchenplanCard extends HTMLElement {
         (c) => `
         <li class="row">
           <div class="main">
-            <div class="title">${esc(c.name)}</div>
+            <div class="title">${c.icon ? esc(c.icon) + " " : ""}${esc(c.name)}</div>
             <div class="sub muted">${esc(names(c.assignees))} · ${esc(this._t("rec")[c.recurrence])}${c.rotation ? " · " + this._t("rotation") : ""}${
               c.requires_approval ? " · " + this._t("approval") : ""
-            }${c.requires_photo ? " · 📷" : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
+            }${c.weekdays?.length ? " · " + esc(this._dayList(c.weekdays)) : ""}${c.requires_photo ? " · 📷" : ""}${c.steps?.length ? " · ☑️ " + esc(this._t("stepsShort", { n: c.steps.length })) : ""}${c.min_age ? " · " + esc(this._t("fromAge", { n: c.min_age })) : ""}${c.assignees.length && !c.responsible.length ? ` · <span class="chip">${this._t("paused")}</span>` : ""}</div>
           </div>
           <div class="actions">
             ${c.photo_url ? `<a class="link" href="${esc(c.photo_url)}" target="_blank" rel="noopener">📷 ${this._t("lastPhoto")}</a>` : ""}
@@ -1635,6 +1805,10 @@ class SternchenplanCard extends HTMLElement {
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
         <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""}>${this._t("photo")}</label>
+        <fieldset><legend>${this._t("weekdays")}</legend>${this._t("dayShort")
+          .map((d, i) => `<label class="check day"><input type="checkbox" data-field="weekday" value="${i}" ${f.weekdays.includes(i) ? "checked" : ""}>${d}</label>`)
+          .join("")}</fieldset>
+        <label>${this._t("icon")}<input data-field="icon" value="${esc(f.icon)}" maxlength="8" placeholder="🧹" class="icon-input"></label>
         <label>${this._t("steps")}<textarea data-field="steps" rows="3" maxlength="800">${esc(f.steps)}</textarea></label>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
@@ -1650,7 +1824,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderAway() {
-    return `<ul>${this._children()
+    return `${this._renderPause()}<ul>${this._children()
       .map((m) => {
         const form = this._awayForm[m.id] || {};
         const others = this._data.members.filter((o) => o.id !== m.id);
@@ -1717,9 +1891,11 @@ const TEMPLATES = [
     name: { de: "Abendroutine", en: "Evening routine" },
     steps: { de: ["Schlafanzug anziehen", "Zähne putzen", "Kleidung weglegen", "Licht aus"], en: ["Put on pyjamas", "Brush teeth", "Put clothes away", "Lights out"] } },
   { emoji: "🎒", age: 6, points: 2, rec: "daily", time: "19:00",
+    school: true,
     name: { de: "Schultasche packen", en: "Pack school bag" },
     steps: { de: ["Hausaufgaben einpacken", "Stundenplan prüfen", "Brotdose", "Trinkflasche"], en: ["Pack homework", "Check timetable", "Lunch box", "Water bottle"] } },
   { emoji: "📚", age: 7, points: 3, rec: "daily", time: "16:00",
+    school: true,
     name: { de: "Hausaufgaben", en: "Homework" },
     steps: { de: ["Alles erledigt", "Mama oder Papa zeigen", "Wieder einpacken"], en: ["All done", "Show a parent", "Pack it away"] } },
   { emoji: "🧸", age: 4, points: 1, rec: "daily", time: "18:30", name: { de: "Spielzeug aufräumen", en: "Tidy up toys" } },
@@ -1744,6 +1920,28 @@ const TEMPLATES = [
   { emoji: "🚗", age: 14, points: 4, rec: "biweekly", time: "17:00", name: { de: "Auto aussaugen", en: "Vacuum the car" } },
 ];
 
+// Symbol raten, wenn die Aufgabe keins hat (Bilder-Modus).
+const CHORE_EMOJI = [
+  [["müll", "trash", "abfall"], "🗑️"],
+  [["spülmaschine", "geschirr", "dishwasher", "dishes"], "🍽️"],
+  [["tisch", "table"], "🍴"],
+  [["zimmer", "aufräumen", "room", "tidy"], "🧹"],
+  [["zähne", "teeth"], "🪥"],
+  [["bett", "bed"], "🛏️"],
+  [["anzieh", "dress", "kleidung", "clothes"], "👕"],
+  [["wäsche", "laundry"], "🧺"],
+  [["staub", "sauge", "vacuum"], "🌀"],
+  [["bad", "bath", "toilette"], "🛁"],
+  [["hund", "katze", "hamster", "füttern", "feed", "pet"], "🐾"],
+  [["blume", "pflanze", "gießen", "plant", "water"], "🪴"],
+  [["hausaufgabe", "homework", "lesen", "read"], "📚"],
+  [["schul", "school", "ranzen"], "🎒"],
+  [["spielzeug", "toys"], "🧸"],
+  [["duschen", "shower"], "🚿"],
+  [["kochen", "cook"], "🍳"],
+  [["einkauf", "shopping"], "🛒"],
+];
+
 // Kräftige Farben, die auf hell und dunkel funktionieren (weiße Schrift darauf).
 const PALETTE = ["#4f7cff", "#ff7a45", "#22a565", "#a259ff", "#e5a100", "#f0508c", "#13a8b8"];
 
@@ -1766,6 +1964,7 @@ const STYLE = `
   .row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
   .row:last-child { border-bottom: none; }
   .row.wrap { flex-wrap: wrap; }
+  .row.wrap > .main { min-width: 140px; }
   .row.overdue .title { color: var(--error-color, #db4437); }
   .main { flex: 1; min-width: 0; }
   .title { font-weight: 500; overflow-wrap: anywhere; }
@@ -1959,6 +2158,29 @@ const STYLE = `
                    background: var(--card-background-color); color: var(--primary-text-color); resize: vertical; }
   button.primary[disabled] { opacity: .45; cursor: default; }
   @keyframes popin { from { transform: scale(.4); } }
+  .pause-banner { margin: 0 0 10px; padding: 12px 14px; border-radius: 16px; font-weight: 600;
+                  background: linear-gradient(135deg, color-mix(in srgb, #13a8b8 22%, var(--card-background-color)), color-mix(in srgb, #e5a100 16%, var(--card-background-color))); }
+  .pause-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .pause-box .pause-banner { flex: 1; margin: 0; }
+  label.check.day { margin-right: 6px; }
+  input.icon-input { width: 80px; font-size: 1.3em; text-align: center; }
+  .kid.picture .hero .hello { font-size: 1.6em; }
+  .big-star { font-size: 1.3em; }
+  .kid.picture .hero .level-badge { width: 48px; height: 48px; font-size: 1.4em; }
+  .pic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 8px 0; }
+  .pic { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 22px; background: var(--secondary-background-color); }
+  .pic.overdue { box-shadow: inset 0 0 0 3px var(--error-color, #db4437); }
+  button.pic-main { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+                    min-height: 140px; border-radius: 18px; background: var(--card-background-color); color: var(--primary-text-color);
+                    box-shadow: 0 3px 0 color-mix(in srgb, var(--kid) 45%, transparent); transition: transform .1s; }
+  button.pic-main:active { transform: scale(.96); }
+  button.pic-main[disabled] { cursor: default; }
+  .pic.wait button.pic-main { opacity: .6; }
+  .pic-icon { font-size: 4em; line-height: 1; }
+  .pic-stars { font-size: 0.9em; letter-spacing: -2px; }
+  .pic-state { position: absolute; top: 8px; right: 10px; font-size: 1.4em; }
+  button.pic-say { background: none; color: var(--primary-text-color); font-weight: 600; min-height: 32px; padding: 0 6px; text-align: center; }
+  .pic ol.steps { margin-top: 0; }
   .party { position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
            background: rgba(0,0,0,.45); animation: fade .25s ease-out; cursor: pointer; }
   .party-card { text-align: center; padding: 26px 34px; border-radius: 24px; background: var(--card-background-color);
