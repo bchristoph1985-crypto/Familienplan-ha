@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.12.0";
+const VERSION = "0.13.0";
 
 const T = {
   de: {
@@ -97,6 +97,12 @@ const T = {
     proOnly: "Gehört zu Pro",
     awayPro: "Abwesenheit mit Vertretung gehört zu Pro.",
     whoAreYou: "Wer bist du?",
+    leftToday: "Noch {n} für heute",
+    leftOne: "Noch eine Aufgabe für heute",
+    allDoneToday: "Alles geschafft für heute!",
+    todayTitle: "Heute",
+    doneShort: "Erledigt",
+    great: ["Super!", "Stark!", "Klasse!", "Weiter so!", "Spitze!"],
     openCount: "{n} offen",
     finished: "Fertig",
     rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen" },
@@ -185,6 +191,12 @@ const T = {
     proOnly: "Part of Pro",
     awayPro: "Absence with substitute is part of Pro.",
     whoAreYou: "Who are you?",
+    leftToday: "{n} left for today",
+    leftOne: "One chore left for today",
+    allDoneToday: "All done for today!",
+    todayTitle: "Today",
+    doneShort: "Done",
+    great: ["Great!", "Awesome!", "Nice!", "Keep going!", "Brilliant!"],
     openCount: "{n} open",
     finished: "Done",
     rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks" },
@@ -393,7 +405,10 @@ class FamilienplanCard extends HTMLElement {
         const data = { chore_id: id };
         if (member && (member !== this._data.me || this._data.tablet)) data.member = member;
         if (this._photoNeeded(chore)) this._pickPhoto("claim", data);
-        else this._call("claim_chore", data);
+        else {
+          this._call("claim_chore", data);
+          if (!this._data.is_manager || this._data.tablet) this._celebrate(el);
+        }
         break;
       }
       case "take": {
@@ -607,6 +622,79 @@ class FamilienplanCard extends HTMLElement {
 
   // -- Anzeige ---------------------------------------------------------------
 
+  // Jedes Kind bekommt eine feste Farbe, damit man es überall wiedererkennt.
+  _color(memberId) {
+    const kids = this._children();
+    const i = kids.findIndex((m) => m.id === memberId);
+    return i < 0 ? "var(--secondary-text-color)" : PALETTE[i % PALETTE.length];
+  }
+
+  _avatar(member, size = 40) {
+    const letter = esc((member?.name || "?").trim().charAt(0).toUpperCase());
+    return `<span class="avatar" style="--kid:${this._color(member?.id)};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.45)}px">${letter}</span>`;
+  }
+
+  _isToday(iso) {
+    if (!iso) return false;
+    const d = new Date(iso);
+    const n = new Date();
+    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  }
+
+  // Heute erledigt / offen für den Fortschrittsring.
+  _todayStats(memberId) {
+    const open = this._openFor(memberId).length;
+    const done = this._data.chores.filter(
+      (c) => c.last_completed_by === memberId && this._isToday(c.last_completed_at) && !this._openFor(memberId).includes(c),
+    ).length;
+    return { done, open, total: done + open };
+  }
+
+  _ring(done, total, color, size = 64) {
+    const r = size / 2 - 5;
+    const len = 2 * Math.PI * r;
+    const part = total ? done / total : 1;
+    return `
+      <svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${done}/${total}">
+        <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--divider-color, #e0e0e0)" stroke-width="6"/>
+        ${part > 0 ? `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round"
+          stroke-dasharray="${len * part} ${len}" transform="rotate(-90 ${size / 2} ${size / 2})"/>` : ""}
+        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="${Math.round(size * 0.26)}" font-weight="600" fill="var(--primary-text-color)">${
+          total && done < total ? `${done}/${total}` : "✓"
+        }</text>
+      </svg>`;
+  }
+
+  _rewardEmoji(name) {
+    const n = String(name).toLowerCase();
+    for (const [words, emoji] of REWARD_EMOJI) if (words.some((w) => n.includes(w))) return emoji;
+    return "🎁";
+  }
+
+  // Kleines Konfetti beim Abhaken. Liegt außerhalb des Kartentexts, damit
+  // ein neuer Stand vom Server die Animation nicht abbricht.
+  _celebrate(from) {
+    const fx = this.shadowRoot.querySelector(".fx");
+    if (!fx || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const box = from.getBoundingClientRect();
+    const host = this.getBoundingClientRect();
+    const x = box.left - host.left + box.width / 2;
+    const y = box.top - host.top + box.height / 2;
+    for (let i = 0; i < 24; i++) {
+      const bit = document.createElement("i");
+      const angle = (Math.PI * 2 * i) / 24 + Math.random() * 0.3;
+      const dist = 50 + Math.random() * 60;
+      bit.style.cssText = `left:${x}px;top:${y}px;background:${PALETTE[i % PALETTE.length]};--dx:${Math.cos(angle) * dist}px;--dy:${Math.sin(angle) * dist - 30}px;--rot:${Math.random() * 360}deg`;
+      fx.appendChild(bit);
+    }
+    const words = this._t("great");
+    const toast = document.createElement("b");
+    toast.textContent = words[Math.floor(Math.random() * words.length)];
+    toast.style.cssText = `left:${x}px;top:${y - 30}px`;
+    fx.appendChild(toast);
+    setTimeout(() => fx.replaceChildren(), 1400);
+  }
+
   _dueLabel(chore) {
     if (chore.state === "overdue") return `<span class="chip bad">${this._t("overdue")}</span>`;
     if (!chore.due) return `<span class="muted">${this._t("noDue")}</span>`;
@@ -627,24 +715,27 @@ class FamilienplanCard extends HTMLElement {
     let action = "";
     if (chore.state === "claimed") {
       const mine = chore.claimed_by === this._me();
-      action = `<span class="chip wait">${this._t("waiting")}</span>`;
+      action = "";
       if (!ro && (mine || this._data.is_manager)) {
         action += `<button class="link" data-action="undo" data-id="${esc(chore.id)}">${this._t("undo")}</button>`;
       }
     } else if (showClaim && !ro) {
-      const label = forName ? this._t("doneFor", { name: esc(forName) }) : this._t("done");
+      const label = forName ? this._t("doneShort") : this._t("done");
       const photo = this._photoNeeded(chore);
       action = `<button class="primary" data-action="claim" data-id="${esc(chore.id)}" data-member="${esc(memberId)}">${
         photo ? this._t("photoDone") : "✓ " + label
       }</button>`;
     }
     return `
-      <li class="row ${chore.state}">
+      <li class="row task ${chore.state}">
         ${chore.state === "claimed" ? this._thumb(chore) : ""}
         <div class="main">
           <div class="title">${esc(chore.name)}${this._photoIcon(chore)}</div>
-          <div class="sub">${this._dueLabel(chore)} · <span class="pts">${chore.points} P</span>${this._takenInfo(chore)}</div>
+          <div class="sub">${
+            chore.state === "claimed" ? `<span class="chip wait">${this._t("waiting")}</span>` : this._dueLabel(chore)
+          }${this._takenInfo(chore)}</div>
         </div>
+        <span class="pts-pill">+${chore.points}</span>
         <div class="actions">${action}</div>
       </li>`;
   }
@@ -705,11 +796,12 @@ class FamilienplanCard extends HTMLElement {
         const owner = c.responsible.map((id) => this._member(id)?.name).filter(Boolean).join(", ");
         const pts = c.points * (t.multiplier || 1);
         return `
-        <li class="row ${c.state}">
+        <li class="row task ${c.state}" style="border-left-color:${this._color(c.responsible[0])}">
           <div class="main">
             <div class="title">${esc(c.name)}${this._photoIcon(c)}</div>
-            <div class="sub muted">${esc(owner)} · <span class="pts">${pts} P</span></div>
+            <div class="sub muted">${esc(owner)}</div>
           </div>
+          <span class="pts-pill">+${pts}</span>
           <div class="actions"><button class="primary" data-action="take" data-id="${esc(c.id)}">${this._t("takeOver")}${
             t.multiplier > 1 ? " x" + t.multiplier : ""
           }</button></div>
@@ -722,7 +814,7 @@ class FamilienplanCard extends HTMLElement {
           t.multiplier > 1 ? `<span class="chip">${this._t("double")}</span>` : ""
         }</div>
         <p class="muted small">${this._t("helpHint")}</p>
-        <ul>${rows}</ul>
+        <ul class="tasks">${rows}</ul>
       </section>`;
   }
 
@@ -752,20 +844,20 @@ class FamilienplanCard extends HTMLElement {
             : `<span class="muted small">${esc(this._t("missing", { n: r.cost - member.points }))}</span>`;
         const pct = Math.min(100, Math.round((member.points / r.cost) * 100));
         return `
-        <li class="row">
-          <div class="main">
-            <div class="title">${esc(r.name)}</div>
-            <div class="sub"><span class="pts">${r.cost} P</span></div>
-            <div class="bar"><span style="width:${pct}%"></span></div>
-          </div>
-          <div class="actions">${action}</div>
-        </li>`;
+        <div class="reward ${enough ? "ready" : ""}">
+          <div class="reward-emoji">${this._rewardEmoji(r.name)}</div>
+          <div class="reward-name">${esc(r.name)}</div>
+          <div class="reward-cost">⭐ ${r.cost}</div>
+          <div class="bar"><span style="width:${pct}%"></span></div>
+          <div class="reward-action">${action}</div>
+        </div>`;
       })
       .join("");
     return `
       <section class="help">
-        <div class="section-head"><strong>🎁 ${this._t("rewards")}</strong></div>
-        <ul>${waiting}${rows}</ul>
+        <div class="section-title">🎁 ${this._t("rewards")}</div>
+        ${waiting ? `<ul>${waiting}</ul>` : ""}
+        <div class="rewards">${rows}</div>
       </section>`;
   }
 
@@ -832,29 +924,42 @@ class FamilienplanCard extends HTMLElement {
       .map((m) => {
         const open = this._openFor(m.id).filter((c) => c.state !== "claimed").length;
         return `
-          <button class="tile" data-action="pick" data-id="${esc(m.id)}">
+          <button class="tile" style="--kid:${this._color(m.id)}" data-action="pick" data-id="${esc(m.id)}">
+            <span class="tile-avatar">${esc(m.name.trim().charAt(0).toUpperCase())}</span>
             <span class="tile-name">${esc(m.name)}</span>
-            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ${esc(this._t("points", { n: m.points }))}</span>
+            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}</span>
           </button>`;
       })
       .join("");
-    return `<div class="hello">${this._t("whoAreYou")}</div><div class="tiles">${tiles}</div>`;
+    return `<div class="hello center">${this._t("whoAreYou")}</div><div class="tiles">${tiles}</div>`;
   }
 
   _renderChild(member) {
     const chores = this._openFor(member.id);
+    const color = this._color(member.id);
+    const { done, open, total } = this._todayStats(member.id);
+    const left = chores.filter((c) => c.state !== "claimed").length;
+    const line = !left ? this._t("allDoneToday") : left === 1 ? this._t("leftOne") : this._t("leftToday", { n: left });
     const list = chores.length
-      ? `<ul>${chores.map((c) => this._choreRow(c, member.id, { showClaim: c.state !== "claimed" })).join("")}</ul>`
-      : `<p class="empty">${this._t("allDone")}</p>`;
+      ? `<ul class="tasks">${chores.map((c) => this._choreRow(c, member.id, { showClaim: c.state !== "claimed" })).join("")}</ul>`
+      : `<div class="done-big">🎉<div>${this._t("allDone")}</div></div>`;
     return `
-      <div class="head">
-        <div class="hello">${esc(this._t("hello", { name: member.name }))}</div>
-        <div class="badge">${esc(this._t("points", { n: member.points }))}</div>
-      </div>
-      ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
-      ${list}
-      ${this._renderTakeOver(member)}
-      ${this._renderChildRewards(member)}`;
+      <div class="kid" style="--kid:${color}">
+        <div class="hero">
+          ${this._avatar(member, 56)}
+          <div class="hero-text">
+            <div class="hello">${esc(this._t("hello", { name: member.name }))} 👋</div>
+            <div class="muted">${esc(line)}</div>
+            <div class="star">⭐ ${esc(this._t("points", { n: member.points }))}</div>
+          </div>
+          ${this._ring(done, total || open, color, 72)}
+        </div>
+        ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
+        <div class="section-title">${this._t("todayTitle")}</div>
+        ${list}
+        ${this._renderTakeOver(member)}
+        ${this._renderChildRewards(member)}
+      </div>`;
   }
 
   _renderParent() {
@@ -887,6 +992,10 @@ class FamilienplanCard extends HTMLElement {
   }
 
   _renderToday() {
+    return `<div class="kidgrid">${this._renderTodayCards()}</div>`;
+  }
+
+  _renderTodayCards() {
     return this._children()
       .map((m) => {
         const chores = this._openFor(m.id);
@@ -905,9 +1014,15 @@ class FamilienplanCard extends HTMLElement {
         const list = chores.length
           ? `<ul>${chores.map((c) => this._choreRow(c, m.id, { showClaim: c.state !== "claimed", forName: m.name })).join("")}</ul>`
           : `<p class="empty small">${this._t("allDone")}</p>`;
+        const { done, open, total } = this._todayStats(m.id);
         return `
-          <section>
-            <div class="section-head"><strong>${esc(m.name)}</strong> ${status}${passBtn}<span class="badge">${esc(this._t("points", { n: m.points }))}</span></div>
+          <section class="kidcard" style="--kid:${this._color(m.id)}">
+            <div class="kidcard-head">
+              ${this._avatar(m, 40)}
+              <div class="kidcard-name"><strong>${esc(m.name)}</strong><span class="muted small">⭐ ${m.points}</span></div>
+              ${this._ring(done, total || open, this._color(m.id), 44)}
+            </div>
+            ${status || passBtn ? `<div class="kidcard-status">${status}${passBtn}</div>` : ""}
             ${list}
           </section>`;
       })
@@ -921,8 +1036,9 @@ class FamilienplanCard extends HTMLElement {
       .map(
         (r) => `
         <li class="row">
+          <span class="gift">${this._rewardEmoji(r.reward_name)}</span>
           <div class="main">
-            <div class="title">🎁 ${esc(r.reward_name)}</div>
+            <div class="title">${esc(r.reward_name)}</div>
             <div class="sub muted">${esc(this._member(r.member_id)?.name)} ${this._t("wantsReward")} · ${r.cost} P</div>
           </div>
           <div class="actions">
@@ -936,7 +1052,7 @@ class FamilienplanCard extends HTMLElement {
       .map(
         (c) => `
         <li class="row">
-          ${this._thumb(c)}
+          ${this._thumb(c) || this._avatar(this._member(c.claimed_by), 36)}
           <div class="main">
             <div class="title">${esc(c.name)}</div>
             <div class="sub muted">${esc(this._member(c.claimed_by)?.name)} · ${c.points * (c.claim_multiplier || 1)} P${this._takenInfo(c)}</div>
@@ -1055,9 +1171,27 @@ class FamilienplanCard extends HTMLElement {
       else if (me) body = this._renderChild(me);
       else body = `<p class="empty">${this._t("noMember")}</p>`;
     }
-    this.shadowRoot.innerHTML = `<style>${STYLE}</style><ha-card>${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div></ha-card>`;
+    if (!this._cardEl) {
+      this.shadowRoot.innerHTML = `<style>${STYLE}</style><ha-card></ha-card><div class="fx" aria-hidden="true"></div>`;
+      this._cardEl = this.shadowRoot.querySelector("ha-card");
+    }
+    this._cardEl.innerHTML = `${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div>`;
   }
 }
+
+// Kräftige Farben, die auf hell und dunkel funktionieren (weiße Schrift darauf).
+const PALETTE = ["#4f7cff", "#ff7a45", "#22a565", "#a259ff", "#e5a100", "#f0508c", "#13a8b8"];
+
+const REWARD_EMOJI = [
+  [["film", "kino", "movie"], "🎬"],
+  [["bildschirm", "zocken", "konsole", "screen", "game", "spiel"], "🎮"],
+  [["essen", "pizza", "dinner", "eis", "süß"], "🍕"],
+  [["ausflug", "trip", "zoo", "park"], "🎡"],
+  [["taschengeld", "geld", "euro", "pocket", "money"], "💶"],
+  [["aufbleiben", "bett", "bedtime", "länger"], "🌙"],
+  [["freund", "übernacht", "friend", "sleepover"], "🧑‍🤝‍🧑"],
+  [["buch", "book"], "📚"],
+];
 
 const STYLE = `
   :host { display: block; }
@@ -1114,7 +1248,69 @@ const STYLE = `
   legend { font-size: 0.9em; margin-bottom: 4px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0 12px; }
   input, select { font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--divider-color, #ccc); background: var(--card-background-color); color: var(--primary-text-color); min-width: 0; }
-  @media (max-width: 420px) { .row { flex-wrap: wrap; } .actions { width: 100%; justify-content: flex-start; } }
+  /* -- Gestaltung 0.13 -- */
+  ha-card { overflow: hidden; color: var(--primary-text-color); }
+  .kidcard-status button.link { padding: 0 4px; min-height: 28px; }
+  .tabs { background: var(--secondary-background-color); border-radius: 22px; padding: 4px; margin-bottom: 12px; }
+  .tab { border-radius: 18px; flex: 1 0 auto; }
+  .tab.on { background: var(--card-background-color); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .avatar { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; border-radius: 50%;
+            background: var(--kid); color: #fff; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+  .ring { flex: 0 0 auto; }
+  .ring circle:last-of-type { transition: stroke-dasharray .6s ease; }
+  .kid button.primary { background: var(--kid); }
+  .hero { display: flex; align-items: center; gap: 14px; padding: 14px; margin: 0 0 8px; border-radius: 18px;
+          background: linear-gradient(135deg, color-mix(in srgb, var(--kid) 22%, transparent), color-mix(in srgb, var(--kid) 6%, transparent)); }
+  .hero-text { flex: 1; min-width: 0; }
+  .hero .hello { font-size: 1.4em; font-weight: 600; }
+  .star { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 12px; background: var(--card-background-color); font-weight: 600; font-size: 0.9em; }
+  .section-title { font-weight: 600; font-size: 1.05em; margin: 14px 0 6px; }
+  ul.tasks { display: flex; flex-direction: column; gap: 8px; }
+  ul.tasks .row.task { border: none; border-radius: 14px; padding: 12px 12px 12px 14px; background: var(--secondary-background-color);
+                       border-left: 5px solid var(--kid); }
+  ul.tasks .row.task.overdue { border-left-color: var(--error-color, #db4437); }
+  ul.tasks .row.task.claimed { opacity: .75; }
+  ul.tasks button.primary { min-height: 44px; padding: 0 18px; font-weight: 600; }
+  .pts-pill { flex: 0 0 auto; font-size: 0.8em; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+              background: color-mix(in srgb, var(--kid, var(--primary-color)) 18%, transparent); }
+  .done-big { text-align: center; font-size: 2.6em; padding: 18px 0 8px; }
+  .done-big div { font-size: 0.42em; font-weight: 600; margin-top: 4px; }
+  section.help { border-top: none; padding-top: 0; }
+  .rewards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .reward { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 12px 10px;
+            border-radius: 16px; background: var(--secondary-background-color); }
+  .reward.ready { box-shadow: inset 0 0 0 2px var(--kid, var(--primary-color)); }
+  .reward-emoji { font-size: 2em; }
+  .reward-name { font-weight: 600; font-size: 0.92em; overflow-wrap: anywhere; }
+  .reward-cost { font-size: 0.85em; color: var(--secondary-text-color); }
+  .reward .bar { width: 100%; max-width: none; }
+  .reward .bar span, .kid .bar span { background: var(--kid, var(--success-color, #43a047)); }
+  .reward-action { min-height: 36px; display: flex; align-items: center; }
+  .kidgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  section.kidcard { margin: 0; padding: 12px 14px; border-radius: 16px; background: var(--secondary-background-color);
+                    border-top: 4px solid var(--kid); }
+  .kidcard-head { display: flex; align-items: center; gap: 10px; }
+  .kidcard-name { flex: 1; display: flex; flex-direction: column; }
+  .kidcard-status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+  .kidcard .row { border-bottom-color: var(--divider-color, #e0e0e0); }
+  .kidcard button.primary { background: var(--kid); }
+  .gift { font-size: 1.8em; width: 36px; text-align: center; }
+  .hello.center { text-align: center; font-size: 1.6em; font-weight: 600; margin: 8px 0; }
+  button.tile { background: var(--kid); min-height: 150px; box-shadow: 0 4px 12px rgba(0,0,0,.15); transition: transform .1s; }
+  button.tile:active { transform: scale(.97); }
+  .tile-avatar { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.25); display: flex;
+                 align-items: center; justify-content: center; font-size: 1.6em; font-weight: 700; }
+  .fx { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+  :host { position: relative; }
+  .fx i { position: absolute; width: 8px; height: 12px; border-radius: 2px; animation: pop 1.1s ease-out forwards; }
+  .fx b { position: absolute; transform: translate(-50%, 0); font-size: 1.3em; color: var(--primary-text-color);
+          text-shadow: 0 1px 4px var(--card-background-color); animation: rise 1.2s ease-out forwards; white-space: nowrap; }
+  @keyframes pop { from { transform: translate(0,0) rotate(0); opacity: 1; }
+                   to { transform: translate(var(--dx), calc(var(--dy) + 60px)) rotate(var(--rot)); opacity: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translate(-50%, 0) scale(.6); } 30% { opacity: 1; transform: translate(-50%, -12px) scale(1.1); }
+                    to { opacity: 0; transform: translate(-50%, -40px) scale(1); } }
+  @media (max-width: 420px) { .row { flex-wrap: wrap; } .actions { width: 100%; justify-content: flex-start; }
+    ul.tasks .actions { width: auto; } .hero { padding: 12px; } .hero .hello { font-size: 1.2em; } }
 `;
 
 // Eigene Seite in der Seitenleiste („Familienplan“). Zeigt die Karte groß,
