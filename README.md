@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.12.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.13.0. Noch nicht für den Alltag gedacht.
 
 ## Was schon geht
 
