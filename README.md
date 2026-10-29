@@ -2,11 +2,11 @@
 
 Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
 
-Stand: Version 0.14.0. Noch nicht für den Alltag gedacht.
+Stand: Version 0.14.1. Noch nicht für den Alltag gedacht.
 
 ## Umstieg vom Arbeitstitel „Familienplan“
 
-Bis Version 0.13.0 hieß die Integration `familienplan`. Ab 0.14.0 heißt sie `sternchenplan`. Daten werden nicht übernommen, weil es noch keine echten Nutzer gibt:
+Bis Version 0.13.0 hieß die Integration `familienplan`. Ab 0.14.1 heißt sie `sternchenplan`. Daten werden nicht übernommen, weil es noch keine echten Nutzer gibt:
 
 1. Unter Einstellungen → Geräte & Dienste die Integration „Familienplan“ löschen.
 2. Den Ordner `custom_components/familienplan` löschen und `custom_components/sternchenplan` hineinkopieren.

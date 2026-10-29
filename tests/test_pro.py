@@ -142,6 +142,11 @@ async def test_schluessel_fehler(
 
 
 async def test_shop_noch_nicht_eingerichtet(hass: HomeAssistant, setup) -> None:  # noqa: F811
+    with patch("custom_components.sternchenplan.licensing.POLAR_ORGANIZATION_ID", ""):
+        await _shop_not_ready(hass, setup)
+
+
+async def _shop_not_ready(hass, setup) -> None:  # noqa: F811
     flow = await hass.config_entries.options.async_init(setup.entry_id)
     flow = await hass.config_entries.options.async_configure(
         flow["flow_id"], {"next_step_id": "pro"}

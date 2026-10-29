@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 DOMAIN = "sternchenplan"
-VERSION = "0.14.0"
+VERSION = "0.14.1"
 CARD_URL = "/sternchenplan/sternchenplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -12,7 +12,7 @@ PANEL_URL = "sternchenplan"
 
 # Kostenlos / Pro. Die Organisations-ID gibt es nach dem Anlegen des Shops bei Polar.
 POLAR_API = "https://api.polar.sh"
-POLAR_ORGANIZATION_ID = ""
+POLAR_ORGANIZATION_ID = "874a4931-4818-439e-b695-33bd1b3e0f0c"
 TRIAL_DAYS = 30
 VALIDATE_EVERY = timedelta(days=7)
 CONF_LICENSE_KEY = "license_key"
