@@ -8,7 +8,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from homeassistant.components import frontend
 from homeassistant.core import HomeAssistant
 
-from custom_components.familienplan.const import DOMAIN, PANEL_URL
+from custom_components.sternchenplan.const import DOMAIN, PANEL_URL
 
 
 @pytest.fixture(autouse=True)
@@ -25,9 +25,9 @@ async def test_menuepunkt_kommt_und_geht(hass: HomeAssistant) -> None:
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     panel = hass.data[frontend.DATA_PANELS][PANEL_URL]
-    assert panel.sidebar_title == "Familienplan"
+    assert panel.sidebar_title == "Sternchenplan"
     assert panel.require_admin is False
-    assert panel.config["_panel_custom"]["name"] == "familienplan-panel"
+    assert panel.config["_panel_custom"]["name"] == "sternchenplan-panel"
 
     await hass.config_entries.async_unload(entry.entry_id)
     assert PANEL_URL not in hass.data[frontend.DATA_PANELS]

@@ -15,9 +15,9 @@ from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
-from custom_components.familienplan.const import DOMAIN
-from custom_components.familienplan.core import SYSTEM, Recurrence, Role
-from custom_components.familienplan.reminders import parse_times
+from custom_components.sternchenplan.const import DOMAIN
+from custom_components.sternchenplan.core import SYSTEM, Recurrence, Role
+from custom_components.sternchenplan.reminders import parse_times
 
 
 @pytest.fixture(autouse=True)

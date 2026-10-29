@@ -101,7 +101,7 @@ PHOTO_KEEP = "keep"
 NO_USER = "__none__"
 
 
-class FamilienplanConfigFlow(ConfigFlow, domain=DOMAIN):
+class SternchenplanConfigFlow(ConfigFlow, domain=DOMAIN):
     """Einrichtung in vier kurzen Schritten.
 
     1. Familienname  2. Wer gehört dazu (aus den HA-Personen, plus Kinder ohne

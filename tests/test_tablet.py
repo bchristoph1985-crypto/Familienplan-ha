@@ -10,8 +10,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 
-from custom_components.familienplan.const import DOMAIN
-from custom_components.familienplan.core import (
+from custom_components.sternchenplan.const import DOMAIN
+from custom_components.sternchenplan.core import (
     SYSTEM,
     ChoreState,
     Family,
@@ -20,7 +20,7 @@ from custom_components.familienplan.core import (
     Recurrence,
     Role,
 )
-from custom_components.familienplan.websocket_api import snapshot
+from custom_components.sternchenplan.websocket_api import snapshot
 
 NOW = datetime(2026, 11, 2, 15, tzinfo=timezone.utc)
 

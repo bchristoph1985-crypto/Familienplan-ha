@@ -216,7 +216,7 @@ class LicenseManager:
             await self.async_save()
             return False
         if status == 404 or (status == 200 and body.get("status") in ("revoked", "disabled")):
-            _LOGGER.warning("Familienplan Pro: Lizenzschlüssel ist nicht mehr gültig")
+            _LOGGER.warning("Sternchenplan Pro: Lizenzschlüssel ist nicht mehr gültig")
             lic.valid = False
             lic.last_check = now
             await self.async_save()

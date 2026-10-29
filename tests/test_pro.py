@@ -12,8 +12,8 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
-from custom_components.familienplan.const import DOMAIN, POLAR_API
-from custom_components.familienplan.core import SYSTEM, FamilyError, Recurrence
+from custom_components.sternchenplan.const import DOMAIN, POLAR_API
+from custom_components.sternchenplan.core import SYSTEM, FamilyError, Recurrence
 
 from .test_consequences import (  # noqa: F401
     _state,
@@ -29,7 +29,7 @@ VALIDATE = f"{POLAR_API}/v1/customer-portal/license-keys/validate"
 
 @pytest.fixture
 def org():
-    with patch("custom_components.familienplan.licensing.POLAR_ORGANIZATION_ID", ORG):
+    with patch("custom_components.sternchenplan.licensing.POLAR_ORGANIZATION_ID", ORG):
         yield
 
 
@@ -59,7 +59,7 @@ async def test_ohne_pro_gesperrte_geraete_frei_und_funktionen_aus(
 
     await _end_trial(hass, setup)
     assert not setup.runtime_data.pro
-    # Ohne Pro sperrt Familienplan nichts mehr und gibt Gesperrtes frei
+    # Ohne Pro sperrt Sternchenplan nichts mehr und gibt Gesperrtes frei
     assert _state(hass, "switch.ps5") == "on"
     assert setup.runtime_data.family.locked == {}
 

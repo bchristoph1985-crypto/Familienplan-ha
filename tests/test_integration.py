@@ -9,8 +9,8 @@ from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
-from custom_components.familienplan.const import DOMAIN
-from custom_components.familienplan.core import SYSTEM, Role
+from custom_components.sternchenplan.const import DOMAIN
+from custom_components.sternchenplan.core import SYSTEM, Role
 
 
 @pytest.fixture(autouse=True)

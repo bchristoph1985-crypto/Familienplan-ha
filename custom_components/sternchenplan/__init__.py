@@ -1,4 +1,4 @@
-"""Familienplan: Aufgaben für Familien, komplett lokal in Home Assistant."""
+"""Sternchenplan: Aufgaben für Familien, komplett lokal in Home Assistant."""
 
 from __future__ import annotations
 
@@ -40,11 +40,11 @@ from .websocket_api import async_register_websocket
 PLATFORMS = [Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-type FamilienplanConfigEntry = ConfigEntry[FamilienplanData]
+type SternchenplanConfigEntry = ConfigEntry[SternchenplanData]
 
 
 @dataclass
-class FamilienplanData:
+class SternchenplanData:
     hass: HomeAssistant
     entry: ConfigEntry
     store: Store
@@ -98,7 +98,7 @@ async def _async_register_card(hass: HomeAssistant) -> None:
         [
             StaticPathConfig(
                 CARD_URL,
-                str(Path(__file__).parent / "frontend" / "familienplan-card.js"),
+                str(Path(__file__).parent / "frontend" / "sternchenplan-card.js"),
                 cache_headers=False,
             )
         ]
@@ -107,13 +107,13 @@ async def _async_register_card(hass: HomeAssistant) -> None:
         add_extra_js_url(hass, f"{CARD_URL}?v={VERSION}")
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> bool:
     store: Store = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
     stored = await store.async_load()
     initial = entry.data.get(DATA_INITIAL_FAMILY)
     license_manager = LicenseManager(hass)
     await license_manager.async_load()
-    data = FamilienplanData(
+    data = SternchenplanData(
         hass, entry, store, Family.from_dict(stored or initial), license_manager
     )
     data.sync_pro()
@@ -147,8 +147,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry)
 
 
 @callback
-def _async_register_panel(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> None:
-    """Eigener Menüpunkt „Familienplan“ in der Seitenleiste. Kein Dashboard nötig."""
+def _async_register_panel(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> None:
+    """Eigener Menüpunkt „Sternchenplan“ in der Seitenleiste. Kein Dashboard nötig."""
     if "frontend" not in hass.config.components or PANEL_URL in hass.data.get(
         frontend.DATA_PANELS, {}
     ):
@@ -156,12 +156,12 @@ def _async_register_panel(hass: HomeAssistant, entry: FamilienplanConfigEntry) -
     frontend.async_register_built_in_panel(
         hass,
         component_name="custom",
-        sidebar_title="Familienplan",
+        sidebar_title="Sternchenplan",
         sidebar_icon="mdi:account-group",
         frontend_url_path=PANEL_URL,
         config={
             "_panel_custom": {
-                "name": "familienplan-panel",
+                "name": "sternchenplan-panel",
                 "module_url": f"{CARD_URL}?v={VERSION}",
                 "embed_iframe": False,
                 "trust_external": False,
@@ -172,10 +172,10 @@ def _async_register_panel(hass: HomeAssistant, entry: FamilienplanConfigEntry) -
     entry.async_on_unload(lambda: frontend.async_remove_panel(hass, PANEL_URL, warn_if_unknown=False))
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
-async def async_remove_entry(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> None:
+async def async_remove_entry(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> None:
     """Beim Löschen der Integration bleiben keine Familiendaten zurück."""
     await Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}").async_remove()

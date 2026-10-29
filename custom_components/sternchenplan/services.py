@@ -1,4 +1,4 @@
-"""Dienste von Familienplan. Jeder Aufruf wird über den Aufrufer geprüft."""
+"""Dienste von Sternchenplan. Jeder Aufruf wird über den Aufrufer geprüft."""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ from .takeover import takeover_terms
 from .core import Actor, FamilyError, PermissionDenied, Recurrence
 
 if TYPE_CHECKING:
-    from . import FamilienplanData
+    from . import SternchenplanData
 
 CHORE_SCHEMA = vol.Schema({vol.Required(ATTR_CHORE_ID): cv.string})
 
@@ -153,24 +153,24 @@ REDEEM_SCHEMA = REWARD_SCHEMA.extend({vol.Optional(ATTR_MEMBER): cv.string})
 REDEMPTION_SCHEMA = vol.Schema({vol.Required(ATTR_REDEMPTION_ID): cv.string})
 
 
-def _runtime(hass: HomeAssistant) -> FamilienplanData:
+def _runtime(hass: HomeAssistant) -> SternchenplanData:
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     if not entries:
-        raise ServiceValidationError("Familienplan ist nicht eingerichtet.")
+        raise ServiceValidationError("Sternchenplan ist nicht eingerichtet.")
     return entries[0].runtime_data
 
 
-async def _actor(hass: HomeAssistant, call: ServiceCall, data: FamilienplanData) -> Actor:
+async def _actor(hass: HomeAssistant, call: ServiceCall, data: SternchenplanData) -> Actor:
     user_id = call.context.user_id
     user = await hass.auth.async_get_user(user_id) if user_id else None
     return actor_for_user(data, user_id, bool(user and user.is_admin))
 
 
-def actor_for_user(data: FamilienplanData, user_id: str | None, is_admin: bool) -> Actor:
+def actor_for_user(data: SternchenplanData, user_id: str | None, is_admin: bool) -> Actor:
     return data.family.actor_for_user(user_id, is_admin=is_admin)
 
 
-def _member_id(data: FamilienplanData, value: str) -> str:
+def _member_id(data: SternchenplanData, value: str) -> str:
     """Mitglied per ID oder Name (Groß-/Kleinschreibung egal)."""
     family = data.family
     if value in family.members:
@@ -183,7 +183,7 @@ def _member_id(data: FamilienplanData, value: str) -> str:
 
 
 def _guarded(
-    handler: Callable[[HomeAssistant, ServiceCall, FamilienplanData, Actor], Awaitable[None]],
+    handler: Callable[[HomeAssistant, ServiceCall, SternchenplanData, Actor], Awaitable[None]],
 ) -> Callable[[ServiceCall], Awaitable[None]]:
     async def wrapper(call: ServiceCall) -> None:
         hass = call.hass
@@ -199,7 +199,7 @@ def _guarded(
     return wrapper
 
 
-def _require_pro(data: FamilienplanData) -> None:
+def _require_pro(data: SternchenplanData) -> None:
     if not data.pro:
         raise FamilyError(PRO_ONLY)
 

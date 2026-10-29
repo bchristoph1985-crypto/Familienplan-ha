@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up Familienplan",
+        "title": "Set up Sternchenplan",
         "description": "Four short steps and you are ready to go.",
         "data": {
           "family_name": "Family name"
@@ -28,7 +28,7 @@
       },
       "chores": {
         "title": "What do you want to start with?",
-        "description": "Suggestions that suit your children's ages. Shared chores rotate, children who are too young are skipped. Add your own chores afterwards in the sidebar under Familienplan → Chores.",
+        "description": "Suggestions that suit your children's ages. Shared chores rotate, children who are too young are skipped. Add your own chores afterwards in the sidebar under Sternchenplan → Chores.",
         "data": {
           "starters": "Starter chores"
         }
@@ -39,7 +39,7 @@
       },
       "rewards": {
         "title": "Which rewards are there?",
-        "description": "Children earn points with completed chores and redeem them here. You confirm every redemption. Add your own rewards and prices later under Familienplan → Rewards.",
+        "description": "Children earn points with completed chores and redeem them here. You confirm every redemption. Add your own rewards and prices later under Sternchenplan → Rewards.",
         "data": {
           "rewards": "Rewards"
         }
@@ -64,7 +64,7 @@
       "no_members": "Please select or enter at least one family member."
     },
     "abort": {
-      "single_instance_allowed": "Familienplan is already set up."
+      "single_instance_allowed": "Sternchenplan is already set up."
     }
   },
   "options": {
@@ -148,7 +148,7 @@
       },
       "announcements": {
         "title": "Speaker announcements",
-        "description": "At these times Familienplan announces who still has open chores today. If everything is done, it stays quiet. Choose speakers plus a text-to-speech engine (e.g. Google Translate, Piper) or a service that speaks by itself (e.g. Alexa Media Player). Both work together.",
+        "description": "At these times Sternchenplan announces who still has open chores today. If everything is done, it stays quiet. Choose speakers plus a text-to-speech engine (e.g. Google Translate, Piper) or a service that speaks by itself (e.g. Alexa Media Player). Both work together.",
         "data": {
           "announce_times": "Times",
           "speakers": "Speakers",
@@ -165,7 +165,7 @@
         "description": "Age in years. Each child only gets chores that suit their age and automatically moves into new chores as they grow older. You can leave it empty."
       },
       "pro": {
-        "title": "Familienplan Pro",
+        "title": "Sternchenplan Pro",
         "description": "{state}\n\nFree: chores, points, rewards, reminders.\nPro: internet lock, photo proof, taking over chores, speaker announcements, absence with substitute.\n\nYou get the key by e-mail after purchase. It is activated online once, after that everything runs locally.",
         "data": {
           "license_key": "License key",

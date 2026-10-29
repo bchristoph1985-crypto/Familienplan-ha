@@ -17,7 +17,7 @@ from .const import (
 )
 
 if TYPE_CHECKING:
-    from . import FamilienplanConfigEntry
+    from . import SternchenplanConfigEntry
 
 
 def _time(value: str) -> time | None:
@@ -25,7 +25,7 @@ def _time(value: str) -> time | None:
     return time.fromisoformat(value) if value else None
 
 
-def takeover_terms(entry: FamilienplanConfigEntry, now: datetime) -> tuple[bool, int, int, datetime]:
+def takeover_terms(entry: SternchenplanConfigEntry, now: datetime) -> tuple[bool, int, int, datetime]:
     """(erlaubt, Faktor, max. pro Tag, Tagesbeginn in UTC)."""
     options = entry.options
     local = dt_util.as_local(now)

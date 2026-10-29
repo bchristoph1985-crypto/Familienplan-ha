@@ -15,9 +15,9 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 
-from custom_components.familienplan.consequences import in_window
-from custom_components.familienplan.const import DOMAIN
-from custom_components.familienplan.core import SYSTEM, Recurrence, Role
+from custom_components.sternchenplan.consequences import in_window
+from custom_components.sternchenplan.const import DOMAIN
+from custom_components.sternchenplan.core import SYSTEM, Recurrence, Role
 
 
 @pytest.fixture(autouse=True)
@@ -161,4 +161,4 @@ async def test_nur_eigene_sperren_werden_freigegeben(hass: HomeAssistant, setup,
     await setup.runtime_data.async_save()
     await hass.services.async_call("switch", "turn_off", {"entity_id": "switch.ps5"}, blocking=True)
     await _tick(hass, freezer, "2026-11-02 20:30:00+00:00")
-    assert _state(hass, "switch.ps5") == "off"  # Familienplan schaltet es nicht ein
+    assert _state(hass, "switch.ps5") == "off"  # Sternchenplan schaltet es nicht ein

@@ -25,13 +25,13 @@ from .const import (
 from .core import ChoreState, Family, Role
 
 if TYPE_CHECKING:
-    from . import FamilienplanConfigEntry
+    from . import SternchenplanConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
 _TEXT = {
     "de": {
-        "title": "Familienplan",
+        "title": "Sternchenplan",
         "open": "Noch offen heute: {list}",
         "overdue": "überfällig",
         "summary_child": "{name}: {count} offen",
@@ -43,7 +43,7 @@ _TEXT = {
         "redeemed": "{name} möchte eine Belohnung einlösen: {reward}",
     },
     "en": {
-        "title": "Familienplan",
+        "title": "Sternchenplan",
         "open": "Still open today: {list}",
         "overdue": "overdue",
         "summary_child": "{name}: {count} open",
@@ -127,7 +127,7 @@ def announcement(hass: HomeAssistant, family: Family, now: datetime) -> str | No
     return " ".join(parts) or None
 
 
-def announce_configured(entry: FamilienplanConfigEntry) -> bool:
+def announce_configured(entry: SternchenplanConfigEntry) -> bool:
     options = entry.options
     return bool(
         (options.get(CONF_TTS_ENGINE) and options.get(CONF_SPEAKERS))
@@ -135,7 +135,7 @@ def announce_configured(entry: FamilienplanConfigEntry) -> bool:
     )
 
 
-async def async_announce(hass: HomeAssistant, entry: FamilienplanConfigEntry, message: str) -> None:
+async def async_announce(hass: HomeAssistant, entry: SternchenplanConfigEntry, message: str) -> None:
     """Ansage über die eingestellten Lautsprecher.
 
     Weg 1: eine TTS-Engine von HA auf beliebige Mediaplayer (Sonos, Google,
@@ -187,7 +187,7 @@ async def _notify(hass: HomeAssistant, service: str, title: str, message: str) -
 
 @callback
 def async_setup_reminders(
-    hass: HomeAssistant, entry: FamilienplanConfigEntry
+    hass: HomeAssistant, entry: SternchenplanConfigEntry
 ) -> list[Callable[[], None]]:
     """Zeitpläne anlegen. Gibt die Abmelde-Funktionen zurück."""
     options = entry.options

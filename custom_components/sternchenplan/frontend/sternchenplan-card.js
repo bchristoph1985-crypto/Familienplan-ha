@@ -1,16 +1,16 @@
 /*
- * Familienplan-Karte für das Home-Assistant-Dashboard.
+ * Sternchenplan-Karte für das Home-Assistant-Dashboard.
  *
- *   type: custom:familienplan-card
+ *   type: custom:sternchenplan-card
  *   mode: auto        # auto | kind | eltern  (auto: Eltern sehen die Eltern-Ansicht)
  *   member: Lucas     # optional: immer dieses Kind zeigen (z. B. Tablet im Kinderzimmer)
  *   readonly: false   # true: nur anzeigen, keine Knöpfe (z. B. Küchen-Tablet)
  *
- * Daten kommen per Websocket (familienplan/subscribe), Änderungen laufen über
+ * Daten kommen per Websocket (sternchenplan/subscribe), Änderungen laufen über
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.13.0";
+const VERSION = "0.14.0";
 
 const T = {
   de: {
@@ -54,7 +54,7 @@ const T = {
     none: "keine",
     setAway: "Abwesend eintragen",
     endAway: "Zurück",
-    notSetUp: "Familienplan ist nicht eingerichtet.",
+    notSetUp: "Sternchenplan ist nicht eingerichtet.",
     noMember: "Dieses Konto gehört zu keinem Familienmitglied.",
     paused: "ruht",
     locked: "🔒 Internet gesperrt",
@@ -93,7 +93,7 @@ const T = {
     double: "doppelte Punkte",
     trial: "Pro-Testphase: noch {n} Tage",
     free: "Kostenlose Version",
-    proHint: "Pro freischalten: Einstellungen › Geräte & Dienste › Familienplan › Konfigurieren › Pro / Lizenz",
+    proHint: "Pro freischalten: Einstellungen › Geräte & Dienste › Sternchenplan › Konfigurieren › Pro / Lizenz",
     proOnly: "Gehört zu Pro",
     awayPro: "Abwesenheit mit Vertretung gehört zu Pro.",
     whoAreYou: "Wer bist du?",
@@ -148,7 +148,7 @@ const T = {
     none: "none",
     setAway: "Set away",
     endAway: "Back",
-    notSetUp: "Familienplan is not set up.",
+    notSetUp: "Sternchenplan is not set up.",
     noMember: "This account is not linked to a family member.",
     paused: "paused",
     locked: "🔒 Internet locked",
@@ -187,7 +187,7 @@ const T = {
     double: "double points",
     trial: "Pro trial: {n} days left",
     free: "Free version",
-    proHint: "Unlock Pro: Settings › Devices & services › Familienplan › Configure › Pro / license",
+    proHint: "Unlock Pro: Settings › Devices & services › Sternchenplan › Configure › Pro / license",
     proOnly: "Part of Pro",
     awayPro: "Absence with substitute is part of Pro.",
     whoAreYou: "Who are you?",
@@ -206,7 +206,7 @@ const T = {
 const esc = (value) =>
   String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
-class FamilienplanCard extends HTMLElement {
+class SternchenplanCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -265,7 +265,7 @@ class FamilienplanCard extends HTMLElement {
           this._error = null;
           this._render();
         },
-        { type: "familienplan/subscribe" },
+        { type: "sternchenplan/subscribe" },
       )
       .catch((err) => {
         this._error = err.code === "not_loaded" ? this._t("notSetUp") : err.message;
@@ -316,7 +316,7 @@ class FamilienplanCard extends HTMLElement {
     if (this._busy) return;
     this._busy = true;
     try {
-      await this._hass.callService("familienplan", service, data);
+      await this._hass.callService("sternchenplan", service, data);
     } catch (err) {
       this.dispatchEvent(
         new CustomEvent("hass-notification", { detail: { message: err.message }, bubbles: true, composed: true }),
@@ -354,7 +354,7 @@ class FamilienplanCard extends HTMLElement {
     if (data.member) body.append("member", data.member);
     body.append("file", file, file.name || "foto.jpg");
     try {
-      const url = "/api/familienplan/photo";
+      const url = "/api/sternchenplan/photo";
       const resp = this._hass.fetchWithAuth
         ? await this._hass.fetchWithAuth(url, { method: "POST", body })
         : await fetch(url, {
@@ -1313,9 +1313,9 @@ const STYLE = `
     ul.tasks .actions { width: auto; } .hero { padding: 12px; } .hero .hello { font-size: 1.2em; } }
 `;
 
-// Eigene Seite in der Seitenleiste („Familienplan“). Zeigt die Karte groß,
+// Eigene Seite in der Seitenleiste („Sternchenplan“). Zeigt die Karte groß,
 // damit niemand erst ein Dashboard einrichten muss.
-class FamilienplanPanel extends HTMLElement {
+class SternchenplanPanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -1346,28 +1346,28 @@ class FamilienplanPanel extends HTMLElement {
         .wrap { max-width: 720px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
         @media (max-width: 600px) { .wrap { padding: 8px; } }
       </style>
-      <div class="bar"><ha-menu-button></ha-menu-button><h1>Familienplan</h1></div>
+      <div class="bar"><ha-menu-button></ha-menu-button><h1>Sternchenplan</h1></div>
       <div class="wrap"></div>`;
     const menu = this.shadowRoot.querySelector("ha-menu-button");
     menu.hass = this._hass;
     menu.narrow = this._narrow;
-    this._card = document.createElement("familienplan-card");
+    this._card = document.createElement("sternchenplan-card");
     this._card.setConfig({ mode: "auto" });
     this.shadowRoot.querySelector(".wrap").appendChild(this._card);
   }
 }
 
-if (!customElements.get("familienplan-panel")) {
-  customElements.define("familienplan-panel", FamilienplanPanel);
+if (!customElements.get("sternchenplan-panel")) {
+  customElements.define("sternchenplan-panel", SternchenplanPanel);
 }
 
-if (!customElements.get("familienplan-card")) {
-  customElements.define("familienplan-card", FamilienplanCard);
+if (!customElements.get("sternchenplan-card")) {
+  customElements.define("sternchenplan-card", SternchenplanCard);
   window.customCards = window.customCards || [];
   window.customCards.push({
-    type: "familienplan-card",
-    name: "Familienplan",
+    type: "sternchenplan-card",
+    name: "Sternchenplan",
     description: "Aufgaben der Familie: Kinder melden, Eltern geben frei.",
   });
-  console.info(`%c FAMILIENPLAN-CARD %c ${VERSION} `, "background:#3f51b5;color:#fff", "");
+  console.info(`%c STERNCHENPLAN-CARD %c ${VERSION} `, "background:#3f51b5;color:#fff", "");
 }

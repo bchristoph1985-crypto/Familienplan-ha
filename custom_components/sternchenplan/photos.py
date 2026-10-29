@@ -35,7 +35,7 @@ from .const import (
 from .core import FamilyError, PermissionDenied
 
 if TYPE_CHECKING:
-    from . import FamilienplanConfigEntry
+    from . import SternchenplanConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def _write(path: Path, data: bytes) -> None:
     path.write_bytes(data)
 
 
-def cleanup(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
+def cleanup(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> bool:
     """Fotos nach der Löschfrist entfernen. Läuft im Executor."""
     days = int(entry.options.get(CONF_PHOTO_RETENTION, DEFAULT_PHOTO_RETENTION))
     folder = photo_dir(hass)
@@ -76,7 +76,7 @@ def cleanup(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
     return removed
 
 
-def delete_after_review(entry: FamilienplanConfigEntry) -> bool:
+def delete_after_review(entry: SternchenplanConfigEntry) -> bool:
     return bool(
         entry.options.get(CONF_PHOTO_DELETE_AFTER_REVIEW, DEFAULT_PHOTO_DELETE_AFTER_REVIEW)
     )
@@ -92,7 +92,7 @@ async def async_discard(hass: HomeAssistant, filename: str | None) -> None:
         await hass.async_add_executor_job(_unlink, photo_dir(hass) / filename)
 
 
-def forget_missing(hass: HomeAssistant, entry: FamilienplanConfigEntry) -> bool:
+def forget_missing(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> bool:
     folder = photo_dir(hass)
     changed = False
     for chore in entry.runtime_data.family.chores.values():
@@ -115,7 +115,7 @@ class PhotoUploadView(HomeAssistantView):
         hass: HomeAssistant = request.app["hass"]
         entries = hass.config_entries.async_loaded_entries(DOMAIN)
         if not entries:
-            return self.json_message("Familienplan ist nicht eingerichtet.", 404)
+            return self.json_message("Sternchenplan ist nicht eingerichtet.", 404)
         data = entries[0].runtime_data
         if not data.pro:
             return self.json_message(PRO_ONLY, 403)

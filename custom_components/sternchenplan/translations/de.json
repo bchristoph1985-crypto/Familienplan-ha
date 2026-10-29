@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Familienplan einrichten",
+        "title": "Sternchenplan einrichten",
         "description": "Vier kurze Schritte, danach ist alles startklar.",
         "data": {
           "family_name": "Name der Familie"
@@ -28,7 +28,7 @@
       },
       "chores": {
         "title": "Womit wollt ihr starten?",
-        "description": "Vorschläge passend zum Alter der Kinder. Gemeinsame Aufgaben wechseln reihum, zu junge Kinder werden übersprungen. Eure eigenen Aufgaben legt ihr danach in der Seitenleiste unter Familienplan → Aufgaben an.",
+        "description": "Vorschläge passend zum Alter der Kinder. Gemeinsame Aufgaben wechseln reihum, zu junge Kinder werden übersprungen. Eure eigenen Aufgaben legt ihr danach in der Seitenleiste unter Sternchenplan → Aufgaben an.",
         "data": {
           "starters": "Startaufgaben"
         }
@@ -39,7 +39,7 @@
       },
       "rewards": {
         "title": "Welche Belohnungen gibt es?",
-        "description": "Kinder sammeln mit erledigten Aufgaben Punkte und lösen sie hier ein. Ihr bestätigt jede Einlösung. Eigene Belohnungen und andere Punktepreise legt ihr später unter Familienplan → Belohnungen fest.",
+        "description": "Kinder sammeln mit erledigten Aufgaben Punkte und lösen sie hier ein. Ihr bestätigt jede Einlösung. Eigene Belohnungen und andere Punktepreise legt ihr später unter Sternchenplan → Belohnungen fest.",
         "data": {
           "rewards": "Belohnungen"
         }
@@ -64,7 +64,7 @@
       "no_members": "Bitte mindestens ein Familienmitglied auswählen oder eintragen."
     },
     "abort": {
-      "single_instance_allowed": "Familienplan ist schon eingerichtet."
+      "single_instance_allowed": "Sternchenplan ist schon eingerichtet."
     }
   },
   "options": {
@@ -148,7 +148,7 @@
       },
       "announcements": {
         "title": "Ansagen über Lautsprecher",
-        "description": "Zu den Uhrzeiten sagt Familienplan an, wer heute noch etwas offen hat. Ist alles erledigt, bleibt es still. Wähle Lautsprecher plus Sprachausgabe (z. B. Google Translate, Piper) oder einen Dienst, der selbst spricht (z. B. Alexa Media Player). Beides geht auch gleichzeitig.",
+        "description": "Zu den Uhrzeiten sagt Sternchenplan an, wer heute noch etwas offen hat. Ist alles erledigt, bleibt es still. Wähle Lautsprecher plus Sprachausgabe (z. B. Google Translate, Piper) oder einen Dienst, der selbst spricht (z. B. Alexa Media Player). Beides geht auch gleichzeitig.",
         "data": {
           "announce_times": "Uhrzeiten",
           "speakers": "Lautsprecher",
@@ -165,7 +165,7 @@
         "description": "Alter in Jahren. Damit bekommt jedes Kind nur Aufgaben, die zu seinem Alter passen, und rückt automatisch in neue Aufgaben nach, wenn es älter wird. Leer lassen geht auch."
       },
       "pro": {
-        "title": "Familienplan Pro",
+        "title": "Sternchenplan Pro",
         "description": "{state}\n\nKostenlos: Aufgaben, Punkte, Belohnungen, Erinnerungen.\nPro: Internetsperre, Fotonachweis, Aufgaben übernehmen, Lautsprecher-Ansagen, Abwesenheit mit Vertretung.\n\nDen Schlüssel bekommst du nach dem Kauf per E-Mail. Er wird einmal online aktiviert, danach läuft alles lokal.",
         "data": {
           "license_key": "Lizenzschlüssel",

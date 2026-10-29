@@ -12,14 +12,14 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from . import FamilienplanConfigEntry, FamilienplanData
+from . import SternchenplanConfigEntry, SternchenplanData
 from .const import DOMAIN, SIGNAL_UPDATED
 from .core import ChoreState
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: FamilienplanConfigEntry,
+    entry: SternchenplanConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     data = entry.runtime_data
@@ -46,12 +46,12 @@ async def async_setup_entry(
     entry.async_on_unload(async_dispatcher_connect(hass, SIGNAL_UPDATED, sync_chores))
 
 
-class _FamilienplanSensor(SensorEntity):
+class _SternchenplanSensor(SensorEntity):
     _attr_has_entity_name = True
     _attr_should_poll = False
 
-    def __init__(self, entry: FamilienplanConfigEntry) -> None:
-        self._data: FamilienplanData = entry.runtime_data
+    def __init__(self, entry: SternchenplanConfigEntry) -> None:
+        self._data: SternchenplanData = entry.runtime_data
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)}, name=entry.title
         )
@@ -62,11 +62,11 @@ class _FamilienplanSensor(SensorEntity):
         )
 
 
-class MemberPointsSensor(_FamilienplanSensor):
+class MemberPointsSensor(_SternchenplanSensor):
     _attr_translation_key = "points"
     _attr_native_unit_of_measurement = "P"
 
-    def __init__(self, entry: FamilienplanConfigEntry, member_id: str) -> None:
+    def __init__(self, entry: SternchenplanConfigEntry, member_id: str) -> None:
         super().__init__(entry)
         self._member_id = member_id
         member = self._data.family.members[member_id]
@@ -107,12 +107,12 @@ class MemberPointsSensor(_FamilienplanSensor):
         }
 
 
-class ChoreSensor(_FamilienplanSensor):
+class ChoreSensor(_SternchenplanSensor):
     _attr_translation_key = "chore"
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [s.value for s in ChoreState]
 
-    def __init__(self, entry: FamilienplanConfigEntry, chore_id: str) -> None:
+    def __init__(self, entry: SternchenplanConfigEntry, chore_id: str) -> None:
         super().__init__(entry)
         self._chore_id = chore_id
         self._attr_unique_id = f"{entry.entry_id}_chore_{chore_id}"
