@@ -894,6 +894,24 @@
         }
       }
     },
+    "set_lock": {
+      "name": "Internetsperre",
+      "description": "Schaltet die Internetsperre an oder aus und legt die Zeiten fest.",
+      "fields": {
+        "enabled": {
+          "name": "Aktiv",
+          "description": "An: Offene Aufgaben sperren die Geräte des Kindes."
+        },
+        "lock_time": {
+          "name": "Sperre ab",
+          "description": "Ab dieser Uhrzeit wird gesperrt, wenn noch Aufgaben offen sind."
+        },
+        "release_time": {
+          "name": "Freigabe um",
+          "description": "Spätestens um diese Uhrzeit werden die Geräte wieder freigegeben."
+        }
+      }
+    },
     "set_features": {
       "name": "Funktionen",
       "description": "Legt fest, welche Zusatzfunktionen die Familie nutzt.",

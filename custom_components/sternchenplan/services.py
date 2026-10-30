@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import time
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,10 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_PHOTO_DELETE_AFTER_REVIEW,
+    CONF_CONSEQUENCES,
+    CONF_LOCK_TIME,
+    CONF_RELEASE_TIME,
+    SERVICE_SET_LOCK,
     ATTR_ASSIGNEES,
     ATTR_CHORE_ID,
     ATTR_DEVICES,
@@ -263,6 +268,23 @@ ADD_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, vol.Required
 DELETE_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_PRESET_ID): cv.string})
 PICTURE_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_ENABLED): cv.boolean})
 PHOTO_PRIVACY_SCHEMA = vol.Schema({vol.Required(ATTR_DELETE): cv.boolean})
+
+
+def _clock(value) -> str:
+    """Uhrzeit als HH:MM, auch aus "20:00:00"."""
+    try:
+        return time.fromisoformat(str(value).strip()).strftime("%H:%M")
+    except ValueError as err:
+        raise vol.Invalid(f"Keine Uhrzeit: {value}") from err
+
+
+LOCK_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_ENABLED): cv.boolean,
+        vol.Optional(CONF_LOCK_TIME): _clock,
+        vol.Optional(CONF_RELEASE_TIME): _clock,
+    }
+)
 THEME_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_THEME, default=""): vol.In(THEMES)})
 _EURO = vol.All(vol.Coerce(float), vol.Range(min=-10000, max=10000))
 MONEY_SCHEMA = vol.Schema(
@@ -656,6 +678,19 @@ async def _set_photo_privacy(hass, call, data, actor) -> None:
     )
 
 
+async def _set_lock(hass, call, data, actor) -> None:
+    """Internetsperre an/aus und Sperrzeiten (Karte: Einstellungen, Assistent)."""
+    if not actor.is_manager:
+        raise PermissionDenied("Nur Eltern.")
+    options = dict(data.entry.options)
+    if ATTR_ENABLED in call.data:
+        options[CONF_CONSEQUENCES] = call.data[ATTR_ENABLED]
+    for key in (CONF_LOCK_TIME, CONF_RELEASE_TIME):
+        if key in call.data:
+            options[key] = call.data[key]
+    hass.config_entries.async_update_entry(data.entry, options=options)
+
+
 async def _set_weather(hass, call, data, actor) -> None:
     data.family.set_weather(actor, call.data[ATTR_ENTITY])
     data.family.bad_weather = weather_is_bad(hass, data.family.weather_entity)
@@ -797,6 +832,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_SET_PICTURE_MODE, _set_picture_mode, PICTURE_SCHEMA),
         (SERVICE_SET_THEME, _set_theme, THEME_SCHEMA),
         (SERVICE_SET_PHOTO_PRIVACY, _set_photo_privacy, PHOTO_PRIVACY_SCHEMA),
+        (SERVICE_SET_LOCK, _set_lock, LOCK_SCHEMA),
         (SERVICE_SET_WEATHER, _set_weather, WEATHER_SCHEMA),
         (SERVICE_SET_REPORT, _set_report, REPORT_SCHEMA),
         (SERVICE_SEND_REPORT, _send_report, EMPTY_SCHEMA),

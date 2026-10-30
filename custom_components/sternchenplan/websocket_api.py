@@ -17,7 +17,17 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, DONATE_URL, HOUSE_FIELDS, SIGNAL_UPDATED
+from .const import (
+    CONF_CONSEQUENCES,
+    CONF_LOCK_TIME,
+    CONF_RELEASE_TIME,
+    DEFAULT_LOCK_TIME,
+    DEFAULT_RELEASE_TIME,
+    DOMAIN,
+    DONATE_URL,
+    HOUSE_FIELDS,
+    SIGNAL_UPDATED,
+)
 from .core import Family, FamilyError, Member, badge_status, level_floor
 from .handsfree import learning
 from .photos import delete_after_review, signed_url
@@ -94,6 +104,13 @@ def snapshot(
         "presets": [dict(p) for p in family.presets] if actor.is_manager else [],
         "learning_tag": learning(hass) if actor.is_manager else None,
         "photo_delete": delete_after_review(entry) if actor.is_manager else None,
+        # Internetsperre: Schalter und Zeiten nur für Eltern
+        "lock": (
+            {"enabled": bool(entry.options.get(CONF_CONSEQUENCES, False)),
+             "lock_time": entry.options.get(CONF_LOCK_TIME, DEFAULT_LOCK_TIME),
+             "release_time": entry.options.get(CONF_RELEASE_TIME, DEFAULT_RELEASE_TIME)}
+            if actor.is_manager else None
+        ),
         # Fotogalerie nur für Eltern, mit kurz gültigen Links
         "gallery": [
             {"file": e["file"], "url": signed_url(hass, e["file"]), "name": e["name"],
@@ -111,6 +128,7 @@ def snapshot(
                 "away_until": iso(m.away_until),
                 "substitute": m.substitute_id,
                 "has_devices": bool(m.devices),
+                "devices": list(m.devices) if actor.is_manager else [],
                 "locked": bool(family.locked.get(m.id)),
                 "pass_until": iso(m.pass_until) if m.has_pass(now) else None,
                 "age": m.age(now),

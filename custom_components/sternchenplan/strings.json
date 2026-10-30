@@ -894,6 +894,24 @@
         }
       }
     },
+    "set_lock": {
+      "name": "Internet lock",
+      "description": "Turns the internet lock on or off and sets its times.",
+      "fields": {
+        "enabled": {
+          "name": "Enabled",
+          "description": "On: unfinished chores lock the child's devices."
+        },
+        "lock_time": {
+          "name": "Lock from",
+          "description": "From this time devices are locked if chores are still open."
+        },
+        "release_time": {
+          "name": "Release at",
+          "description": "Devices are released at this time at the latest."
+        }
+      }
+    },
     "set_features": {
       "name": "Features",
       "description": "Chooses which extra features the family uses.",
