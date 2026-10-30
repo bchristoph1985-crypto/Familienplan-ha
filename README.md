@@ -172,6 +172,12 @@ Jede Aufgabe kann mit einem Gerät oder Sensor aus Home Assistant verbunden werd
 - **Erledigt, wenn …:** Der Saugroboter meldet „docked“, also ist „Saugroboter leeren“ erledigt. Gutgeschrieben wird dem Kind, das gerade dran ist. Eine Freigabe braucht es dafür nicht, das Haus hat ja selbst nachgesehen. Sind mehrere Kinder gleichzeitig dran, wird nichts gutgeschrieben, weil unklar ist, wer es war.
 - **Jetzt dran, wenn …:** Die Spülmaschine geht auf „off“, dann bekommt das Kind „Jetzt bist du dran: Spülmaschine ausräumen“.
 
+## So einfach wie möglich
+
+- **In einer Minute startklar:** Ist noch nichts angelegt, schlägt Sternchenplan unter „Heute“ ein Startpaket nach Alter vor: gemeinsame Aufgaben reihum (Tisch decken, Spülmaschine, Müll, Staubsaugen), eigene je Kind (Bett machen, Zimmer) und vier Belohnungen. Ein Tipp auf „Alles anlegen“ genügt.
+- **Kurzes Formular:** Für eine neue Aufgabe reichen Name, wer, wie oft und Sterne. Alles Weitere steht unter „Mehr Optionen“. Ohne Frist nimmt Sternchenplan 18 Uhr.
+- **❓ Hilfe:** Der Knopf oben erklärt jeden Reiter in einem Satz.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.

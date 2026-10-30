@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.26.0";
+const VERSION = "0.27.0";
 
 const T = {
   de: {
@@ -62,6 +62,25 @@ const T = {
     givePass: "Freikarte",
     starsBtn: "± Sterne",
     nfc: "📱 NFC-Aufkleber",
+    moreOptions: "Mehr Optionen (Freigabe, Foto, Tage, Routine, NFC, Haus …)",
+    starterTitle: "✨ In einer Minute startklar",
+    starterText: "Ich schlage passende Aufgaben nach Alter vor. Gemeinsame Aufgaben wechseln reihum, eigene bekommt jedes Kind selbst. Alles lässt sich später ändern.",
+    starterChores: "Aufgaben",
+    starterRewards: "Belohnungen",
+    starterGo: "✨ Alles anlegen",
+    starterLater: "Nein danke, ich mache es selbst",
+    starterDone: "Fertig! {n} Aufgaben und {r} Belohnungen sind angelegt.",
+    starterNoKids: "Lege zuerst die Kinder an (Einstellungen → Geräte & Dienste → Sternchenplan → Konfigurieren).",
+    shared: "reihum: {names}",
+    help: "❓ Hilfe",
+    helpTabs: {
+      today: "Hier siehst du, was jedes Kind heute noch tun muss. Mit „± Sterne“ gibst du Bonus oder ziehst ab, unten steht die Wochenbilanz.",
+      approve: "Hier bestätigst du gemeldete Aufgaben und Belohnungen. Einfacher geht es direkt in der Push-Nachricht auf dem Handy.",
+      chores: "Hier legst du Aufgaben an. Am schnellsten über „Vorlagen“. Die Grundeinstellungen reichen meistens, der Rest steht unter „Mehr Optionen“.",
+      rewards: "Belohnungen, die Kinder mit Sternen einlösen. Kleine Belohnungen (10–20 Sterne) motivieren am meisten.",
+      money: "Optional: Sterne in Taschengeld tauschen und wöchentliches Taschengeld verwalten.",
+      away: "Ferien eintragen (dann ruht alles) oder ein Kind abwesend melden, z. B. bei Krankheit oder Übernachtung.",
+    },
     house: "🏠 Das Haus prüft selbst",
     houseHint: "Ohne Automation: Ein Gerät oder Sensor hakt die Aufgabe ab oder sagt dem Kind, dass es dran ist.",
     houseDone: "Erledigt, wenn",
@@ -276,6 +295,25 @@ const T = {
     givePass: "Free pass",
     starsBtn: "± Stars",
     nfc: "📱 NFC tag",
+    moreOptions: "More options (approval, photo, days, routine, NFC, house …)",
+    starterTitle: "✨ Ready in one minute",
+    starterText: "I suggest chores that fit each child's age. Shared chores rotate, personal ones go to each child. You can change everything later.",
+    starterChores: "Chores",
+    starterRewards: "Rewards",
+    starterGo: "✨ Create all",
+    starterLater: "No thanks, I'll do it myself",
+    starterDone: "Done! {n} chores and {r} rewards created.",
+    starterNoKids: "Add the children first (Settings → Devices & services → Sternchenplan → Configure).",
+    shared: "rotating: {names}",
+    help: "❓ Help",
+    helpTabs: {
+      today: "What each child still has to do today. Use “± Stars” for bonus or deductions; the weekly summary is at the bottom.",
+      approve: "Confirm reported chores and rewards here, or directly in the push notification on your phone.",
+      chores: "Create chores here, fastest via “Templates”. The basics are usually enough; everything else is under “More options”.",
+      rewards: "Rewards children redeem with stars. Small rewards (10–20 stars) motivate most.",
+      money: "Optional: exchange stars for pocket money and manage weekly allowance.",
+      away: "Enter holidays (everything pauses) or mark a child as away, e.g. sick or at a sleepover.",
+    },
     house: "🏠 The house checks itself",
     houseHint: "No automation needed: a device or sensor checks the chore off or tells the child it's their turn.",
     houseDone: "Done when",
@@ -771,6 +809,22 @@ class SternchenplanCard extends HTMLElement {
         this._call("add_preset", { name, stars });
         break;
       }
+      case "help":
+        this._help = !this._help;
+        this._render();
+        break;
+      case "starter-go":
+        el.disabled = true;
+        this._runStarter();
+        break;
+      case "starter-hide":
+        try {
+          localStorage.setItem("sternchenplan-starter-hidden", "1");
+        } catch (e) {
+          /* egal */
+        }
+        this._render();
+        break;
       case "tag-learn":
         this._call("learn_tag", { chore_id: id });
         break;
@@ -1105,6 +1159,101 @@ class SternchenplanCard extends HTMLElement {
       </div>`;
   }
 
+  _hasAdvanced(f) {
+    return !!(f.approval || f.photo || f.outdoor || f.weekdays.length || f.icon || f.steps || Number(f.minAge) ||
+      f.done_entity || f.start_entity || f.editId);
+  }
+
+  // Nächster Zeitpunkt mit dieser Uhrzeit (heute oder morgen).
+  _nextAt(time) {
+    const d = new Date();
+    const [h, m] = time.split(":").map(Number);
+    d.setHours(h, m, 0, 0);
+    if (d < new Date()) d.setDate(d.getDate() + 1);
+    return d;
+  }
+
+  // Startpaket: gemeinsame Aufgaben reihum für alle, die alt genug sind, eigene je Kind.
+  _starterPlan() {
+    const kids = this._children();
+    const lang = this._lang();
+    const SHARED = ["Tisch decken", "Spülmaschine ausräumen", "Müll rausbringen", "Staubsaugen"];
+    const OWN = ["Spielzeug aufräumen", "Bett machen", "Zimmer aufräumen"];
+    const byName = (n) => TEMPLATES.find((t) => t.name.de === n);
+    const fits = (t, k) => k.age == null || k.age >= t.age;
+    const chores = [];
+    for (const n of SHARED) {
+      const t = byName(n);
+      const who = kids.filter((k) => fits(t, k));
+      if (t && who.length) chores.push({ t, who, rotation: who.length > 1 });
+    }
+    for (const k of kids) {
+      // Kleine räumen Spielzeug auf, Größere ihr Zimmer
+      const own = OWN.map(byName).filter((t) => t && fits(t, k));
+      const pick = own.filter((t) => !(t.name.de === "Spielzeug aufräumen" && k.age >= 8));
+      for (const t of pick) chores.push({ t, who: [k], rotation: false });
+    }
+    const rewards = lang === "de"
+      ? [["30 Minuten extra Bildschirmzeit", 15], ["Länger aufbleiben", 20], ["Filmabend aussuchen", 40], ["Ausflug aussuchen", 100]]
+      : [["30 extra minutes screen time", 15], ["Stay up later", 20], ["Pick the movie night", 40], ["Pick a day trip", 100]];
+    return { chores, rewards: this._data.rewards.length ? [] : rewards };
+  }
+
+  _renderStarter() {
+    if (this._config.readonly || this._data.chores.length) return "";
+    try {
+      if (localStorage.getItem("sternchenplan-starter-hidden")) return "";
+    } catch (e) {
+      /* ohne Speicher einfach zeigen */
+    }
+    const kids = this._children();
+    if (!kids.length) return `<section class="starter"><strong>${this._t("starterTitle")}</strong><p>${this._t("starterNoKids")}</p></section>`;
+    const lang = this._lang();
+    const plan = this._starterPlan();
+    const names = (who) => who.map((k) => k.name).join(", ");
+    return `
+      <section class="starter">
+        <div class="starter-title">${this._t("starterTitle")}</div>
+        <p class="muted">${this._t("starterText")}</p>
+        <div class="starter-cols">
+          <div><div class="small"><strong>${this._t("starterChores")}</strong></div><ul>${plan.chores
+            .map((c) => `<li>${esc(c.t.emoji)} ${esc(c.t.name[lang])} <span class="muted small">· ${esc(c.rotation ? this._t("shared", { names: names(c.who) }) : names(c.who))}</span></li>`)
+            .join("")}</ul></div>
+          ${plan.rewards.length ? `<div><div class="small"><strong>${this._t("starterRewards")}</strong></div><ul>${plan.rewards
+            .map(([n, c]) => `<li>🎁 ${esc(n)} <span class="muted small">· ⭐ ${c}</span></li>`)
+            .join("")}</ul></div>` : ""}
+        </div>
+        <div class="starter-actions">
+          <button class="primary big" data-action="starter-go">${this._t("starterGo")}</button>
+          <button class="link" data-action="starter-hide">${this._t("starterLater")}</button>
+        </div>
+      </section>`;
+  }
+
+  async _runStarter() {
+    const lang = this._lang();
+    const plan = this._starterPlan();
+    const call = (service, data) => this._hass.callService("sternchenplan", service, data);
+    try {
+      for (const c of plan.chores) {
+        await call("create_chore", {
+          name: c.t.name[lang], assignees: c.who.map((k) => k.id), points: c.t.points, recurrence: c.t.rec,
+          due: this._nextAt(c.t.time).toISOString(), rotation: c.rotation, requires_photo: !!c.t.photo,
+          min_age: c.t.age, icon: c.t.emoji, steps: c.t.steps?.[lang] || [], outdoor: !!c.t.outdoor,
+        });
+      }
+      for (const [name, cost] of plan.rewards) await call("create_reward", { name, cost });
+      this._notify(this._t("starterDone", { n: plan.chores.length, r: plan.rewards.length }));
+    } catch (err) {
+      this._notify(err.message);
+    }
+  }
+
+  _helpTip() {
+    if (!this._help) return "";
+    return `<p class="help-tip">💡 ${esc(this._t("helpTabs")[this._tab] || "")}</p>`;
+  }
+
   _houseData(f) {
     return { done_entity: f.done_entity || "", done_state: f.done_state || "", start_entity: f.start_entity || "", start_state: f.start_state || "" };
   }
@@ -1376,6 +1525,7 @@ class SternchenplanCard extends HTMLElement {
   async _createChore() {
     const f = this._form;
     if (!f.name.trim() || !f.assignees.length) return;
+    if (!f.due && f.recurrence !== "none") f.due = this._toLocalInput(this._nextAt("18:00").toISOString());
     if (f.editId) {
       await this._call("update_chore", {
         chore_id: f.editId,
@@ -2015,7 +2165,8 @@ class SternchenplanCard extends HTMLElement {
     return `
       <nav class="tabs">${tabs
         .map(([id, label]) => `<button class="tab ${this._tab === id ? "on" : ""}" data-action="tab" data-id="${id}">${label}</button>`)
-        .join("")}</nav>
+        .join("")}<button class="tab help-btn ${this._help ? "on" : ""}" data-action="help" title="${this._t("help")}" aria-label="${this._t("help")}">❓</button></nav>
+      ${this._helpTip()}
       ${body}
       ${this._donateLine()}`;
   }
@@ -2025,7 +2176,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderToday() {
-    return `${this._pauseBanner()}${this._rainBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>${this._renderWeek()}`;
+    return `${this._renderStarter()}${this._pauseBanner()}${this._rainBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>${this._renderWeek()}`;
   }
 
   _renderTodayCards() {
@@ -2155,9 +2306,11 @@ class SternchenplanCard extends HTMLElement {
             .join("")}</select></label>
           <label>${this._t("due")}<input type="datetime-local" data-field="due" value="${esc(f.due)}"></label>
           <label>${this._t("pointsLabel")}<input type="number" min="0" max="100" data-field="points" value="${esc(f.points)}"></label>
-          <label>${this._t("minAge")}<input type="number" min="0" max="18" data-field="minAge" value="${esc(f.minAge)}"></label>
         </div>
         <label class="check"><input type="checkbox" data-field="rotation" ${f.rotation ? "checked" : ""}>${this._t("rotation")}</label>
+        <details class="more-options" ${this._hasAdvanced(f) ? "open" : ""}>
+        <summary>${this._t("moreOptions")}</summary>
+        <label>${this._t("minAge")}<input type="number" min="0" max="18" data-field="minAge" value="${esc(f.minAge)}" class="narrow"></label>
         <label class="check"><input type="checkbox" data-field="approval" ${f.approval ? "checked" : ""}>${this._t("approval")}</label>
         <label class="check"><input type="checkbox" data-field="photo" ${f.photo ? "checked" : ""}>${this._t("photo")}</label>
         <label class="check"><input type="checkbox" data-field="outdoor" ${f.outdoor ? "checked" : ""}>${this._t("outdoor")}</label>
@@ -2168,6 +2321,7 @@ class SternchenplanCard extends HTMLElement {
         ${this._nfcBlock(f)}
         ${this._houseBlock(f)}
         <label>${this._t("steps")}<textarea data-field="steps" rows="3" maxlength="800">${esc(f.steps)}</textarea></label>
+        </details>
         <button class="primary" data-action="create">${f.editId ? this._t("save") : this._t("create")}</button>
         ${f.editId ? `<button class="link" data-action="cancel-edit">${this._t("cancel")}</button>` : ""}
       </details>
@@ -2552,6 +2706,19 @@ const STYLE = `
   .stars-custom { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .stars-custom input[type="number"] { width: 72px; }
   .stars-custom input:not([type]) { flex: 1; min-width: 120px; }
+  .more-options { margin: 8px 0; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, var(--primary-text-color) 4%, transparent); }
+  .more-options summary { cursor: pointer; font-weight: 500; }
+  .more-options[open] summary { margin-bottom: 8px; }
+  input.narrow { max-width: 120px; }
+  .starter { margin-bottom: 16px; padding: 18px; border-radius: 18px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color, #03a9f4) 16%, transparent), color-mix(in srgb, #ffc107 14%, transparent)); }
+  .starter-title { font-size: 1.25em; font-weight: 700; margin-bottom: 4px; }
+  .starter-cols { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .starter ul { margin: 6px 0 0; padding-left: 0; list-style: none; display: grid; gap: 4px; }
+  .starter-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 14px; }
+  button.big { font-size: 1.05em; padding: 12px 22px; }
+  .help-btn { margin-left: auto; }
+  .help-tip { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: color-mix(in srgb, #ffc107 16%, transparent); }
   .nfc-box { display: grid; gap: 4px; margin: 8px 0; padding: 10px 12px; border-radius: 12px;
     border: 1px dashed var(--divider-color, #e0e0e0); }
   .voice-help { margin-top: 12px; }
