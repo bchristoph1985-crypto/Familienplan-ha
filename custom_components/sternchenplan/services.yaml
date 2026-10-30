@@ -560,6 +560,8 @@ set_features:
         select:
           multiple: true
           options:
+          - levels
+          - helping
           - pet
           - lamp
           - screen

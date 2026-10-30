@@ -19,7 +19,9 @@ if TYPE_CHECKING:
     from .family import Actor
 
 # Was eine Familie nutzen kann. Reihenfolge = Anzeige im Assistenten.
-FEATURES = ("pet", "lamp", "screen", "demand", "vote", "certificate", "parents", "money", "goal")
+FEATURES = ("levels", "helping", "pet", "lamp", "screen", "demand", "vote", "certificate", "parents", "money", "goal")
+# Was es vor „levels“ und „helping“ gab. Neue Funktionen sind für bestehende Familien erst einmal an.
+_FIRST_FEATURES = ("pet", "lamp", "screen", "demand", "vote", "certificate", "parents", "money", "goal")
 # Ohne Auswahl ist alles an, nur „Eltern machen mit“ nicht: das ändert die Wertung.
 DEFAULT_FEATURES = frozenset(FEATURES) - {"parents"}
 
@@ -54,6 +56,7 @@ class ExtrasMixin:
     def _extras_to_dict(self) -> dict[str, Any]:
         return {
             "features": sorted(self.features),
+            "features_known": list(FEATURES),
             "vote": dict(self.vote) if self.vote else None,
             "screen_rate": self.screen_rate,
             "screen_max": self.screen_max,
@@ -63,7 +66,8 @@ class ExtrasMixin:
 
     def _extras_from_dict(self, data: dict[str, Any]) -> None:
         if "features" in data:
-            self.features = {f for f in data["features"] if f in FEATURES}
+            known = set(data.get("features_known", _FIRST_FEATURES))
+            self.features = {f for f in data["features"] if f in FEATURES} | (DEFAULT_FEATURES - known)
         self.vote = data.get("vote")
         self.screen_rate = int(data.get("screen_rate", 0))
         self.screen_max = int(data.get("screen_max", 60))

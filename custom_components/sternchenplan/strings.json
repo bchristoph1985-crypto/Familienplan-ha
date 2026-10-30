@@ -900,7 +900,7 @@
       "fields": {
         "features": {
           "name": "Features",
-          "description": "pet, lamp, screen, demand, vote, certificate, parents, money, goal."
+          "description": "levels, helping, pet, lamp, screen, demand, vote, certificate, parents, money, goal."
         }
       }
     },

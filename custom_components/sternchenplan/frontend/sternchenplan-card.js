@@ -251,6 +251,8 @@ const T = {
     tabExtras: "Extras",
     privTitle: "Datenschutz",
     privPush: "Sparsame Push-Nachrichten",
+    privPhoto: "Fotos nach dem Freigeben löschen",
+    privPhotoSub: "Eingeschaltet wird ein Foto gelöscht, sobald du die Aufgabe freigibst. Aus: Fotos bleiben, bis die Löschfrist abläuft.",
     privPushSub: "Push-Nachrichten laufen über Google oder Apple. Eingeschaltet stehen darin keine Namen, Aufgaben oder Fotos, nur „Schau in Sternchenplan nach“.",
     privLocal: "Alles andere bleibt in eurem Home Assistant. Sternchenplan schickt nichts ins Internet.",
     privPeople: "Daten einer Person",
@@ -258,6 +260,8 @@ const T = {
     privDelete: "🗑️ Löschen",
     privConfirm: "Wirklich alles über {name} löschen? Aufgaben-Verlauf, Sterne, Taschengeld, Fotos und Einlösungen sind danach weg. Zum Bestätigen den Namen eintippen:",
     feat: {
+      levels: ["🏆", "Level und Abzeichen", "Level, Serien (🔥) und Abzeichen für fleißige Tage."],
+      helping: ["🤝", "Geschwistern helfen", "Abends Aufgaben der Geschwister übernehmen und doppelte Sterne holen."],
       pet: ["🐉", "Sternchen-Haustier", "Jedes Kind hat ein Tier, das mit den Sternen wächst."],
       lamp: ["💡", "Zimmerlampe als Ampel", "Leuchtet kurz orange, wenn etwas offen ist, und grün, wenn alles geschafft ist."],
       screen: ["📺", "Bildschirmzeit verdienen", "Sterne gegen Minuten am Fernseher, an der Konsole oder im Internet tauschen."],
@@ -269,7 +273,7 @@ const T = {
       goal: ["🎯", "Familienziel", "Alle sammeln zusammen, zum Beispiel für einen Ausflug."],
     },
     featTitle: "Was möchtet ihr nutzen?",
-    featText: "Tippe an, was ihr nicht braucht. Du kannst es später unter „Extras“ jederzeit ändern.",
+    featText: "Tippe an, was ihr nicht braucht. Nichts davon ist Pflicht. Du kannst alles später unter „Einstellungen“ an- oder abwählen.",
     featAdmin: "Funktionen",
     wzFeatures: "Was möchtet ihr nutzen?",
     pets: { dragon: "Drache", cat: "Katze", dog: "Hund", unicorn: "Einhorn", dino: "Dino", panda: "Panda", fox: "Fuchs", owl: "Eule" },
@@ -645,6 +649,8 @@ const T = {
     tabExtras: "Extras",
     privTitle: "Privacy",
     privPush: "Sparing push notifications",
+    privPhoto: "Delete photos after approval",
+    privPhotoSub: "When on, a photo is deleted as soon as you approve the chore. Off: photos stay until the retention period ends.",
     privPushSub: "Push notifications travel via Google or Apple. When on, they contain no names, chores or photos, just “Have a look in Sternchenplan”.",
     privLocal: "Everything else stays in your Home Assistant. Sternchenplan sends nothing to the internet.",
     privPeople: "Data of a person",
@@ -652,6 +658,8 @@ const T = {
     privDelete: "🗑️ Delete",
     privConfirm: "Really delete everything about {name}? Chore history, stars, pocket money, photos and redemptions will be gone. Type the name to confirm:",
     feat: {
+      levels: ["🏆", "Levels and badges", "Levels, streaks (🔥) and badges for busy days."],
+      helping: ["🤝", "Help your siblings", "In the evening, take over a sibling's chore for double stars."],
       pet: ["🐉", "Star pet", "Each child has a pet that grows with every star."],
       lamp: ["💡", "Room lamp signal", "Briefly glows orange when something is open and green when everything is done."],
       screen: ["📺", "Earn screen time", "Swap stars for minutes on the TV, the console or the internet."],
@@ -663,7 +671,7 @@ const T = {
       goal: ["🎯", "Family goal", "Everyone collects together, e.g. for a trip."],
     },
     featTitle: "What do you want to use?",
-    featText: "Tap anything you don't need. You can change it any time under “Extras”.",
+    featText: "Tap anything you don't need. None of it is required. You can switch anything on or off later under “Settings”.",
     featAdmin: "Features",
     wzFeatures: "What do you want to use?",
     pets: { dragon: "Dragon", cat: "Cat", dog: "Dog", unicorn: "Unicorn", dino: "Dino", panda: "Panda", fox: "Fox", owl: "Owl" },
@@ -1329,6 +1337,11 @@ class SternchenplanCard extends HTMLElement {
         this._data.private_push = !this._data.private_push;
         this._render();
         this._hass.callService("sternchenplan", "set_private_push", { enabled: this._data.private_push }).catch((err) => this._notify(err.message));
+        break;
+      case "priv-photo":
+        this._data.photo_delete = !this._data.photo_delete;
+        this._render();
+        this._hass.callService("sternchenplan", "set_photo_privacy", { delete: this._data.photo_delete }).catch((err) => this._notify(err.message));
         break;
       case "wz-priv":
         this._wz.privatePush = !this._wzPrivate();
@@ -2078,7 +2091,7 @@ class SternchenplanCard extends HTMLElement {
               <div class="week-head"><strong>${esc(m.name)}</strong>${crown ? ` <span class="chip best">🏆 ${this._t("weekBest")}</span>` : ""}
                 <span class="week-stars">⭐ ${r.stars}</span></div>
               <div class="week-bar ${total ? "" : "nil"}" role="img" aria-label="${esc(this._t("weekRow", r))}"><span style="width:${pct}%"></span></div>
-              <div class="muted small">${esc(this._t("weekRow", r))}${r.streak ? ` · 🔥 ${r.streak}` : ""}</div>
+              <div class="muted small">${esc(this._t("weekRow", r))}${r.streak && this._on("levels") ? ` · 🔥 ${r.streak}` : ""}</div>
             </div>
           </li>`;
       })
@@ -2500,7 +2513,7 @@ class SternchenplanCard extends HTMLElement {
 
   _renderTakeOver(member) {
     const t = this._data.takeover;
-    if (!t?.allowed || this._config.readonly || member.id !== this._me()) return "";
+    if (!t?.allowed || !this._on("helping") || this._config.readonly || member.id !== this._me()) return "";
     const chores = this._takeable(member.id);
     if (!chores.length) return "";
     const rows = chores
@@ -2688,7 +2701,7 @@ class SternchenplanCard extends HTMLElement {
           <button class="tile" style="--kid:${this._color(m.id)}" data-action="pick" data-id="${esc(m.id)}">
             <span class="tile-avatar">${esc(m.name.trim().charAt(0).toUpperCase())}</span>
             <span class="tile-name">${esc(m.name)}</span>
-            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}${m.progress?.streak ? ` · 🔥 ${m.progress.streak}` : ""}</span>
+            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}${this._on("levels") && m.progress?.streak ? ` · 🔥 ${m.progress.streak}` : ""}</span>
           </button>`;
       })
       .join("");
@@ -2703,7 +2716,7 @@ class SternchenplanCard extends HTMLElement {
     const todo = chores.filter((c) => c.state !== "claimed");
     const left = todo.length;
     const line = !left ? this._t("allDoneToday") : left === 1 ? this._t("leftOne") : this._t("leftToday", { n: left });
-    const streak = member.progress?.streak;
+    const streak = this._on("levels") && member.progress?.streak;
     const tab = ["today", "rewards", "me"].includes(this._kidTab) ? this._kidTab : "today";
     const labels = this._t("kidTabs");
     const points = member.points || 0;
@@ -2880,6 +2893,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderLevel(member) {
+    if (!this._on("levels")) return "";
     const p = member.progress;
     if (!p) return "";
     const span = Math.max(1, p.level_to - p.level_from);
@@ -2904,6 +2918,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderBadges(member) {
+    if (!this._on("levels")) return "";
     const list = member.progress?.badges;
     if (!list) return "";
     const names = this._t("badgeNames");
@@ -3332,7 +3347,10 @@ class SternchenplanCard extends HTMLElement {
     const ro = this._config.readonly;
     const people = this._data.members;
     return `<section class="extras-box"><div class="section-title">🔒 ${this._t("privTitle")}</div>
-      <div class="feat-grid">${this._privacyTile(!!this._data.private_push, ro ? "noop" : "priv-push")}</div>
+      <div class="feat-grid">${this._privacyTile(!!this._data.private_push, ro ? "noop" : "priv-push")}
+        <button class="feat ${this._data.photo_delete ? "on" : ""}" data-action="${ro ? "noop" : "priv-photo"}" aria-pressed="${!!this._data.photo_delete}">
+          <span class="feat-emoji">📷</span><span class="feat-main"><strong>${this._t("privPhoto")}</strong><span class="muted small">${this._t("privPhotoSub")}</span></span>
+          <span class="feat-switch" aria-hidden="true"><i></i></span></button></div>
       <p class="muted small">${this._t("privLocal")}</p>
       ${ro ? "" : `<div class="small"><strong>${this._t("privPeople")}</strong></div>
       <div class="extras-rows">${people.map((m) => `<div class="extras-row">${this._avatar(m, 32)}<strong>${esc(m.name)}</strong>
@@ -3444,7 +3462,7 @@ class SternchenplanCard extends HTMLElement {
             <div class="kidcard-head">
               ${this._avatar(m, 40)}
               <div class="kidcard-name"><strong>${esc(m.name)}${this._on("pet") && m.pet ? ` <span class="pet-mini" title="${esc(m.pet_name)}">${PET_EMOJI[m.pet] || ""}</span>` : ""}</strong><span class="muted small">⭐ ${m.points}${
-                m.progress ? ` · ${esc(this._t("level", { n: m.progress.level }))}${m.progress.streak ? ` · 🔥 ${m.progress.streak}` : ""}` : ""
+                m.progress && this._on("levels") ? ` · ${esc(this._t("level", { n: m.progress.level }))}${m.progress.streak ? ` · 🔥 ${m.progress.streak}` : ""}` : ""
               }</span></div>
               ${this._ring(done, total || open, this._color(m.id), 44)}
               ${menu}
@@ -3722,7 +3740,7 @@ const THEMES = [
   { id: "elegant", emoji: "🤍", deco: [] },
 ];
 
-const FEATURES = ["pet", "lamp", "screen", "demand", "vote", "certificate", "parents", "money", "goal"];
+const FEATURES = ["levels", "helping", "pet", "lamp", "screen", "demand", "vote", "certificate", "parents", "money", "goal"];
 const PETS = ["dragon", "cat", "dog", "unicorn", "dino", "panda", "fox", "owl"];
 const PET_EMOJI = { dragon: "🐉", cat: "🐱", dog: "🐶", unicorn: "🦄", dino: "🦖", panda: "🐼", fox: "🦊", owl: "🦉" };
 

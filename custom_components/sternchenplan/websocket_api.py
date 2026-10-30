@@ -74,7 +74,7 @@ def snapshot(
         "is_manager": actor.is_manager,
         "tablet": actor.tablet and not actor.is_manager,
         "donate_url": DONATE_URL if actor.is_manager else None,
-        "takeover": {"allowed": allowed, "multiplier": multiplier},
+        "takeover": {"allowed": allowed and family.has("helping"), "multiplier": multiplier},
         "family_goal": family.goal.to_dict() if family.goal else None,
         "money": {"rate": family.money_rate, "payday": family.payday},
         "pause": (

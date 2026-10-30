@@ -39,6 +39,35 @@ def test_funktionen_waehlen_und_speichern(family: Family) -> None:  # noqa: F811
     assert Family.from_dict(old).features == set(DEFAULT_FEATURES)
 
 
+def test_neue_funktionen_bleiben_fuer_bestehende_familien_an(family: Family) -> None:  # noqa: F811
+    # Gespeichert vor 0.35: es gab noch kein „levels“ und kein „helping“
+    old = family.to_dict()
+    old["features"] = ["pet", "vote"]
+    old.pop("features_known")
+    assert Family.from_dict(old).features == {"pet", "vote", "levels", "helping"}
+    # Wer sie danach abwählt, behält das auch nach dem Neustart
+    family.set_features(SYSTEM, ["pet"])
+    assert Family.from_dict(family.to_dict()).features == {"pet"}
+
+
+async def test_geschwistern_helfen_abwaehlbar(hass: HomeAssistant) -> None:
+    from homeassistant.exceptions import ServiceValidationError  # noqa: PLC0415
+
+    entry = MockConfigEntry(domain=DOMAIN)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    fam = entry.runtime_data.family
+    lena = fam.add_member(SYSTEM, "Lena", Role.CHILD)
+    tom = fam.add_member(SYSTEM, "Tom", Role.CHILD)
+    chore = fam.create_chore(SYSTEM, "Tisch", [lena.id], due=dt_util.utcnow() - timedelta(hours=1))
+    fam.set_features(SYSTEM, [f for f in DEFAULT_FEATURES if f != "helping"])
+    with pytest.raises(ServiceValidationError, match="ausgeschaltet"):
+        await hass.services.async_call(
+            DOMAIN, "take_over_chore", {"chore_id": chore.id, "member": tom.id}, blocking=True
+        )
+
+
 def test_haustier_nur_fuer_sich_selbst(family: Family) -> None:  # noqa: F811
     lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
     family.set_pet(actor(family, "Lucas"), lucas.id, "dragon", "  Feuerzahn  ")

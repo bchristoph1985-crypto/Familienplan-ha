@@ -443,6 +443,8 @@ def take_over(data, actor, chore_id: str, member_id: str, photo: str | None = No
     """Gemeinsam für Dienst und Foto-Upload."""
     now = dt_util.utcnow()
     allowed, multiplier, max_per_day, day_start = takeover_terms(data.entry, now)
+    if not data.family.has("helping"):
+        raise FamilyError("Geschwistern helfen ist ausgeschaltet.")
     if not allowed and not actor.is_manager:
         raise FamilyError("Übernehmen geht erst später am Tag.")
     data.family.take_over(

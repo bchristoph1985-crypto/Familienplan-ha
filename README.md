@@ -182,7 +182,10 @@ Jedes Kind wählt in seinem Reiter „🙂 Ich“ unter „🎨 Mein Design“ s
 
 ## Extras: Was ihr nutzen wollt
 
-Im Willkommens-Assistenten (Schritt 2) und später im Reiter **Einstellungen** schaltet ihr an oder aus, was ihr braucht. Was aus ist, verschwindet aus der Ansicht.
+Im Willkommens-Assistenten (Schritt 2) und später im Reiter **Einstellungen** schaltet ihr an oder aus, was ihr braucht. Was aus ist, verschwindet aus der Ansicht. Nichts davon ist Pflicht, und jede Wahl lässt sich später wieder ändern, auch die Foto- und Push-Einstellungen aus dem Assistenten (Einstellungen → Datenschutz).
+
+- **🏆 Level und Abzeichen:** Level, Serien (🔥) und Abzeichen. Aus: keine Level-Leiste, keine Abzeichen, keine Level-Pushes.
+- **🤝 Geschwistern helfen:** Abends Aufgaben der Geschwister übernehmen und mehr Sterne holen. Aus: Übernehmen ist auch per Dienst gesperrt.
 
 - **🐉 Sternchen-Haustier:** Jedes Kind sucht sich ein Tier aus (Drache, Katze, Hund, Einhorn, Dino, Panda, Fuchs, Eule) und gibt ihm einen Namen. Es schlüpft aus dem Ei und wächst mit jedem Level. Es freut sich, wenn alles geschafft ist, hat Hunger, wenn noch etwas offen ist, ist traurig bei Überfälligem und schläft nachts.
 - **💡 Zimmerlampe als Ampel:** Pro Person eine Lampe. Sie leuchtet ein paar Sekunden orange bei Erinnerungen und überfälligen Aufgaben und grün, wenn heute alles geschafft ist. Danach ist sie wieder genau wie vorher. Zwischen 21 und 7 Uhr bleibt sie in Ruhe.

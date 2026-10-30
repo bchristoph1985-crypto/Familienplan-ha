@@ -145,6 +145,8 @@ async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict
     flashed: set[str] = set()
     for event in events:
         kind = event["type"]
+        if kind in ("level", "badge") and not family.has("levels"):
+            continue
         if kind in ("all_done", "overdue"):
             member = family.members.get(event["member"])
             if member and member.lamp and family.has("lamp") and member.id not in flashed:
