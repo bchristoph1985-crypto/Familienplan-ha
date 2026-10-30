@@ -33,49 +33,49 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 def _family() -> tuple[Family, str, str, str]:
     family = Family()
     papa = family.add_member(SYSTEM, "Papa", Role.PARENT, user_id="u-papa")
-    lucas = family.add_member(SYSTEM, "Lucas", Role.CHILD)
-    osmo = family.add_member(SYSTEM, "Osmo", Role.CHILD)
+    finn = family.add_member(SYSTEM, "Finn", Role.CHILD)
+    paul = family.add_member(SYSTEM, "Paul", Role.CHILD)
     family.set_tablet(SYSTEM, ["u-tablet"], approval=False)
-    return family, papa.id, lucas.id, osmo.id
+    return family, papa.id, finn.id, paul.id
 
 
 def test_tablet_hakt_fuer_kind_ab_aber_nicht_fuer_eltern() -> None:
-    family, papa, lucas, osmo = _family()
-    chore = family.create_chore(SYSTEM, "Müll", [lucas], recurrence=Recurrence.NONE)
+    family, papa, finn, paul = _family()
+    chore = family.create_chore(SYSTEM, "Müll", [finn], recurrence=Recurrence.NONE)
     tablet = family.actor_for_user("u-tablet", is_admin=False)
     assert tablet.tablet and not tablet.is_manager
 
     # Nur wer dran ist, nicht ein anderes Kind und nicht die Eltern
     with pytest.raises(PermissionDenied):
-        family.claim(tablet, chore.id, osmo, NOW)
+        family.claim(tablet, chore.id, paul, NOW)
     with pytest.raises(PermissionDenied):
         family.claim(tablet, chore.id, papa, NOW)
-    family.claim(tablet, chore.id, lucas, NOW)
+    family.claim(tablet, chore.id, finn, NOW)
     assert chore.state is ChoreState.DONE
 
 
 def test_tablet_mit_elternbestaetigung() -> None:
-    family, _, lucas, _ = _family()
+    family, _, finn, _ = _family()
     family.tablet_approval = True
-    chore = family.create_chore(SYSTEM, "Müll", [lucas], recurrence=Recurrence.NONE)
+    chore = family.create_chore(SYSTEM, "Müll", [finn], recurrence=Recurrence.NONE)
     tablet = family.actor_for_user("u-tablet", is_admin=False)
-    family.claim(tablet, chore.id, lucas, NOW)
+    family.claim(tablet, chore.id, finn, NOW)
     assert chore.state is ChoreState.CLAIMED
     family.undo_claim(tablet, chore.id)
     assert chore.state is ChoreState.OPEN
 
 
 def test_tablet_belohnung_einloesen_und_zuruecknehmen() -> None:
-    family, _, lucas, _ = _family()
-    family.members[lucas].points = 20
+    family, _, finn, _ = _family()
+    family.members[finn].points = 20
     reward = family.create_reward(SYSTEM, "Filmabend", 15)
     tablet = family.actor_for_user("u-tablet", is_admin=False)
-    redemption = family.redeem(tablet, reward.id, lucas, NOW)
-    assert family.members[lucas].points == 5
+    redemption = family.redeem(tablet, reward.id, finn, NOW)
+    assert family.members[finn].points == 5
     family.reject_redemption(tablet, redemption.id, NOW)
-    assert family.members[lucas].points == 20
+    assert family.members[finn].points == 20
     # Bestätigen bleibt Elternsache
-    redemption = family.redeem(tablet, reward.id, lucas, NOW)
+    redemption = family.redeem(tablet, reward.id, finn, NOW)
     with pytest.raises(PermissionDenied):
         family.approve_redemption(tablet, redemption.id, NOW)
 
@@ -85,7 +85,7 @@ def test_tablet_konto_und_mitglieder() -> None:
     with pytest.raises(FamilyError):
         family.set_tablet(SYSTEM, ["u-papa"], approval=False)
     # Wird das Tablet-Konto doch Mitglied, ist es kein Tablet mehr
-    family.add_member(SYSTEM, "Jan", Role.CHILD, user_id="u-tablet")
+    family.add_member(SYSTEM, "Noah", Role.CHILD, user_id="u-tablet")
     assert family.tablet_users == []
     restored = Family.from_dict(family.to_dict())
     assert restored.tablet_users == [] and not restored.tablet_approval
@@ -100,9 +100,9 @@ async def test_tablet_ueber_dienst_und_karte(
     await hass.async_block_till_done()
     family = entry.runtime_data.family
     family.add_member(SYSTEM, "Papa", Role.PARENT, user_id=hass_admin_user.id)
-    lucas = family.add_member(SYSTEM, "Lucas", Role.CHILD)
+    finn = family.add_member(SYSTEM, "Finn", Role.CHILD)
     family.set_tablet(SYSTEM, [hass_read_only_user.id], approval=False)
-    chore = family.create_chore(SYSTEM, "Tisch", [lucas.id], recurrence=Recurrence.NONE)
+    chore = family.create_chore(SYSTEM, "Tisch", [finn.id], recurrence=Recurrence.NONE)
     await entry.runtime_data.async_save()
 
     ctx = Context(user_id=hass_read_only_user.id)
@@ -112,7 +112,7 @@ async def test_tablet_ueber_dienst_und_karte(
             DOMAIN, "claim_chore", {"chore_id": chore.id}, blocking=True, context=ctx
         )
     await hass.services.async_call(
-        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Lucas"}, blocking=True, context=ctx
+        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Finn"}, blocking=True, context=ctx
     )
     assert chore.state is ChoreState.DONE
 
@@ -128,7 +128,7 @@ async def test_tablet_im_assistenten(hass: HomeAssistant, hass_admin_user, hass_
     flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"family_name": "B"})
     # Küchen-Tablet ist versehentlich als Mitglied angehakt
     flow = await hass.config_entries.flow.async_configure(
-        flow["flow_id"], {"people": ["person.benni", "person.kueche"], "extra_children": "Lucas"}
+        flow["flow_id"], {"people": ["person.benni", "person.kueche"], "extra_children": "Finn"}
     )
     flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"parents": ["person.benni"]})
     assert flow["step_id"] == "tablet"
@@ -138,5 +138,5 @@ async def test_tablet_im_assistenten(hass: HomeAssistant, hass_admin_user, hass_
     assert flow["type"] == "create_entry"
     await hass.async_block_till_done()
     family = hass.config_entries.async_entries(DOMAIN)[0].runtime_data.family
-    assert {m.name for m in family.members.values()} == {"Benni", "Lucas"}
+    assert {m.name for m in family.members.values()} == {"Benni", "Finn"}
     assert family.tablet_users == [hass_read_only_user.id] and family.tablet_approval

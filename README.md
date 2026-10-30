@@ -1,25 +1,35 @@
 # Sternchenplan
 
-Home-Assistant-Integration für Familienaufgaben. Läuft komplett lokal, ohne Cloud.
+Der Familienplan für Home Assistant: Kinder erledigen Aufgaben, sammeln Sterne und tauschen sie gegen Belohnungen. Eltern behalten den Überblick, und das Haus hilft mit (NFC-Aufkleber, Sprachbefehle, Geräte, die selbst abhaken).
 
-Stand: Version 0.19.0. Noch nicht für den Alltag gedacht.
+Läuft komplett lokal in deinem Home Assistant. Kostenlos, ohne Konto, ohne Cloud.
 
-## Umstieg vom Arbeitstitel „Familienplan“
+Website mit Demo: https://bchristoph1985-crypto.github.io/sternchenplan/
 
-Bis Version 0.13.0 hieß die Integration `familienplan`. Ab 0.14.0 heißt sie `sternchenplan`. Daten werden nicht übernommen, weil es noch keine echten Nutzer gibt:
+## Installation
 
-1. Unter Einstellungen → Geräte & Dienste die Integration „Familienplan“ löschen.
-2. Den Ordner `custom_components/familienplan` löschen und `custom_components/sternchenplan` hineinkopieren.
-3. Home Assistant neu starten und „Sternchenplan“ neu einrichten.
+Voraussetzung: Home Assistant ab 2025.6.
 
-## Was schon geht
+**Mit HACS (empfohlen)**
+1. HACS → oben rechts ⋮ → *Benutzerdefinierte Repositories*.
+2. `https://github.com/bchristoph1985-crypto/sternchenplan` eintragen, Typ *Integration*, hinzufügen.
+3. Sternchenplan in HACS suchen, herunterladen, Home Assistant neu starten.
+
+**Von Hand**
+1. [`sternchenplan.zip`](https://github.com/bchristoph1985-crypto/sternchenplan/releases/latest/download/sternchenplan.zip) herunterladen und entpacken.
+2. Den Ordner `sternchenplan` nach `config/custom_components/` kopieren (z. B. mit File editor oder Samba).
+3. Home Assistant neu starten.
+
+Danach: *Einstellungen → Geräte & Dienste → Integration hinzufügen → Sternchenplan*.
+
+## Funktionen
 
 - **Einrichtung in drei kurzen Schritten** über *Einstellungen → Geräte & Dienste → Integration hinzufügen → Sternchenplan*:
   1. Name der Familie
   2. Wer gehört dazu: die Personen aus Home Assistant sind schon angehakt, Kinder ohne eigenes Konto einfach mit Namen eintragen
   3. Wer sind die Eltern: HA-Administratoren sind vorgeschlagen
 
-  Danach öffnet man links **Sternchenplan**. Dort begrüßt einen der **Willkommens-Assistent** mit vier großen, einfachen Schritten: Alter und Design jedes Kindes, passende Aufgaben antippen, Belohnungen antippen, Fotos löschen oder behalten. Ein Tipp auf „✨ Alles anlegen“, fertig.
+  Danach öffnet man links **Sternchenplan**. Dort begrüßt einen der **Willkommens-Assistent** mit fünf einfachen Schritten: Alter und Design jedes Kindes, Funktionen wählen, passende Aufgaben antippen, Belohnungen und Taschengeld antippen, Fotos löschen oder behalten. Nichts davon ist Pflicht, alles lässt sich später unter „Einstellungen“ ändern.
 
   Eigene Aufgaben legt man danach unter *Sternchenplan → Aufgaben* an.
 
@@ -31,7 +41,7 @@ Bis Version 0.13.0 hieß die Integration `familienplan`. Ab 0.14.0 heißt sie `s
 - **Alter**: Je Kind ein Alter, je Aufgabe ein Mindestalter („ab 8“). Zu junge Kinder werden bei Reihum übersprungen und rücken automatisch nach, sobald sie alt genug sind. Unbekanntes Alter zählt als alt genug. Alter ändern unter *Konfigurieren → Alter der Kinder* oder per Dienst `sternchenplan.set_age`.
 - Abwesenheit (z. B. Klassenfahrt, krank) mit Beginn, Ende und Vertretung. Bei Rotation ist automatisch das nächste Kind dran; ohne Rotation übernimmt die Vertretung. Ist niemand da, ruht die Aufgabe und wird nicht überfällig.
 - Erinnerungen per HA-Push an Kinder zu einstellbaren Uhrzeiten (Standard 15:00, 17:00, 18:30), nur wenn noch etwas offen ist; Sammelnachricht an Eltern (Standard 19:00)
-- **Ansagen über Lautsprecher**: Zu einstellbaren Uhrzeiten (Standard 17:00, 18:30) sagt Sternchenplan an, wer heute noch etwas offen hat, z. B. „Lucas, bei dir ist noch offen: Müll und Tisch decken.“ Ist alles erledigt, bleibt es still. Geht über jede Sprachausgabe von HA auf beliebige Lautsprecher (Sonos, Google, Piper usw.) und optional über Alexa Media Player. Dienst `sternchenplan.announce` für eigene Ansagen aus Automationen.
+- **Ansagen über Lautsprecher**: Zu einstellbaren Uhrzeiten (Standard 17:00, 18:30) sagt Sternchenplan an, wer heute noch etwas offen hat, z. B. „Finn, bei dir ist noch offen: Müll und Tisch decken.“ Ist alles erledigt, bleibt es still. Geht über jede Sprachausgabe von HA auf beliebige Lautsprecher (Sonos, Google, Piper usw.) und optional über Alexa Media Player. Dienst `sternchenplan.announce` für eigene Ansagen aus Automationen.
 - Sensoren: Punkte je Mitglied, Status je Aufgabe
 - **Internetsperre** (ausgeschaltet bis man sie aktiviert): Eltern wählen je Kind Internet-Schalter von Freizeitgeräten (z. B. FRITZ!Box „Internetzugang“). Hat das Kind im Sperrzeitraum (Standard 20:00–05:00) überfällige Aufgaben, gehen diese Schalter aus. Sie gehen wieder an, sobald alles erledigt oder gemeldet ist, spätestens am Ende des Zeitraums. Schaltet jemand ein gesperrtes Gerät wieder an, wird es nach spätestens einer Minute erneut gesperrt. Eltern können eine Freikarte geben. Abwesende Kinder werden nie gesperrt. Sternchenplan gibt nur Geräte frei, die es selbst gesperrt hat, und fasst keine anderen Schalter an.
 - **Fotonachweis** je Aufgabe, standardmäßig aus: Eltern haken ihn pro Aufgabe an. Kinder machen beim Abhaken ein Foto (Kamera öffnet sich in der Karte), die Aufgabe geht dann immer zur Bestätigung an die Eltern. Fotos bleiben lokal in `config/sternchenplan_photos`, sind nicht öffentlich, nur Eltern sehen sie über einen kurz gültigen Link.
@@ -149,7 +159,7 @@ Das klappt mit der Home-Assistant-App (Push-Dienst `notify.mobile_app_…`). Gep
 
 ## Kalender
 
-Sternchenplan legt Kalender in Home Assistant an: „Aufgaben“ für die ganze Familie und „Aufgaben Lucas“ usw. für jedes Kind. Darin steht jede Frist der nächsten Wochen, auch Wiederholungen, Wochentage und wer bei Rotation dran ist. Ferien-Pausen bleiben leer. So siehst du alles im HA-Kalender, auf einem Wand-Tablet mit Kalenderkarte oder kannst Automationen auf „Termin beginnt“ bauen.
+Sternchenplan legt Kalender in Home Assistant an: „Aufgaben“ für die ganze Familie und „Aufgaben Finn“ usw. für jedes Kind. Darin steht jede Frist der nächsten Wochen, auch Wiederholungen, Wochentage und wer bei Rotation dran ist. Ferien-Pausen bleiben leer. So siehst du alles im HA-Kalender, auf einem Wand-Tablet mit Kalenderkarte oder kannst Automationen auf „Termin beginnt“ bauen.
 
 ## Abhaken ohne Bildschirm: NFC-Aufkleber und Sprache
 
@@ -157,8 +167,8 @@ Sternchenplan legt Kalender in Home Assistant an: „Aufgaben“ für die ganze 
 
 **Sprache:** Mit Home Assistant Assist (Handy, Sprach-Satellit, Wear OS) versteht Sternchenplan von selbst:
 
-- „Ich habe den Müll rausgebracht“ / „Lucas hat den Tisch gedeckt“
-- „Was muss ich noch machen?“ / „Was muss Osmo noch machen?“
+- „Ich habe den Müll rausgebracht“ / „Finn hat den Tisch gedeckt“
+- „Was muss ich noch machen?“ / „Was muss Paul noch machen?“
 - „Wie viele Sterne habe ich?“
 
 Spricht ein Kind über sein eigenes Konto, kann es nur für sich melden. Über einen Lautsprecher ohne Konto sagt es seinen Namen dazu.
@@ -172,7 +182,7 @@ Jede Aufgabe kann mit einem Gerät oder Sensor aus Home Assistant verbunden werd
 
 ## So einfach wie möglich
 
-- **In einer Minute startklar:** Ist noch nichts angelegt, schlägt Sternchenplan unter „Heute“ ein Startpaket nach Alter vor: gemeinsame Aufgaben reihum (Tisch decken, Spülmaschine, Müll, Staubsaugen), eigene je Kind (Bett machen, Zimmer) und vier Belohnungen. Ein Tipp auf „Alles anlegen“ genügt.
+- **In einer Minute startklar:** Der Assistent schlägt Aufgaben nach Alter vor: gemeinsame Aufgaben reihum (Tisch decken, Spülmaschine, Müll, Staubsaugen), eigene je Kind (Bett machen, Zimmer) und vier Belohnungen. Was nicht passt, tippt man weg.
 - **Kurzes Formular:** Für eine neue Aufgabe reichen Name, wer, wie oft und Sterne. Alles Weitere steht unter „Mehr Optionen“. Ohne Frist nimmt Sternchenplan 18 Uhr.
 - **💡 Hilfe-Tipps:** Unter „Einstellungen“ eingeschaltet, erklärt ein Satz oben jeden Reiter.
 
@@ -224,7 +234,7 @@ Wer die Karte zusätzlich auf ein eigenes Dashboard legen will (z. B. Küchen-Ta
 ```yaml
 type: custom:sternchenplan-card
 mode: auto        # auto | kind | eltern
-member: Lucas     # optional: immer dieses Kind zeigen
+member: Finn     # optional: immer dieses Kind zeigen
 readonly: false   # true: nur anzeigen, z. B. Küchen-Tablet
 title: Sternchenplan
 ```

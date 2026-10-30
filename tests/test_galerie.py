@@ -23,23 +23,23 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 
 def test_galerie_sammelt_jede_runde(family: Family) -> None:  # noqa: F811
-    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
-    chore = family.create_chore(SYSTEM, "Zimmer", [lucas.id], recurrence=Recurrence.DAILY, due=NOW, requires_photo=True)
-    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW, photo="a.jpg")
+    finn, paul = by_name(family, "Finn"), by_name(family, "Paul")
+    chore = family.create_chore(SYSTEM, "Zimmer", [finn.id], recurrence=Recurrence.DAILY, due=NOW, requires_photo=True)
+    family.claim(actor(family, "Finn"), chore.id, finn.id, NOW, photo="a.jpg")
     family.reject(SYSTEM, chore.id, NOW)
-    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW + timedelta(minutes=5), photo="b.jpg")
+    family.claim(actor(family, "Finn"), chore.id, finn.id, NOW + timedelta(minutes=5), photo="b.jpg")
     assert [e["file"] for e in family.gallery()] == ["b.jpg", "a.jpg"]
-    assert family.gallery()[0]["name"] == "Zimmer" and family.gallery()[0]["member"] == lucas.id
+    assert family.gallery()[0]["name"] == "Zimmer" and family.gallery()[0]["member"] == finn.id
     assert Family.from_dict(family.to_dict()).photo_log == family.photo_log
 
     with pytest.raises(PermissionDenied):
-        family.delete_photo(actor(family, "Osmo"), "a.jpg")
+        family.delete_photo(actor(family, "Paul"), "a.jpg")
     family.delete_photo(SYSTEM, "b.jpg")
     assert [e["file"] for e in family.gallery()] == ["a.jpg"] and chore.photo is None
 
     # Person löschen: alle ihre Fotos gehen mit, nicht nur das letzte
-    assert family.remove_member(SYSTEM, lucas.id) == ["a.jpg"]
-    assert family.gallery() == [] and osmo.id in family.members
+    assert family.remove_member(SYSTEM, finn.id) == ["a.jpg"]
+    assert family.gallery() == [] and paul.id in family.members
 
 
 async def test_galerie_nur_fuer_eltern_und_loeschen(

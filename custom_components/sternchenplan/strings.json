@@ -16,7 +16,7 @@
           "extra_children": "Children without their own account"
         },
         "data_description": {
-          "extra_children": "Optional, comma separated, e.g. Lucas, Osmo."
+          "extra_children": "Optional, comma separated, e.g. Finn, Paul."
         }
       },
       "parents": {

@@ -27,7 +27,7 @@ async def setup(hass: HomeAssistant, hass_admin_user, hass_read_only_user):
 
     family = entry.runtime_data.family
     family.add_member(SYSTEM, "Papa", Role.PARENT, user_id=hass_admin_user.id)
-    family.add_member(SYSTEM, "Lucas", Role.CHILD, user_id=hass_read_only_user.id)
+    family.add_member(SYSTEM, "Finn", Role.CHILD, user_id=hass_read_only_user.id)
     await entry.runtime_data.async_save()
     await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
@@ -52,14 +52,14 @@ async def test_ablauf_mit_rechten(
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(
             DOMAIN, "create_chore",
-            {"name": "Müll", "assignees": ["Lucas"]},
+            {"name": "Müll", "assignees": ["Finn"]},
             blocking=True, context=_ctx(hass_read_only_user),
         )
 
     # Eltern legen an, mit Freigabe
     await hass.services.async_call(
         DOMAIN, "create_chore",
-        {"name": "Müll", "assignees": ["lucas"], "points": 2, "requires_approval": True},
+        {"name": "Müll", "assignees": ["finn"], "points": 2, "requires_approval": True},
         blocking=True, context=_ctx(hass_admin_user),
     )
     await hass.async_block_till_done()
@@ -89,13 +89,13 @@ async def test_ablauf_mit_rechten(
     )
     await hass.async_block_till_done()
     assert _chore_state(hass, "Müll").state == "done"
-    points = _chore_state(hass, "Lucas Punkte") or _chore_state(hass, "Lucas points")
+    points = _chore_state(hass, "Finn Punkte") or _chore_state(hass, "Finn points")
     assert points is not None and points.state == "2"
 
 
 async def test_daten_ueberleben_neustart(hass: HomeAssistant, setup, hass_admin_user) -> None:
     await hass.services.async_call(
-        DOMAIN, "create_chore", {"name": "Tisch", "assignees": ["Lucas"]},
+        DOMAIN, "create_chore", {"name": "Tisch", "assignees": ["Finn"]},
         blocking=True, context=_ctx(hass_admin_user),
     )
     await hass.config_entries.async_reload(setup.entry_id)
@@ -106,7 +106,7 @@ async def test_daten_ueberleben_neustart(hass: HomeAssistant, setup, hass_admin_
 
 async def test_loeschen_entfernt_sensor(hass: HomeAssistant, setup, hass_admin_user) -> None:
     await hass.services.async_call(
-        DOMAIN, "create_chore", {"name": "Fenster", "assignees": ["Lucas"]},
+        DOMAIN, "create_chore", {"name": "Fenster", "assignees": ["Finn"]},
         blocking=True, context=_ctx(hass_admin_user),
     )
     await hass.async_block_till_done()
@@ -142,7 +142,7 @@ async def test_einrichtungsassistent(
         {"friendly_name": "Benni", "user_id": hass_admin_user.id, "device_trackers": ["device_tracker.fold_7_benni"]},
     )
     hass.states.async_set(
-        "person.jan", "home", {"friendly_name": "Jan", "user_id": hass_read_only_user.id}
+        "person.noah", "home", {"friendly_name": "Noah", "user_id": hass_read_only_user.id}
     )
     hass.states.async_set("person.oma", "not_home", {"friendly_name": "Oma"})
 
@@ -156,7 +156,7 @@ async def test_einrichtungsassistent(
 
     flow = await hass.config_entries.flow.async_configure(
         flow["flow_id"],
-        {"people": ["person.benni", "person.jan"], "extra_children": "Lucas, Osmo"},
+        {"people": ["person.benni", "person.noah"], "extra_children": "Finn, Paul"},
     )
     assert flow["step_id"] == "parents"
     # Vorschlag: Admin ist Elternteil
@@ -175,15 +175,15 @@ async def test_einrichtungsassistent(
     entry = hass.config_entries.async_entries(DOMAIN)[0]
     family = entry.runtime_data.family
     members = {m.name: m for m in family.members.values()}
-    assert set(members) == {"Benni", "Jan", "Lucas", "Osmo"}
+    assert set(members) == {"Benni", "Noah", "Finn", "Paul"}
     assert members["Benni"].role is Role.PARENT
     assert members["Benni"].notify_service == "mobile_app_fold_7_benni"
-    assert members["Jan"].role is Role.CHILD and members["Jan"].user_id == hass_read_only_user.id
+    assert members["Noah"].role is Role.CHILD and members["Noah"].user_id == hass_read_only_user.id
     assert not family.chores and not family.rewards
     # Willkommens-Assistent: Alter und Fotos per Dienst
-    await hass.services.async_call(DOMAIN, "set_age", {"member": "Osmo", "age": 6}, blocking=True)
+    await hass.services.async_call(DOMAIN, "set_age", {"member": "Paul", "age": 6}, blocking=True)
     await hass.services.async_call(DOMAIN, "set_photo_privacy", {"delete": False}, blocking=True)
-    assert members["Osmo"].age(dt_util.utcnow()) == 6
+    assert members["Paul"].age(dt_util.utcnow()) == 6
     assert entry.options["photo_delete_after_review"] is False
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(

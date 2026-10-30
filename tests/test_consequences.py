@@ -66,10 +66,10 @@ async def setup(hass: HomeAssistant, freezer, hass_admin_user, hass_read_only_us
     await hass.async_block_till_done()
     family = entry.runtime_data.family
     family.add_member(SYSTEM, "Papa", Role.PARENT, user_id=hass_admin_user.id)
-    lucas = family.add_member(SYSTEM, "Lucas", Role.CHILD, user_id=hass_read_only_user.id)
-    family.set_devices(SYSTEM, lucas.id, ["switch.ps5"])
+    finn = family.add_member(SYSTEM, "Finn", Role.CHILD, user_id=hass_read_only_user.id)
+    family.set_devices(SYSTEM, finn.id, ["switch.ps5"])
     family.create_chore(
-        SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY,
+        SYSTEM, "Müll", [finn.id], recurrence=Recurrence.DAILY,
         due=dt_util.utcnow() + timedelta(hours=1),  # 19:00
     )
     await entry.runtime_data.async_save()
@@ -121,22 +121,22 @@ async def test_freikarte_und_ende_des_zeitfensters(
 
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(
-            DOMAIN, "grant_pass", {"member": "Lucas"},
+            DOMAIN, "grant_pass", {"member": "Finn"},
             blocking=True, context=Context(user_id=hass_read_only_user.id),
         )
     assert _state(hass, "switch.ps5") == "off"
 
     await hass.services.async_call(
-        DOMAIN, "grant_pass", {"member": "Lucas"},
+        DOMAIN, "grant_pass", {"member": "Finn"},
         blocking=True, context=Context(user_id=hass_admin_user.id),
     )
     await hass.async_block_till_done()
     assert _state(hass, "switch.ps5") == "on"
-    lucas = next(m for m in setup.runtime_data.family.members.values() if m.name == "Lucas")
-    assert lucas.pass_until.hour == 5  # bis morgen 05:00
+    finn = next(m for m in setup.runtime_data.family.members.values() if m.name == "Finn")
+    assert finn.pass_until.hour == 5  # bis morgen 05:00
 
     await hass.services.async_call(
-        DOMAIN, "revoke_pass", {"member": "Lucas"},
+        DOMAIN, "revoke_pass", {"member": "Finn"},
         blocking=True, context=Context(user_id=hass_admin_user.id),
     )
     await hass.async_block_till_done()

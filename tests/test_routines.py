@@ -21,50 +21,50 @@ STEPS = ["Anziehen", "Zähne putzen", "Bett machen"]
 
 
 def _routine(fam: Family, **kw):
-    lucas = by_name(fam, "Lucas")
-    return lucas, fam.create_chore(
-        SYSTEM, "Morgenroutine", [lucas.id], points=3, recurrence=Recurrence.DAILY,
+    finn = by_name(fam, "Finn")
+    return finn, fam.create_chore(
+        SYSTEM, "Morgenroutine", [finn.id], points=3, recurrence=Recurrence.DAILY,
         due=NOW + timedelta(hours=1), steps=[" Anziehen ", "", "Zähne putzen", "Bett machen"], **kw
     )
 
 
 def test_schritte_abhaken_meldet_am_ende(family: Family) -> None:  # noqa: F811
-    lucas, chore = _routine(family)
+    finn, chore = _routine(family)
     assert chore.steps == STEPS  # leere Zeilen und Leerzeichen raus
-    kid = actor(family, "Lucas")
-    family.check_step(kid, chore.id, lucas.id, 0, True, NOW)
-    family.check_step(kid, chore.id, lucas.id, 2, True, NOW)
-    family.check_step(kid, chore.id, lucas.id, 2, False, NOW)
+    kid = actor(family, "Finn")
+    family.check_step(kid, chore.id, finn.id, 0, True, NOW)
+    family.check_step(kid, chore.id, finn.id, 2, True, NOW)
+    family.check_step(kid, chore.id, finn.id, 2, False, NOW)
     assert chore.steps_done == [0]
-    assert lucas.points == 0
-    family.check_step(kid, chore.id, lucas.id, 1, True, NOW)
-    family.check_step(kid, chore.id, lucas.id, 2, True, NOW)
-    assert lucas.points == 3
+    assert finn.points == 0
+    family.check_step(kid, chore.id, finn.id, 1, True, NOW)
+    family.check_step(kid, chore.id, finn.id, 2, True, NOW)
+    assert finn.points == 3
     assert chore.steps_done == []  # neue Runde für morgen
     assert chore.state is ChoreState.OPEN
 
 
 def test_schritte_mit_foto_und_freigabe(family: Family) -> None:  # noqa: F811
-    lucas, chore = _routine(family, requires_photo=True)
-    kid = actor(family, "Lucas")
+    finn, chore = _routine(family, requires_photo=True)
+    kid = actor(family, "Finn")
     for i in range(3):
-        family.check_step(kid, chore.id, lucas.id, i, True, NOW)
+        family.check_step(kid, chore.id, finn.id, i, True, NOW)
     assert chore.state is ChoreState.OPEN  # Foto fehlt noch, Kind tippt selbst
-    family.claim(kid, chore.id, lucas.id, NOW, photo="x.jpg")
+    family.claim(kid, chore.id, finn.id, NOW, photo="x.jpg")
     assert chore.state is ChoreState.CLAIMED
     family.reject(SYSTEM, chore.id, NOW)
     assert chore.steps_done == []
 
 
 def test_schritte_rechte_und_grenzen(family: Family) -> None:  # noqa: F811
-    lucas, chore = _routine(family)
+    finn, chore = _routine(family)
     with pytest.raises(PermissionDenied):
-        family.check_step(actor(family, "Osmo"), chore.id, lucas.id, 0, True, NOW)
+        family.check_step(actor(family, "Paul"), chore.id, finn.id, 0, True, NOW)
     with pytest.raises(FamilyError):
-        family.check_step(actor(family, "Lucas"), chore.id, lucas.id, 5, True, NOW)
+        family.check_step(actor(family, "Finn"), chore.id, finn.id, 5, True, NOW)
     with pytest.raises(FamilyError):
-        family.create_chore(SYSTEM, "Zu lang", [lucas.id], steps=[str(i) for i in range(13)])
-    family.check_step(actor(family, "Lucas"), chore.id, lucas.id, 0, True, NOW)
+        family.create_chore(SYSTEM, "Zu lang", [finn.id], steps=[str(i) for i in range(13)])
+    family.check_step(actor(family, "Finn"), chore.id, finn.id, 0, True, NOW)
     family.update_chore(SYSTEM, chore.id, NOW, steps=["Neu"])
     assert chore.steps == ["Neu"] and chore.steps_done == []
     restored = Family.from_dict(family.to_dict())

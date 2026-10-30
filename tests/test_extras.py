@@ -28,7 +28,7 @@ from .test_core import NOW, actor, by_name, family  # noqa: F401
 def test_funktionen_waehlen_und_speichern(family: Family) -> None:  # noqa: F811
     assert family.features == set(DEFAULT_FEATURES) and not family.has("parents")
     with pytest.raises(PermissionDenied):
-        family.set_features(actor(family, "Lucas"), ["pet"])
+        family.set_features(actor(family, "Finn"), ["pet"])
     with pytest.raises(FamilyError):
         family.set_features(SYSTEM, ["disco"])
     family.set_features(SYSTEM, ["pet", "vote"])
@@ -69,127 +69,127 @@ async def test_geschwistern_helfen_abwaehlbar(hass: HomeAssistant) -> None:
 
 
 def test_haustier_nur_fuer_sich_selbst(family: Family) -> None:  # noqa: F811
-    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
-    family.set_pet(actor(family, "Lucas"), lucas.id, "dragon", "  Feuerzahn  ")
-    assert (lucas.pet, lucas.pet_name) == ("dragon", "Feuerzahn")
+    finn, paul = by_name(family, "Finn"), by_name(family, "Paul")
+    family.set_pet(actor(family, "Finn"), finn.id, "dragon", "  Feuerzahn  ")
+    assert (finn.pet, finn.pet_name) == ("dragon", "Feuerzahn")
     with pytest.raises(PermissionDenied):
-        family.set_pet(actor(family, "Lucas"), osmo.id, "cat", "Mimi")
+        family.set_pet(actor(family, "Finn"), paul.id, "cat", "Mimi")
     with pytest.raises(FamilyError):
-        family.set_pet(SYSTEM, osmo.id, "trex", "")
+        family.set_pet(SYSTEM, paul.id, "trex", "")
     family.set_features(SYSTEM, [])
     with pytest.raises(FamilyError):
-        family.set_pet(SYSTEM, osmo.id, "cat", "")
+        family.set_pet(SYSTEM, paul.id, "cat", "")
 
 
 def test_alles_geschafft_meldet_sich_einmal(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
-    a = family.create_chore(SYSTEM, "Tisch", [lucas.id], recurrence=Recurrence.DAILY, due=NOW)
-    b = family.create_chore(SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=NOW)
-    family.claim(actor(family, "Lucas"), a.id, lucas.id, NOW)
+    finn = by_name(family, "Finn")
+    a = family.create_chore(SYSTEM, "Tisch", [finn.id], recurrence=Recurrence.DAILY, due=NOW)
+    b = family.create_chore(SYSTEM, "Müll", [finn.id], recurrence=Recurrence.DAILY, due=NOW)
+    family.claim(actor(family, "Finn"), a.id, finn.id, NOW)
     assert not [e for e in family.pop_events() if e["type"] == "all_done"]
-    family.claim(actor(family, "Lucas"), b.id, lucas.id, NOW)
+    family.claim(actor(family, "Finn"), b.id, finn.id, NOW)
     assert [e for e in family.pop_events() if e["type"] == "all_done"] == [
-        {"type": "all_done", "member": lucas.id}
+        {"type": "all_done", "member": finn.id}
     ]
 
 
 def test_ueberfaellig_gibt_ereignis_fuer_lampe(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
-    family.create_chore(SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=NOW)
+    finn = by_name(family, "Finn")
+    family.create_chore(SYSTEM, "Müll", [finn.id], recurrence=Recurrence.DAILY, due=NOW)
     family.refresh(NOW + timedelta(minutes=1))
-    assert {"type": "overdue", "member": lucas.id} in [
+    assert {"type": "overdue", "member": finn.id} in [
         {k: e[k] for k in ("type", "member")} for e in family.pop_events()
     ]
 
 
 def test_bildschirmzeit(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
-    lucas.points = 10
-    kid = actor(family, "Lucas")
+    finn = by_name(family, "Finn")
+    finn.points = 10
+    kid = actor(family, "Finn")
     with pytest.raises(FamilyError):
-        family.buy_screen_time(kid, lucas.id, 15, NOW)  # nicht eingeschaltet
+        family.buy_screen_time(kid, finn.id, 15, NOW)  # nicht eingeschaltet
     family.set_screen(SYSTEM, 5, 30)
     with pytest.raises(FamilyError):
-        family.buy_screen_time(kid, lucas.id, 15, NOW)  # keine Geräte
-    family.set_screen_devices(SYSTEM, lucas.id, ["switch.tv"])
+        family.buy_screen_time(kid, finn.id, 15, NOW)  # keine Geräte
+    family.set_screen_devices(SYSTEM, finn.id, ["switch.tv"])
     with pytest.raises(FamilyError):
-        family.buy_screen_time(kid, lucas.id, 12, NOW)  # nur 5er-Schritte
-    family.buy_screen_time(kid, lucas.id, 15, NOW)
-    assert lucas.points == 7 and lucas.screen_until == NOW + timedelta(minutes=15)
-    assert family.screen_active(lucas, NOW)
+        family.buy_screen_time(kid, finn.id, 12, NOW)  # nur 5er-Schritte
+    family.buy_screen_time(kid, finn.id, 15, NOW)
+    assert finn.points == 7 and finn.screen_until == NOW + timedelta(minutes=15)
+    assert family.screen_active(finn, NOW)
     with pytest.raises(FamilyError):
-        family.buy_screen_time(kid, lucas.id, 20, NOW)  # Tageslimit 30
-    family.buy_screen_time(kid, lucas.id, 15, NOW + timedelta(minutes=5))
-    assert lucas.screen_until == NOW + timedelta(minutes=30)
+        family.buy_screen_time(kid, finn.id, 20, NOW)  # Tageslimit 30
+    family.buy_screen_time(kid, finn.id, 15, NOW + timedelta(minutes=5))
+    assert finn.screen_until == NOW + timedelta(minutes=30)
     family.pop_events()
     family.refresh(NOW + timedelta(minutes=26))
     assert [e["type"] for e in family.pop_events()] == ["screen_ending"]
     family.refresh(NOW + timedelta(minutes=30))
     assert [e["type"] for e in family.pop_events()] == ["screen_over"]
-    assert lucas.screen_until is None
+    assert finn.screen_until is None
     # Neuer Tag, neues Kontingent
-    assert family.screen_left_today(lucas, NOW + timedelta(days=1)) == 30
+    assert family.screen_left_today(finn, NOW + timedelta(days=1)) == 30
 
 
 def test_bildschirmzeit_nicht_bei_ueberfaelligem(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
-    lucas.points = 10
+    finn = by_name(family, "Finn")
+    finn.points = 10
     family.set_screen(SYSTEM, 5, 60)
-    family.set_screen_devices(SYSTEM, lucas.id, ["switch.tv"])
-    family.set_devices(SYSTEM, lucas.id, ["switch.internet"])
-    family.create_chore(SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=NOW)
+    family.set_screen_devices(SYSTEM, finn.id, ["switch.tv"])
+    family.set_devices(SYSTEM, finn.id, ["switch.internet"])
+    family.create_chore(SYSTEM, "Müll", [finn.id], recurrence=Recurrence.DAILY, due=NOW)
     family.refresh(NOW + timedelta(minutes=1))
     with pytest.raises(FamilyError):
-        family.buy_screen_time(actor(family, "Lucas"), lucas.id, 10, NOW + timedelta(minutes=2))
+        family.buy_screen_time(actor(family, "Finn"), finn.id, 10, NOW + timedelta(minutes=2))
 
 
 def test_aufgabe_bei_bedarf(family: Family) -> None:  # noqa: F811
-    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    finn, paul = by_name(family, "Finn"), by_name(family, "Paul")
     chore = family.create_chore(
-        SYSTEM, "Wäsche aufhängen", [lucas.id, osmo.id], recurrence=Recurrence.ON_DEMAND, rotation=True
+        SYSTEM, "Wäsche aufhängen", [finn.id, paul.id], recurrence=Recurrence.ON_DEMAND, rotation=True
     )
     assert chore.state is ChoreState.DONE and chore.due is None
-    assert not family.open_for(lucas.id, NOW)
+    assert not family.open_for(finn.id, NOW)
     assert family.trigger_chore(SYSTEM, chore.id, NOW)
     assert not family.trigger_chore(SYSTEM, chore.id, NOW)  # schon offen
     assert chore.state is ChoreState.OPEN and chore.due == NOW + timedelta(hours=2)
     demand = [e for e in family.pop_events() if e["type"] == "demand"]
-    assert demand[0]["members"] == [lucas.id]
-    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW)
+    assert demand[0]["members"] == [finn.id]
+    family.claim(actor(family, "Finn"), chore.id, finn.id, NOW)
     assert chore.state is ChoreState.DONE and chore.due is None
-    assert family.responsible(chore, NOW) == [osmo.id]  # reihum weiter
+    assert family.responsible(chore, NOW) == [paul.id]  # reihum weiter
     with pytest.raises(PermissionDenied):
-        family.trigger_chore(actor(family, "Osmo"), chore.id, NOW)
+        family.trigger_chore(actor(family, "Paul"), chore.id, NOW)
 
 
 def test_familienrat(family: Family) -> None:  # noqa: F811
-    lucas, osmo, papa = by_name(family, "Lucas"), by_name(family, "Osmo"), by_name(family, "Papa")
+    finn, paul, papa = by_name(family, "Finn"), by_name(family, "Paul"), by_name(family, "Papa")
     with pytest.raises(PermissionDenied):
-        family.start_vote(actor(family, "Lucas"), "Wohin?", ["Zoo", "Kino"], 24, NOW)
+        family.start_vote(actor(family, "Finn"), "Wohin?", ["Zoo", "Kino"], 24, NOW)
     with pytest.raises(FamilyError):
         family.start_vote(SYSTEM, "Wohin?", ["Zoo"], 24, NOW)
     family.start_vote(SYSTEM, "Wohin am Samstag?", ["Zoo", "Kino", "Schwimmbad"], 24, NOW)
-    family.cast_vote(actor(family, "Lucas"), lucas.id, 1, NOW)
-    family.cast_vote(actor(family, "Lucas"), lucas.id, 2, NOW)  # umentschieden
+    family.cast_vote(actor(family, "Finn"), finn.id, 1, NOW)
+    family.cast_vote(actor(family, "Finn"), finn.id, 2, NOW)  # umentschieden
     with pytest.raises(PermissionDenied):
-        family.cast_vote(actor(family, "Lucas"), osmo.id, 0, NOW)
-    family.cast_vote(actor(family, "Osmo"), osmo.id, 2, NOW)
+        family.cast_vote(actor(family, "Finn"), paul.id, 0, NOW)
+    family.cast_vote(actor(family, "Paul"), paul.id, 2, NOW)
     assert family.vote["closed_at"] is None
     family.cast_vote(actor(family, "Papa"), papa.id, 0, NOW)  # alle haben abgestimmt
     assert family.vote["winner"] == 2
     result = [e for e in family.pop_events() if e["type"] == "vote_result"][0]
     assert result["winner"] == "Schwimmbad"
     with pytest.raises(FamilyError):
-        family.cast_vote(actor(family, "Osmo"), osmo.id, 0, NOW)
+        family.cast_vote(actor(family, "Paul"), paul.id, 0, NOW)
     family.refresh(NOW + timedelta(days=4))
     assert family.vote is None
 
 
 def test_familienrat_gleichstand_nach_ablauf(family: Family) -> None:  # noqa: F811
-    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    finn, paul = by_name(family, "Finn"), by_name(family, "Paul")
     family.start_vote(SYSTEM, "Essen?", ["Pizza", "Nudeln"], 2, NOW)
-    family.cast_vote(actor(family, "Lucas"), lucas.id, 0, NOW)
-    family.cast_vote(actor(family, "Osmo"), osmo.id, 1, NOW)
+    family.cast_vote(actor(family, "Finn"), finn.id, 0, NOW)
+    family.cast_vote(actor(family, "Paul"), paul.id, 1, NOW)
     family.refresh(NOW + timedelta(hours=3))
     assert family.vote["closed_at"] and family.vote["winner"] is None
     result = [e for e in family.pop_events() if e["type"] == "vote_result"][0]
@@ -197,21 +197,21 @@ def test_familienrat_gleichstand_nach_ablauf(family: Family) -> None:  # noqa: F
 
 
 def test_monatsurkunde(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
-    chore = family.create_chore(SYSTEM, "Tisch", [lucas.id], recurrence=Recurrence.DAILY, due=NOW, points=2)
-    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW)
-    family.claim(actor(family, "Lucas"), chore.id, lucas.id, NOW + timedelta(days=1))
-    family.give_stars(SYSTEM, lucas.id, 3, "lieb", NOW)
+    finn = by_name(family, "Finn")
+    chore = family.create_chore(SYSTEM, "Tisch", [finn.id], recurrence=Recurrence.DAILY, due=NOW, points=2)
+    family.claim(actor(family, "Finn"), chore.id, finn.id, NOW)
+    family.claim(actor(family, "Finn"), chore.id, finn.id, NOW + timedelta(days=1))
+    family.give_stars(SYSTEM, finn.id, 3, "lieb", NOW)
     rows = {r["name"]: r for r in family.month_report(2026, 11)}
-    assert set(rows) == {"Lucas", "Osmo"}  # Eltern nur mit „Eltern machen mit“
-    assert rows["Lucas"]["done"] == 2 and rows["Lucas"]["stars"] == 4 and rows["Lucas"]["bonus"] == 3
-    assert rows["Lucas"]["favourite"] == "Tisch" and "first" in rows["Lucas"]["badges"]
+    assert set(rows) == {"Finn", "Paul"}  # Eltern nur mit „Eltern machen mit“
+    assert rows["Finn"]["done"] == 2 and rows["Finn"]["stars"] == 4 and rows["Finn"]["bonus"] == 3
+    assert rows["Finn"]["favourite"] == "Tisch" and "first" in rows["Finn"]["badges"]
     assert family.month_report(2026, 10)[0]["done"] == 0
     assert family.previous_month(NOW.date()) == (2026, 10)
 
 
 def test_eltern_machen_mit(family: Family) -> None:  # noqa: F811
-    papa, lucas = by_name(family, "Papa"), by_name(family, "Lucas")
+    papa, finn = by_name(family, "Papa"), by_name(family, "Finn")
     family.set_family_goal(SYSTEM, "Zoo", 10, NOW)
     chore = family.create_chore(SYSTEM, "Rasen", [papa.id], points=4)
     family.claim(actor(family, "Papa"), chore.id, papa.id, NOW)
@@ -222,8 +222,8 @@ def test_eltern_machen_mit(family: Family) -> None:  # noqa: F811
     family.claim(actor(family, "Papa"), chore2.id, papa.id, NOW)
     assert family.goal.progress == 3
     week = {r["name"]: r for r in family.week_report(NOW + timedelta(hours=1))}
-    assert week["Papa"]["stars"] == 7 and "Lucas" in week
-    assert lucas.points == 0
+    assert week["Papa"]["stars"] == 7 and "Finn" in week
+    assert finn.points == 0
 
 
 @pytest.fixture(autouse=True)
@@ -241,8 +241,8 @@ async def test_bildschirmzeit_schaltet_geraete(
     data = entry.runtime_data
     fam = data.family
     fam.add_member(SYSTEM, "Papa", Role.PARENT, user_id=hass_admin_user.id)
-    lucas = fam.add_member(SYSTEM, "Lucas", Role.CHILD, user_id=hass_read_only_user.id)
-    lucas.points = 5
+    finn = fam.add_member(SYSTEM, "Finn", Role.CHILD, user_id=hass_read_only_user.id)
+    finn.points = 5
     hass.states.async_set("switch.tv", "off")
     on = async_mock_service(hass, "switch", "turn_on")
     off = async_mock_service(hass, "switch", "turn_off")
@@ -251,18 +251,18 @@ async def test_bildschirmzeit_schaltet_geraete(
     admin = Context(user_id=hass_admin_user.id)
     await hass.services.async_call(DOMAIN, "set_screen", {"rate": 10, "max_minutes": 60}, blocking=True, context=admin)
     await hass.services.async_call(
-        DOMAIN, "set_screen_devices", {"member": "Lucas", "devices": ["switch.tv"]}, blocking=True, context=admin
+        DOMAIN, "set_screen_devices", {"member": "Finn", "devices": ["switch.tv"]}, blocking=True, context=admin
     )
     await hass.services.async_call(
         DOMAIN, "buy_screen_time", {"minutes": 20}, blocking=True, context=Context(user_id=hass_read_only_user.id)
     )
-    assert lucas.points == 3
+    assert finn.points == 3
     assert [c.data["entity_id"] for c in on] == ["switch.tv"]
     # Kind macht den Fernseher früher selbst aus: er bleibt aus
     await data.async_tick()
     assert len(on) == 1
     hass.states.async_set("switch.tv", "on")
-    lucas.screen_until = dt_util.utcnow() - timedelta(seconds=1)
+    finn.screen_until = dt_util.utcnow() - timedelta(seconds=1)
     await data.async_tick()
     assert [c.data["entity_id"] for c in off] == ["switch.tv"]
     assert fam.screen_on == {}

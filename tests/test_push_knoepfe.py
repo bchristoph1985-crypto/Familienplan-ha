@@ -23,8 +23,8 @@ async def test_freigabe_aus_der_push(
     papa = async_mock_service(hass, "notify", "mobile_app_papa")
     family = entry.runtime_data.family
     next(m for m in family.members.values() if m.name == "Papa").notify_service = "mobile_app_papa"
-    lucas = next(m for m in family.members.values() if m.name == "Lucas")
-    chore = family.create_chore(SYSTEM, "Bad putzen", [lucas.id], points=5, requires_approval=True)
+    finn = next(m for m in family.members.values() if m.name == "Finn")
+    chore = family.create_chore(SYSTEM, "Bad putzen", [finn.id], points=5, requires_approval=True)
     await entry.runtime_data.async_save()
 
     await hass.services.async_call(
@@ -33,7 +33,7 @@ async def test_freigabe_aus_der_push(
     )
     await hass.async_block_till_done()
     ask = papa[-1].data
-    assert ask["message"] == "Lucas hat „Bad putzen“ erledigt. Freigeben?"
+    assert ask["message"] == "Finn hat „Bad putzen“ erledigt. Freigeben?"
     actions = [a["action"] for a in ask["data"]["actions"]]
     assert actions == [f"STERNCHENPLAN:APPROVE:{chore.id}", f"STERNCHENPLAN:REJECT:{chore.id}"]
 
@@ -45,13 +45,13 @@ async def test_freigabe_aus_der_push(
     _knopf(hass, actions[0], hass_admin_user.id)
     await hass.async_block_till_done()
     assert chore.state is not ChoreState.CLAIMED
-    assert lucas.points == 5
+    assert finn.points == 5
     assert papa[-1].data == {"message": "clear_notification", "data": {"tag": f"sternchenplan-{chore.id}"}}
 
     # Zweiter Druck (anderes Elternteil war schneller): kein Fehler, keine Doppelpunkte
     _knopf(hass, actions[0], hass_admin_user.id)
     await hass.async_block_till_done()
-    assert lucas.points == 5
+    assert finn.points == 5
 
 
 async def test_einloesen_aus_der_push(
@@ -60,8 +60,8 @@ async def test_einloesen_aus_der_push(
     papa = async_mock_service(hass, "notify", "mobile_app_papa")
     family = entry.runtime_data.family
     next(m for m in family.members.values() if m.name == "Papa").notify_service = "mobile_app_papa"
-    lucas = next(m for m in family.members.values() if m.name == "Lucas")
-    lucas.points = 20
+    finn = next(m for m in family.members.values() if m.name == "Finn")
+    finn.points = 20
     reward = family.create_reward(SYSTEM, "Eis", 15)
     await entry.runtime_data.async_save()
     await hass.services.async_call(
@@ -74,7 +74,7 @@ async def test_einloesen_aus_der_push(
     _knopf(hass, f"STERNCHENPLAN:REFUSE:{redemption.id}", hass_admin_user.id)
     await hass.async_block_till_done()
     assert family.pending_redemptions() == []
-    assert lucas.points == 20  # abgelehnt: Sterne zurück
+    assert finn.points == 20  # abgelehnt: Sterne zurück
     # Fremde Knöpfe anderer Integrationen werden ignoriert
     _knopf(hass, "ALARM_OFF", hass_admin_user.id)
     await hass.async_block_till_done()
