@@ -1053,6 +1053,16 @@
           "description": "Name or ID."
         }
       }
+    },
+    "delete_photo": {
+      "name": "Delete photo",
+      "description": "Deletes a photo from the gallery and from disk. Parents only.",
+      "fields": {
+        "file": {
+          "name": "File",
+          "description": "File name from the gallery."
+        }
+      }
     }
   }
 }

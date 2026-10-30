@@ -93,12 +93,15 @@ async def async_discard(hass: HomeAssistant, filename: str | None) -> None:
 
 def forget_missing(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> bool:
     folder = photo_dir(hass)
+    family = entry.runtime_data.family
     changed = False
-    for chore in entry.runtime_data.family.chores.values():
+    for chore in family.chores.values():
         if chore.photo and not (folder / chore.photo).is_file():
             chore.photo = None
             changed = True
-    return changed
+    # Nach der Löschfrist verschwinden die Fotos auch aus der Galerie
+    gone = [e["file"] for e in family.photo_log if not (folder / e["file"]).is_file()]
+    return family.forget_photos(gone) or changed
 
 
 class PhotoUploadView(HomeAssistantView):

@@ -41,6 +41,7 @@ class ExtrasMixin:
     screen_rate: int
     screen_max: int
     screen_on: dict[str, list[str]]
+    photo_log: list[dict[str, Any]]
 
     def _init_extras(self) -> None:
         self.features = set(DEFAULT_FEATURES)
@@ -52,6 +53,8 @@ class ExtrasMixin:
         self.screen_on = {}
         # Sparsame Push-Nachrichten: keine Namen und Aufgaben im Text (laufen über Google/Apple)
         self.private_push = False
+        # Fotogalerie: welches Foto zu welcher Aufgabe und Person gehört
+        self.photo_log = []
 
     def _extras_to_dict(self) -> dict[str, Any]:
         return {
@@ -62,6 +65,7 @@ class ExtrasMixin:
             "screen_max": self.screen_max,
             "screen_on": {k: list(v) for k, v in self.screen_on.items()},
             "private_push": self.private_push,
+            "photo_log": [dict(e) for e in self.photo_log],
         }
 
     def _extras_from_dict(self, data: dict[str, Any]) -> None:
@@ -73,6 +77,7 @@ class ExtrasMixin:
         self.screen_max = int(data.get("screen_max", 60))
         self.screen_on = {k: list(v) for k, v in data.get("screen_on", {}).items()}
         self.private_push = bool(data.get("private_push", False))
+        self.photo_log = [dict(e) for e in data.get("photo_log", [])]
 
     def has(self, feature: str) -> bool:
         return feature in self.features
@@ -109,6 +114,7 @@ class ExtrasMixin:
             "redemptions": [r.to_dict() for r in self.redemptions if r.member_id == member_id],
             "star_log": [e for e in self.star_log if e["member"] == member_id],
             "money_log": [e for e in self.money_log if e["member"] == member_id],
+            "photos": [e for e in self.photo_log if e["member"] == member_id],
             "vote": (
                 {"question": self.vote["question"],
                  "choice": self.vote["options"][self.vote["votes"][member_id]]}
@@ -118,11 +124,13 @@ class ExtrasMixin:
 
     def _purge(self, member_id: str) -> list[str]:
         """Spuren einer Person löschen. Gibt die Fotos zurück, die weg müssen."""
-        photos = []
+        photos = [e["file"] for e in self.photo_log if e["member"] == member_id]
+        self.photo_log = [e for e in self.photo_log if e["member"] != member_id]
         for chore in self.chores.values():
             mine = chore.claimed_by == member_id or chore.last_completed_by == member_id
             if chore.photo and mine:
-                photos.append(chore.photo)
+                if chore.photo not in photos:
+                    photos.append(chore.photo)
                 chore.photo = None
             chore.history = [h for h in chore.history if h.get("member") != member_id]
             if chore.last_completed_by == member_id:
@@ -136,6 +144,34 @@ class ExtrasMixin:
             self.vote["votes"].pop(member_id, None)
         self.screen_on.pop(member_id, None)
         return photos
+
+    # -- Fotogalerie ------------------------------------------------------------
+
+    def _keep_photo(self, chore, member_id: str, now: datetime, photo: str) -> None:
+        self.photo_log.append(
+            {"file": photo, "chore": chore.id, "name": chore.name, "member": member_id, "at": now.isoformat()}
+        )
+
+    def gallery(self) -> list[dict[str, Any]]:
+        """Fotos, neueste zuerst."""
+        return sorted(self.photo_log, key=lambda e: e["at"], reverse=True)
+
+    def forget_photos(self, files) -> bool:
+        """Gelöschte Fotos aus der Galerie nehmen."""
+        gone = set(files)
+        before = len(self.photo_log)
+        self.photo_log = [e for e in self.photo_log if e["file"] not in gone]
+        for chore in self.chores.values():
+            if chore.photo in gone:
+                chore.photo = None
+        return len(self.photo_log) != before
+
+    def delete_photo(self, actor: Actor, file: str) -> None:
+        """Eltern löschen ein Foto aus der Galerie."""
+        self._require_manager(actor)
+        if not any(e["file"] == file for e in self.photo_log):
+            raise self._error("Dieses Foto gibt es nicht mehr.")
+        self.forget_photos([file])
 
     # -- Haustier -------------------------------------------------------------
 

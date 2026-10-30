@@ -23,6 +23,8 @@ from .handsfree import learning
 from .photos import delete_after_review, signed_url
 from .takeover import takeover_terms
 
+GALLERY_LIMIT = 120
+
 
 def _progress(member: Member, today) -> dict[str, Any]:
     p = member.progress
@@ -92,6 +94,12 @@ def snapshot(
         "presets": [dict(p) for p in family.presets] if actor.is_manager else [],
         "learning_tag": learning(hass) if actor.is_manager else None,
         "photo_delete": delete_after_review(entry) if actor.is_manager else None,
+        # Fotogalerie nur für Eltern, mit kurz gültigen Links
+        "gallery": [
+            {"file": e["file"], "url": signed_url(hass, e["file"]), "name": e["name"],
+             "member": e["member"], "at": e["at"]}
+            for e in family.gallery()[:GALLERY_LIMIT]
+        ] if actor.is_manager else [],
         "members": [
             {
                 "id": m.id,

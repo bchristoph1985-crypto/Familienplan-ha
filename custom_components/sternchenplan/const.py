@@ -159,3 +159,6 @@ SERVICE_END_VOTE = "end_vote"
 # Datenschutz (0.34)
 SERVICE_SET_PRIVATE_PUSH = "set_private_push"
 SERVICE_FORGET_MEMBER = "forget_member"
+# Fotogalerie (0.35)
+SERVICE_DELETE_PHOTO = "delete_photo"
+ATTR_FILE = "file"

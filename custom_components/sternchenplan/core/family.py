@@ -649,6 +649,8 @@ class Family(ExtrasMixin):
                 raise FamilyError("Für diese Aufgabe brauchst du ein Foto.")
         self._check_claimable(chore)
         chore.photo = photo  # altes Foto gehört zur letzten Runde
+        if photo:
+            self._keep_photo(chore, member_id, now, photo)
         self._submit(chore, member_id, now, needs_check=self._needs_check(actor, chore))
         return chore
 
@@ -739,6 +741,8 @@ class Family(ExtrasMixin):
         chore.claim_multiplier = max(1, multiplier)
         chore.claim_taken_from = responsible[0]
         chore.photo = photo  # altes Foto gehört zur letzten Runde
+        if photo:
+            self._keep_photo(chore, member_id, now, photo)
         self._log(chore, "taken_over", member_id, now)
         self._submit(chore, member_id, now, needs_check=self._needs_check(actor, chore))
         return chore

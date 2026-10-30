@@ -123,6 +123,8 @@ from .const import (
     SERVICE_STOP_SCREEN_TIME,
     SERVICE_TRIGGER_CHORE,
     SERVICE_FORGET_MEMBER,
+    SERVICE_DELETE_PHOTO,
+    ATTR_FILE,
     SERVICE_SET_PRIVATE_PUSH,
 )
 from .consequences import next_release
@@ -523,9 +525,7 @@ async def _drop_photo(hass, data, chore_id: str, photo: str | None, always: bool
 
     if photo is None or not (always or delete_after_review(data.entry)):
         return
-    chore = data.family.chores.get(chore_id)
-    if chore is not None and chore.photo == photo:
-        chore.photo = None
+    data.family.forget_photos([photo])
     await async_discard(hass, photo)
 
 
@@ -711,6 +711,13 @@ async def _forget_member(hass, call, data, actor) -> None:
         await async_discard(hass, photo)
 
 
+async def _delete_photo(hass, call, data, actor) -> None:
+    from .photos import async_discard  # noqa: PLC0415
+
+    data.family.delete_photo(actor, call.data[ATTR_FILE])
+    await async_discard(hass, call.data[ATTR_FILE])
+
+
 async def _set_features(hass, call, data, actor) -> None:
     data.family.set_features(actor, call.data[ATTR_FEATURES])
 
@@ -815,5 +822,6 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_END_VOTE, _end_vote, EMPTY_SCHEMA),
         (SERVICE_SET_PRIVATE_PUSH, _set_private_push, vol.Schema({vol.Required(ATTR_ENABLED): cv.boolean})),
         (SERVICE_FORGET_MEMBER, _forget_member, vol.Schema({vol.Required(ATTR_MEMBER): cv.string})),
+        (SERVICE_DELETE_PHOTO, _delete_photo, vol.Schema({vol.Required(ATTR_FILE): cv.string})),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

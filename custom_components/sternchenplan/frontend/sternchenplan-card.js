@@ -39,6 +39,15 @@ const T = {
     showMore: "Aufgaben zeigen",
     showLess: "Weniger zeigen",
     awayMenu: "🏖️ Abwesend melden",
+    gallTitle: "📷 Fotos",
+    gallAll: "Alle",
+    gallEmpty: "Noch keine Fotos. Sie erscheinen hier, sobald ein Kind eine Aufgabe mit Foto meldet.",
+    gallAutoDelete: "Fotos werden gerade nach dem Freigeben gelöscht. Wer sie hier sammeln will, stellt das unter Einstellungen → Datenschutz um.",
+    gallDelete: "🗑️ Löschen",
+    gallConfirm: "Dieses Foto wirklich löschen?",
+    gallClose: "Schließen",
+    gallPrev: "Vorheriges Foto",
+    gallNext: "Nächstes Foto",
     awaySection: "🏖️ Ferien und Abwesenheit",
     moneySection: "💶 Taschengeld",
     helpToggle: "💡 Hilfe-Tipps anzeigen",
@@ -437,6 +446,15 @@ const T = {
     showMore: "Show chores",
     showLess: "Show less",
     awayMenu: "🏖️ Mark as away",
+    gallTitle: "📷 Photos",
+    gallAll: "All",
+    gallEmpty: "No photos yet. They show up here as soon as a child reports a chore with a photo.",
+    gallAutoDelete: "Photos are currently deleted after approval. To collect them here, change it under Settings → Privacy.",
+    gallDelete: "🗑️ Delete",
+    gallConfirm: "Really delete this photo?",
+    gallClose: "Close",
+    gallPrev: "Previous photo",
+    gallNext: "Next photo",
     awaySection: "🏖️ Holidays and absence",
     moneySection: "💶 Pocket money",
     helpToggle: "💡 Show help tips",
@@ -889,6 +907,9 @@ class SternchenplanCard extends HTMLElement {
     this._kidTab = "today";
     // Elternansicht: aufgeklappte Kinderkarten
     this._openCards = new Set();
+    // Fotogalerie: Filter nach Person, gerade groß gezeigtes Foto
+    this._galFilter = "";
+    this._photo = null;
     this._form = this._emptyForm();
     this._awayForm = {};
     this._rewardForm = this._emptyReward();
@@ -903,6 +924,13 @@ class SternchenplanCard extends HTMLElement {
     this._actingAs = null;
     this._idleTimer = null;
     this.shadowRoot.addEventListener("click", (ev) => this._onClick(ev));
+    // „close“ blubbert nicht hoch, darum in der Einfangphase (Esc beim Foto)
+    this.shadowRoot.addEventListener("close", (ev) => {
+      if (ev.target.matches?.("dialog.lightbox") && this._photo) {
+        this._photo = null;
+        this._render();
+      }
+    }, true);
     this.shadowRoot.addEventListener("input", (ev) => this._onInput(ev));
     this.shadowRoot.addEventListener("change", (ev) => this._onInput(ev));
   }
@@ -1349,6 +1377,32 @@ class SternchenplanCard extends HTMLElement {
         break;
       case "priv-export":
         this._exportMember(id);
+        break;
+      case "gal-filter":
+        this._galFilter = id || "";
+        this._render();
+        break;
+      case "photo-open":
+        this._photo = id;
+        this._render();
+        break;
+      case "photo-close":
+        this._photo = null;
+        this._render();
+        break;
+      case "photo-step": {
+        const list = this._galleryItems();
+        const i = list.findIndex((e) => e.file === this._photo);
+        if (i >= 0 && list.length) this._photo = list[(i + Number(id) + list.length) % list.length].file;
+        this._render();
+        break;
+      }
+      case "photo-delete":
+        if (!confirm(this._t("gallConfirm"))) break;
+        this._data.gallery = (this._data.gallery || []).filter((e) => e.file !== id);
+        this._photo = null;
+        this._render();
+        this._call("delete_photo", { file: id });
         break;
       case "priv-delete": {
         const who = this._member(id);
@@ -3005,13 +3059,66 @@ class SternchenplanCard extends HTMLElement {
         .join("")}</nav>
       ${this._helpTip()}
       ${body}
+      ${this._renderLightbox()}
       ${this._renderCert()}
       ${this._donateLine()}`;
   }
 
   _renderFamilyTab() {
     const money = this._on("money") ? `<div class="section-title">${this._t("moneySection")}</div>${this._renderMoneyAdmin()}` : "";
-    return `<div class="section-title">${this._t("awaySection")}</div>${this._renderAway()}${money}`;
+    return `${this._renderGallery()}<div class="section-title">${this._t("awaySection")}</div>${this._renderAway()}${money}`;
+  }
+
+  // -- Fotogalerie (nur Eltern) ----------------------------------------------
+
+  _galleryItems() {
+    const all = this._data.gallery || [];
+    return this._galFilter ? all.filter((e) => e.member === this._galFilter) : all;
+  }
+
+  _photoDate(at) {
+    return fmt(this._locale(), { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }, new Date(at));
+  }
+
+  _renderGallery() {
+    const all = this._data.gallery || [];
+    const hint = this._data.photo_delete ? `<p class="muted small">${this._t("gallAutoDelete")}</p>` : "";
+    if (!all.length) {
+      // Ohne Fotopflicht-Aufgaben braucht es den Abschnitt gar nicht
+      if (!this._data.chores.some((c) => c.requires_photo)) return "";
+      return `<div class="section-title">${this._t("gallTitle")}</div><p class="muted small">${this._t("gallEmpty")}</p>${hint}`;
+    }
+    const people = this._data.members.filter((m) => all.some((e) => e.member === m.id));
+    const chip = (id, label) => `<button class="gal-chip ${(this._galFilter || "") === id ? "on" : ""}" data-action="gal-filter" data-id="${esc(id)}">${esc(label)}</button>`;
+    const items = this._galleryItems();
+    return `
+      <div class="section-title">${this._t("gallTitle")} <span class="muted small">${all.length}</span></div>
+      ${people.length > 1 ? `<div class="gal-chips">${chip("", this._t("gallAll"))}${people.map((m) => chip(m.id, m.name)).join("")}</div>` : ""}
+      <div class="gal-grid">${items.map((e) => {
+        const who = this._member(e.member);
+        return `<button class="gal-item" data-action="photo-open" data-id="${esc(e.file)}" style="--kid:${this._color(e.member)}">
+          <img src="${esc(e.url)}" alt="${esc(e.name)}" loading="lazy">
+          <span class="gal-cap"><strong>${esc(e.name)}</strong><span>${esc(who?.name || "")} · ${esc(this._photoDate(e.at))}</span></span></button>`;
+      }).join("")}</div>
+      ${hint}`;
+  }
+
+  _renderLightbox() {
+    const list = this._galleryItems();
+    const e = this._photo && list.find((x) => x.file === this._photo);
+    if (!e) return "";
+    const who = this._member(e.member);
+    const nav = list.length > 1;
+    // <dialog> liegt als Modal über allem, egal wie das Dashboard gebaut ist; Esc schließt
+    return `<dialog class="lightbox" data-action="photo-close" aria-label="${esc(e.name)}">
+      <figure data-action="noop">
+        <img src="${esc(e.url)}" alt="${esc(e.name)}">
+        <figcaption><span><strong>${esc(e.name)}</strong><br><span class="muted small">${esc(who?.name || "")} · ${esc(this._photoDate(e.at))}</span></span>
+          <span class="lb-actions">${this._config.readonly ? "" : `<button class="link bad" data-action="photo-delete" data-id="${esc(e.file)}">${this._t("gallDelete")}</button>`}
+          <button class="primary" data-action="photo-close" autofocus>${this._t("gallClose")}</button></span></figcaption>
+      </figure>
+      ${nav ? `<button class="lb-nav prev" data-action="photo-step" data-id="-1" aria-label="${this._t("gallPrev")}">‹</button><button class="lb-nav next" data-action="photo-step" data-id="1" aria-label="${this._t("gallNext")}">›</button>` : ""}
+    </dialog>`;
   }
 
   _renderSettingsTab() {
@@ -3659,6 +3766,8 @@ class SternchenplanCard extends HTMLElement {
     const next = document.createElement("template");
     next.innerHTML = html;
     morphChildren(this._cardEl, next.content);
+    const box = this._cardEl.querySelector("dialog.lightbox");
+    if (box && !box.open) box.showModal();
   }
 }
 
@@ -4441,6 +4550,27 @@ const STYLE = `
     .parent-tabs .tab-short { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
     .parent-tabs .count { position: absolute; top: 2px; right: 6px; }
   }
+  /* -- Fotogalerie (0.35) -- */
+  .gal-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+  button.gal-chip { min-height: 32px; padding: 4px 12px; border-radius: 16px; background: var(--secondary-background-color); color: var(--primary-text-color); font-size: 0.9em; }
+  button.gal-chip.on { background: var(--primary-color); color: var(--text-primary-color, #fff); }
+  .gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 8px; }
+  button.gal-item { position: relative; display: block; padding: 0; aspect-ratio: 1; overflow: hidden; border-radius: 14px; background: var(--secondary-background-color); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  button.gal-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s ease; }
+  button.gal-item:hover img { transform: scale(1.04); }
+  .gal-cap { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1px; padding: 18px 8px 6px; text-align: left;
+    color: #fff; font-size: 0.78em; background: linear-gradient(transparent, rgba(0,0,0,.7)); border-bottom: 3px solid var(--kid); }
+  .gal-cap strong { font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  dialog.lightbox { border: none; padding: 16px; margin: 0; width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; box-sizing: border-box; background: transparent; color: var(--primary-text-color); }
+  dialog.lightbox[open] { display: flex; align-items: center; justify-content: center; }
+  dialog.lightbox::backdrop { background: rgba(0,0,0,.82); }
+  .lightbox figure { margin: 0; max-width: min(920px, 100%); max-height: 100%; display: flex; flex-direction: column; background: var(--card-background-color); border-radius: 16px; overflow: hidden; }
+  .lightbox img { max-width: 100%; max-height: calc(100vh - 150px); object-fit: contain; background: #000; }
+  .lightbox figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 14px; }
+  .lb-actions { display: flex; gap: 8px; align-items: center; }
+  button.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.9); color: #222; font-size: 1.8em; line-height: 1; padding: 0; }
+  button.lb-nav.prev { left: 10px; }
+  button.lb-nav.next { right: 10px; }
   /* -- Urkunde -- */
   .cert { width: min(560px, 100%); padding: 14px; border-radius: 10px; background: #fffaf0; color: #2b2118; font-family: Georgia, "Times New Roman", serif;
     box-shadow: 0 18px 50px rgba(0,0,0,.35); box-sizing: border-box; }

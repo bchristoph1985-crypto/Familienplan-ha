@@ -198,6 +198,10 @@ Im Willkommens-Assistenten (Schritt 2) und später im Reiter **Einstellungen** s
 
 Neue Ereignisse für eigene Automationen: `sternchenplan_all_done`, `sternchenplan_screen_start`, `sternchenplan_screen_ending`, `sternchenplan_screen_over`, `sternchenplan_vote_started`, `sternchenplan_vote_result`, `sternchenplan_month_report`.
 
+## Fotogalerie
+
+Behaltet ihr Fotos (Einstellungen → Datenschutz → „Fotos nach dem Freigeben löschen“ aus), sammelt Sternchenplan sie im Eltern-Reiter **Familie** unter „📷 Fotos“: neueste zuerst, mit Aufgabe, Kind und Uhrzeit, filterbar nach Kind. Ein Tipp öffnet das Foto groß, mit Blättern und Löschen. Die Galerie sehen nur Eltern, die Links gelten jeweils eine Stunde. Nach der Löschfrist (Integrations-Optionen) verschwinden Fotos automatisch, auch aus der Galerie. Wird eine Person gelöscht, gehen alle ihre Fotos mit. Dienst: `sternchenplan.delete_photo`.
+
 ## Datenschutz
 
 - **Alles bleibt zu Hause.** Sternchenplan läuft komplett in eurem Home Assistant. Es gibt keine Cloud, kein Konto und keine Statistik, und die Integration schickt nichts ins Internet.

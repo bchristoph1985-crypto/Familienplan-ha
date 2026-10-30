@@ -1053,6 +1053,16 @@
           "description": "Name oder ID."
         }
       }
+    },
+    "delete_photo": {
+      "name": "Foto löschen",
+      "description": "Löscht ein Foto aus der Galerie und von der Festplatte. Nur für Eltern.",
+      "fields": {
+        "file": {
+          "name": "Datei",
+          "description": "Dateiname aus der Galerie."
+        }
+      }
     }
   }
 }

@@ -697,3 +697,9 @@ forget_member:
       required: true
       selector:
         text: {}
+delete_photo:
+  fields:
+    file:
+      required: true
+      selector:
+        text: {}
