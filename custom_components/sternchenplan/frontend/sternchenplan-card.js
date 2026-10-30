@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.35.2";
+const VERSION = "0.35.3";
 
 const T = {
   de: {
@@ -110,8 +110,8 @@ const T = {
     wzRewards: "Worauf sparen die Kinder?",
     wzRewardsText: "Belohnungen tauschen die Kinder gegen Sterne ein. Du bestätigst jedes Einlösen.",
     wzMoney: "Taschengeld",
-    wzMoneySub: "{n} ⭐ = 1 €",
-    wzMoneyRate: "Wie viele Sterne sind 1 €?",
+    wzMoneySub: "{n} ⭐ = {one}",
+    wzMoneyRate: "Wie viele Sterne sind {one}?",
     wzMoneyHint: "Wochengeld und Auszahlen stellst du später unter „Familie“ ein.",
     wzPhotos: "Fotos und Datenschutz",
     wzPhotosText: "Bei manchen Aufgaben machen Kinder ein Foto als Nachweis. Nur Eltern sehen es. Was soll danach passieren?",
@@ -379,12 +379,12 @@ const T = {
     parentsHint: "Eltern mit eigenen Aufgaben erscheinen bei „Heute“ und in der Wochenwertung. Ihre Sterne zählen fürs Familienziel.",
     money: "Taschengeld",
     weekly: "{amount} Wochengeld, jeden {day}",
-    exchange: "{stars} ⭐ → 1 € tauschen",
-    confirmExchange: "{stars} Sterne gegen 1 € tauschen?",
+    exchange: "{stars} ⭐ → {one} tauschen",
+    confirmExchange: "{stars} Sterne gegen {one} tauschen?",
     rate: "Sterne pro Euro",
     rateHint: "0 = Sterne lassen sich nicht in Geld tauschen",
     payday: "Zahltag fürs Wochengeld",
-    perWeek: "€ pro Woche",
+    perWeek: "{cur} pro Woche",
     payout: "Auszahlen",
     confirmPayout: "{amount} an {name} auszahlen? Gib das Geld bar oder überweise es.",
     book: "Buchen",
@@ -531,8 +531,8 @@ const T = {
     wzRewards: "What do the kids save up for?",
     wzRewardsText: "Kids trade stars for rewards. You confirm every redemption.",
     wzMoney: "Pocket money",
-    wzMoneySub: "{n} ⭐ = €1",
-    wzMoneyRate: "How many stars make €1?",
+    wzMoneySub: "{n} ⭐ = {one}",
+    wzMoneyRate: "How many stars make {one}?",
     wzMoneyHint: "Set weekly allowance and payouts later under “Family”.",
     wzPhotos: "Photos and privacy",
     wzPhotosText: "Some chores need a photo as proof. Only parents see it. What happens afterwards?",
@@ -800,12 +800,12 @@ const T = {
     parentsHint: "Parents with their own chores appear under “Today” and in the weekly ranking. Their stars count towards the family goal.",
     money: "Pocket money",
     weekly: "{amount} allowance, every {day}",
-    exchange: "Exchange {stars} ⭐ → 1 €",
-    confirmExchange: "Exchange {stars} stars for 1 €?",
+    exchange: "Exchange {stars} ⭐ → {one}",
+    confirmExchange: "Exchange {stars} stars for {one}?",
     rate: "Stars per euro",
     rateHint: "0 = stars can't be exchanged for money",
     payday: "Payday for the allowance",
-    perWeek: "€ per week",
+    perWeek: "{cur} per week",
     payout: "Pay out",
     confirmPayout: "Pay {amount} to {name}? Hand over cash or transfer it.",
     book: "Book",
@@ -1017,6 +1017,7 @@ class SternchenplanCard extends HTMLElement {
     const lang = (this._hass?.locale?.language || this._hass?.language || "de").startsWith("de") ? "de" : "en";
     let text = T[lang][key] ?? key;
     if (typeof text === "string") {
+      if (text.includes("{one}") || text.includes("{cur}")) vars = { one: this._money(100, 0), cur: this._currencySymbol(), ...vars };
       for (const [k, v] of Object.entries(vars)) text = text.replace(`{${k}}`, v);
     }
     return text;
@@ -1557,7 +1558,7 @@ class SternchenplanCard extends HTMLElement {
       }
       case "payout": {
         const k = this._member(id);
-        if (k && confirm(this._t("confirmPayout", { amount: this._euro(k.money), name: k.name }))) {
+        if (k && confirm(this._t("confirmPayout", { amount: this._money(k.money), name: k.name }))) {
           this._call("payout", { member: id });
         }
         break;
@@ -2973,8 +2974,28 @@ class SternchenplanCard extends HTMLElement {
       </div>`;
   }
 
-  _euro(cents) {
-    return new Intl.NumberFormat(this._locale(), { style: "currency", currency: "EUR" }).format(cents / 100);
+  // Währung aus Home Assistant (Einstellungen → System → Allgemein), sonst Euro
+  _currency() {
+    return this._hass?.config?.currency || "EUR";
+  }
+
+  _money(cents, digits) {
+    const opts = { style: "currency", currency: this._currency() };
+    if (digits !== undefined) Object.assign(opts, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    try {
+      return new Intl.NumberFormat(this._locale(), opts).format(cents / 100);
+    } catch (e) {
+      return `${(cents / 100).toFixed(digits ?? 2)} ${this._currency()}`;
+    }
+  }
+
+  _currencySymbol() {
+    try {
+      const parts = new Intl.NumberFormat(this._locale(), { style: "currency", currency: this._currency() }).formatToParts(1);
+      return parts.find((x) => x.type === "currency")?.value || this._currency();
+    } catch (e) {
+      return this._currency();
+    }
   }
 
   _moneyLog(member) {
@@ -2985,7 +3006,7 @@ class SternchenplanCard extends HTMLElement {
       .slice(0, 10)
       .map(
         (e) => `<li><span>${esc(e.note || kinds[e.kind] || e.kind)}${e.stars ? ` · ${e.stars} ⭐` : ""}<span class="muted small"> · ${new Date(e.at).toLocaleDateString(this._locale())}</span></span>
-          <b class="${e.cents < 0 ? "minus" : "plus"}">${e.cents > 0 ? "+" : ""}${esc(this._euro(e.cents))}</b></li>`,
+          <b class="${e.cents < 0 ? "minus" : "plus"}">${e.cents > 0 ? "+" : ""}${esc(this._money(e.cents))}</b></li>`,
       )
       .join("")}</ul>`;
   }
@@ -2999,8 +3020,8 @@ class SternchenplanCard extends HTMLElement {
       <section class="money">
         <div class="section-title">💶 ${this._t("money")}</div>
         <div class="wallet">
-          <div class="wallet-sum">${esc(this._euro(member.money || 0))}</div>
-          ${member.allowance ? `<div class="muted small">${esc(this._t("weekly", { amount: this._euro(member.allowance), day: this._t("days")[m.payday ?? 6] }))}</div>` : ""}
+          <div class="wallet-sum">${esc(this._money(member.money || 0))}</div>
+          ${member.allowance ? `<div class="muted small">${esc(this._t("weekly", { amount: this._money(member.allowance), day: this._t("days")[m.payday ?? 6] }))}</div>` : ""}
           ${m.rate && !ro ? `<button class="primary" data-action="exchange" ${can ? "" : "disabled"}>${esc(this._t("exchange", { stars: m.rate }))}</button>` : ""}
         </div>
         <details class="ledger-box"><summary class="muted small">${this._t("history")}</summary>${this._moneyLog(member)}</details>
@@ -3017,7 +3038,7 @@ class SternchenplanCard extends HTMLElement {
           <div class="kidcard-head">
             ${this._avatar(k, 40)}
             <div class="kidcard-name"><strong>${esc(k.name)}</strong><span class="muted small">⭐ ${k.points}</span></div>
-            <div class="wallet-sum small-sum">${esc(this._euro(k.money || 0))}</div>
+            <div class="wallet-sum small-sum">${esc(this._money(k.money || 0))}</div>
           </div>
           <div class="money-row">
             <label>${this._t("perWeek")}<input type="number" min="0" step="0.5" data-field="allow.${esc(k.id)}" value="${(k.allowance || 0) / 100}"></label>

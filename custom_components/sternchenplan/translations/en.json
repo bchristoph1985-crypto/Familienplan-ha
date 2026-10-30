@@ -657,7 +657,7 @@
       "description": "Exchange rate for stars and the weekly payday.",
       "fields": {
         "rate": {
-          "name": "Stars per euro",
+          "name": "Stars per 1 unit of money (e.g. €1, £1, $1)",
           "description": "How many stars a child exchanges for 1 €. 0 turns exchanging off."
         },
         "payday": {
@@ -676,7 +676,7 @@
         },
         "amount": {
           "name": "Amount",
-          "description": "Euros per week. 0 turns it off."
+          "description": "Amount per week in your currency. 0 turns it off."
         }
       }
     },
@@ -685,8 +685,8 @@
       "description": "A child exchanges stars for pocket money at the family's rate.",
       "fields": {
         "euros": {
-          "name": "Euros",
-          "description": "How many whole euros."
+          "name": "Amount",
+          "description": "How many whole units of your currency."
         },
         "member": {
           "name": "Child",
@@ -704,7 +704,7 @@
         },
         "amount": {
           "name": "Amount",
-          "description": "Euros. Empty pays out everything."
+          "description": "Amount in your currency. Empty pays out everything."
         }
       }
     },
@@ -718,7 +718,7 @@
         },
         "amount": {
           "name": "Amount",
-          "description": "Euros, negative subtracts."
+          "description": "Amount in your currency, negative subtracts."
         },
         "note": {
           "name": "Note",
