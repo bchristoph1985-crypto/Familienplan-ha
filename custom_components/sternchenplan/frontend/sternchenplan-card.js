@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.31.0";
+const VERSION = "0.32.0";
 
 const T = {
   de: {
@@ -567,6 +567,70 @@ const T = {
 
 const esc = (value) =>
   String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+// Datumsformate einmal anlegen statt bei jeder Aufgabe neu (spürbar auf alten Tablets).
+const FORMATS = new Map();
+const fmt = (locale, opts, date) => {
+  const key = locale + JSON.stringify(opts);
+  if (!FORMATS.has(key)) FORMATS.set(key, new Intl.DateTimeFormat(locale, opts));
+  return FORMATS.get(key).format(date);
+};
+
+// Neue Klappboxen merken sich, wie die Karte sie angelegt hat (auf oder zu).
+const fresh = (node) => {
+  if (node.nodeType !== 1) return node;
+  for (const d of [node, ...node.querySelectorAll("details")]) {
+    if (d.nodeName === "DETAILS") d._tplOpen = d.hasAttribute("open");
+  }
+  return node;
+};
+
+const morphChildren = (from, to) => {
+  const a = [...from.childNodes];
+  const b = [...to.childNodes];
+  b.forEach((node, i) => (i < a.length ? morph(a[i], node) : from.appendChild(fresh(node))));
+  for (let i = b.length; i < a.length; i++) a[i].remove();
+};
+
+// Neuen Stand in die bestehende Ansicht einarbeiten, statt alles neu zu bauen.
+// So bleiben offene Menüs, das Feld mit dem Cursor und laufende Animationen
+// erhalten, wenn jemand anderes gerade etwas abhakt, und der Browser muss nur
+// das Geänderte neu zeichnen.
+const morph = (from, to) => {
+  if (from.nodeType !== to.nodeType || from.nodeName !== to.nodeName) {
+    from.replaceWith(fresh(to));
+    return;
+  }
+  if (from.nodeType !== 1) {
+    if (from.nodeValue !== to.nodeValue) from.nodeValue = to.nodeValue;
+    return;
+  }
+  for (const { name } of [...from.attributes]) {
+    if (!to.hasAttribute(name) && name !== "open") from.removeAttribute(name);
+  }
+  for (const { name, value } of to.attributes) {
+    if (name !== "open" && from.getAttribute(name) !== value) from.setAttribute(name, value);
+  }
+  if (from.nodeName === "DETAILS") {
+    // Auf/zu nur übernehmen, wenn die Karte es selbst ändert, nicht bei jedem Stand
+    const open = to.hasAttribute("open");
+    if (from._tplOpen !== open) from.open = open;
+    from._tplOpen = open;
+  }
+  const focused = from === from.getRootNode().activeElement;
+  if (from.nodeName === "INPUT" || from.nodeName === "TEXTAREA") {
+    if (!focused) {
+      if (from.type === "checkbox" || from.type === "radio") from.checked = to.hasAttribute("checked");
+      else if (from.type !== "file") from.value = from.nodeName === "TEXTAREA" ? to.value : to.getAttribute("value") ?? "";
+    }
+    if (from.nodeName === "TEXTAREA") return;
+  }
+  morphChildren(from, to);
+  if (from.nodeName === "SELECT" && !focused) {
+    const pick = [...to.options].find((o) => o.hasAttribute("selected")) || to.options[0];
+    if (pick) from.value = pick.value;
+  }
+};
 
 class SternchenplanCard extends HTMLElement {
   constructor() {
@@ -1926,13 +1990,13 @@ class SternchenplanCard extends HTMLElement {
     if (!chore.due) return `<span class="muted">${this._t("noDue")}</span>`;
     const due = new Date(chore.due);
     const now = new Date();
-    const time = due.toLocaleTimeString(this._locale(), { hour: "2-digit", minute: "2-digit" });
+    const time = fmt(this._locale(), { hour: "2-digit", minute: "2-digit" }, due);
     const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const diff = Math.round((day(due) - day(now)) / 86400000);
     let label;
     if (diff === 0) label = this._t("today", { time });
     else if (diff === 1) label = this._t("tomorrow", { time });
-    else label = due.toLocaleDateString(this._locale(), { weekday: "short", day: "numeric", month: "numeric" }) + " " + time;
+    else label = fmt(this._locale(), { weekday: "short", day: "numeric", month: "numeric" }, due) + " " + time;
     return `<span class="muted">${esc(label)}</span>`;
   }
 
@@ -2738,7 +2802,12 @@ class SternchenplanCard extends HTMLElement {
     if (theme.id) this._cardEl.dataset.theme = theme.id;
     else delete this._cardEl.dataset.theme;
     const deco = theme.deco.length ? `<div class="deco" aria-hidden="true">${theme.deco.map((e) => `<span>${e}</span>`).join("")}</div>` : "";
-    this._cardEl.innerHTML = `${deco}${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div>`;
+    const html = `${deco}${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div>`;
+    if (html === this._html) return;
+    this._html = html;
+    const next = document.createElement("template");
+    next.innerHTML = html;
+    morphChildren(this._cardEl, next.content);
   }
 }
 
