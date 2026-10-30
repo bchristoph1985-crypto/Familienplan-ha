@@ -683,3 +683,15 @@ cast_vote:
       selector:
         text: {}
 end_vote: {}
+set_private_push:
+  fields:
+    enabled:
+      required: true
+      selector:
+        boolean: {}
+forget_member:
+  fields:
+    member:
+      required: true
+      selector:
+        text: {}

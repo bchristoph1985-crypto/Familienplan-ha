@@ -396,7 +396,10 @@ class MembersOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         data = self.config_entry.runtime_data
         if user_input is not None:
-            data.family.remove_member(SYSTEM, user_input[CONF_MEMBER])
+            from .photos import async_discard  # noqa: PLC0415
+
+            for photo in data.family.remove_member(SYSTEM, user_input[CONF_MEMBER]):
+                await async_discard(self.hass, photo)
             return await self._async_finish()
         return self.async_show_form(
             step_id="remove_member",

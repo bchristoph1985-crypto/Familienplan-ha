@@ -18,7 +18,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, DONATE_URL, HOUSE_FIELDS, SIGNAL_UPDATED
-from .core import Family, Member, badge_status, level_floor
+from .core import Family, FamilyError, Member, badge_status, level_floor
 from .handsfree import learning
 from .photos import delete_after_review, signed_url
 from .takeover import takeover_terms
@@ -66,6 +66,7 @@ def snapshot(
 
     return {
         "features": sorted(family.features),
+        "private_push": family.private_push,
         "screen": {"rate": family.screen_rate, "max": family.screen_max},
         "vote": family.vote,
         "month": month,
@@ -191,6 +192,27 @@ def snapshot(
 @callback
 def async_register_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe)
+    websocket_api.async_register_command(hass, ws_export)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/export", vol.Required("member"): str}
+)
+@callback
+def ws_export(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Datenauskunft: alles über eine Person als JSON. Nur für Eltern."""
+    entries = hass.config_entries.async_loaded_entries(DOMAIN)
+    if not entries:
+        connection.send_error(msg["id"], "not_loaded", "Sternchenplan ist nicht eingerichtet.")
+        return
+    family: Family = entries[0].runtime_data.family
+    actor = family.actor_for_user(connection.user.id, is_admin=connection.user.is_admin)
+    try:
+        data = family.export_member(actor, msg["member"])
+    except FamilyError as err:
+        connection.send_error(msg["id"], "not_allowed", str(err))
+        return
+    connection.send_result(msg["id"], data)
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/subscribe"})

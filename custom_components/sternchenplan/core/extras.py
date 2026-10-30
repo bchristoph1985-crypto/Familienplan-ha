@@ -48,6 +48,8 @@ class ExtrasMixin:
         self.screen_max = 60
         # Welche Geräte wir für die Bildschirmzeit eingeschaltet haben
         self.screen_on = {}
+        # Sparsame Push-Nachrichten: keine Namen und Aufgaben im Text (laufen über Google/Apple)
+        self.private_push = False
 
     def _extras_to_dict(self) -> dict[str, Any]:
         return {
@@ -56,6 +58,7 @@ class ExtrasMixin:
             "screen_rate": self.screen_rate,
             "screen_max": self.screen_max,
             "screen_on": {k: list(v) for k, v in self.screen_on.items()},
+            "private_push": self.private_push,
         }
 
     def _extras_from_dict(self, data: dict[str, Any]) -> None:
@@ -65,6 +68,7 @@ class ExtrasMixin:
         self.screen_rate = int(data.get("screen_rate", 0))
         self.screen_max = int(data.get("screen_max", 60))
         self.screen_on = {k: list(v) for k, v in data.get("screen_on", {}).items()}
+        self.private_push = bool(data.get("private_push", False))
 
     def has(self, feature: str) -> bool:
         return feature in self.features
@@ -79,6 +83,55 @@ class ExtrasMixin:
     def _need(self, feature: str) -> None:
         if not self.has(feature):
             raise self._error("Diese Funktion ist ausgeschaltet.")
+
+    # -- Datenschutz -----------------------------------------------------------
+
+    def set_private_push(self, actor: Actor, enabled: bool) -> None:
+        self._require_manager(actor)
+        self.private_push = enabled
+
+    def export_member(self, actor: Actor, member_id: str) -> dict[str, Any]:
+        """Alles, was Sternchenplan über eine Person speichert (Auskunft, Umzug)."""
+        self._require_manager(actor)
+        member = self.member(member_id)
+        return {
+            "member": member.to_dict(),
+            "chores": [
+                {"id": c.id, "name": c.name, "assigned": member_id in c.assignees,
+                 "history": [h for h in c.history if h.get("member") == member_id]}
+                for c in self.chores.values()
+                if member_id in c.assignees or any(h.get("member") == member_id for h in c.history)
+            ],
+            "redemptions": [r.to_dict() for r in self.redemptions if r.member_id == member_id],
+            "star_log": [e for e in self.star_log if e["member"] == member_id],
+            "money_log": [e for e in self.money_log if e["member"] == member_id],
+            "vote": (
+                {"question": self.vote["question"],
+                 "choice": self.vote["options"][self.vote["votes"][member_id]]}
+                if self.vote and member_id in self.vote["votes"] else None
+            ),
+        }
+
+    def _purge(self, member_id: str) -> list[str]:
+        """Spuren einer Person löschen. Gibt die Fotos zurück, die weg müssen."""
+        photos = []
+        for chore in self.chores.values():
+            mine = chore.claimed_by == member_id or chore.last_completed_by == member_id
+            if chore.photo and mine:
+                photos.append(chore.photo)
+                chore.photo = None
+            chore.history = [h for h in chore.history if h.get("member") != member_id]
+            if chore.last_completed_by == member_id:
+                chore.last_completed_by = chore.last_completed_at = None
+            if chore.claim_taken_from == member_id:
+                chore.claim_taken_from = None
+        self.redemptions = [r for r in self.redemptions if r.member_id != member_id]
+        self.star_log = [e for e in self.star_log if e["member"] != member_id]
+        self.money_log = [e for e in self.money_log if e["member"] != member_id]
+        if self.vote:
+            self.vote["votes"].pop(member_id, None)
+        self.screen_on.pop(member_id, None)
+        return photos
 
     # -- Haustier -------------------------------------------------------------
 

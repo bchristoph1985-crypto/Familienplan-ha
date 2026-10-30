@@ -1033,6 +1033,26 @@
     "end_vote": {
       "name": "Familienrat beenden",
       "description": "Beendet die Abstimmung jetzt oder blendet ein Ergebnis aus."
+    },
+    "set_private_push": {
+      "name": "Sparsame Nachrichten",
+      "description": "Keine Namen, Aufgaben oder Fotos in Push-Nachrichten (die laufen über Google/Apple).",
+      "fields": {
+        "enabled": {
+          "name": "An",
+          "description": ""
+        }
+      }
+    },
+    "forget_member": {
+      "name": "Daten einer Person löschen",
+      "description": "Löscht eine Person und alles, was über sie gespeichert ist, auch Fotos.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        }
+      }
     }
   }
 }

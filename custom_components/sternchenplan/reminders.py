@@ -25,6 +25,7 @@ from .const import (
 )
 from .actions import async_ask_parents
 from .lamp import GREEN, ORANGE, async_flash
+from .privacy import scrub
 from .core import ChoreState, Family, Role
 
 if TYPE_CHECKING:
@@ -356,7 +357,7 @@ async def _notify(hass: HomeAssistant, service: str, title: str, message: str) -
         _LOGGER.warning("Benachrichtigungsdienst notify.%s gibt es nicht", service)
         return
     await hass.services.async_call(
-        "notify", service, {"title": title, "message": message}, blocking=False
+        "notify", service, scrub(hass, {"title": title, "message": message}), blocking=False
     )
 
 

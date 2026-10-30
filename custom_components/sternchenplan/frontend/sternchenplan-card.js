@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.33.0";
+const VERSION = "0.34.0";
 
 const T = {
   de: {
@@ -85,7 +85,7 @@ const T = {
     wzOwn: "Für jedes Kind",
     wzRewards: "Worauf sparen die Kinder?",
     wzRewardsText: "Belohnungen tauschen die Kinder gegen Sterne ein. Du bestätigst jedes Einlösen.",
-    wzPhotos: "Fotos vom Erledigen",
+    wzPhotos: "Fotos und Datenschutz",
     wzPhotosText: "Bei manchen Aufgaben machen Kinder ein Foto als Nachweis. Nur Eltern sehen es. Was soll danach passieren?",
     wzPhotoDelete: "Nach meiner Entscheidung löschen",
     wzPhotoDeleteSub: "Empfohlen. Es bleibt nichts gespeichert.",
@@ -233,6 +233,14 @@ const T = {
     fgConfirm: "Familienziel „{name}“ beenden?",
     tabMoney: "Geld",
     tabExtras: "Extras",
+    privTitle: "Datenschutz",
+    privPush: "Sparsame Push-Nachrichten",
+    privPushSub: "Push-Nachrichten laufen über Google oder Apple. Eingeschaltet stehen darin keine Namen, Aufgaben oder Fotos, nur „Schau in Sternchenplan nach“.",
+    privLocal: "Alles andere bleibt in eurem Home Assistant. Sternchenplan schickt nichts ins Internet.",
+    privPeople: "Daten einer Person",
+    privExport: "📥 Exportieren",
+    privDelete: "🗑️ Löschen",
+    privConfirm: "Wirklich alles über {name} löschen? Aufgaben-Verlauf, Sterne, Taschengeld, Fotos und Einlösungen sind danach weg. Zum Bestätigen den Namen eintippen:",
     feat: {
       pet: ["🐉", "Sternchen-Haustier", "Jedes Kind hat ein Tier, das mit den Sternen wächst."],
       lamp: ["💡", "Zimmerlampe als Ampel", "Leuchtet kurz orange, wenn etwas offen ist, und grün, wenn alles geschafft ist."],
@@ -455,7 +463,7 @@ const T = {
     wzOwn: "For each child",
     wzRewards: "What do the kids save up for?",
     wzRewardsText: "Kids trade stars for rewards. You confirm every redemption.",
-    wzPhotos: "Proof photos",
+    wzPhotos: "Photos and privacy",
     wzPhotosText: "Some chores need a photo as proof. Only parents see it. What happens afterwards?",
     wzPhotoDelete: "Delete after my decision",
     wzPhotoDeleteSub: "Recommended. Nothing stays stored.",
@@ -603,6 +611,14 @@ const T = {
     fgConfirm: "End family goal “{name}”?",
     tabMoney: "Money",
     tabExtras: "Extras",
+    privTitle: "Privacy",
+    privPush: "Sparing push notifications",
+    privPushSub: "Push notifications travel via Google or Apple. When on, they contain no names, chores or photos, just “Have a look in Sternchenplan”.",
+    privLocal: "Everything else stays in your Home Assistant. Sternchenplan sends nothing to the internet.",
+    privPeople: "Data of a person",
+    privExport: "📥 Export",
+    privDelete: "🗑️ Delete",
+    privConfirm: "Really delete everything about {name}? Chore history, stars, pocket money, photos and redemptions will be gone. Type the name to confirm:",
     feat: {
       pet: ["🐉", "Star pet", "Each child has a pet that grows with every star."],
       lamp: ["💡", "Room lamp signal", "Briefly glows orange when something is open and green when everything is done."],
@@ -1263,6 +1279,26 @@ class SternchenplanCard extends HTMLElement {
       case "cert-print":
         this._printCert();
         break;
+      case "priv-push":
+        this._data.private_push = !this._data.private_push;
+        this._render();
+        this._hass.callService("sternchenplan", "set_private_push", { enabled: this._data.private_push }).catch((err) => this._notify(err.message));
+        break;
+      case "wz-priv":
+        this._wz.privatePush = !this._wzPrivate();
+        this._render();
+        break;
+      case "priv-export":
+        this._exportMember(id);
+        break;
+      case "priv-delete": {
+        const who = this._member(id);
+        if (!who) break;
+        const typed = prompt(this._t("privConfirm", { name: who.name }));
+        if (typed == null || typed.trim().toLowerCase() !== who.name.trim().toLowerCase()) break;
+        this._call("forget_member", { member: id });
+        break;
+      }
       case "demand-now":
         this._call("trigger_chore", { chore_id: id });
         break;
@@ -1826,6 +1862,7 @@ class SternchenplanCard extends HTMLElement {
         <span class="wz-choice-emoji">${emoji}</span><span><strong>${title}</strong><span class="muted small">${sub}</span></span></button>`;
       body = `<h2>${this._t("wzPhotos")}</h2><p class="muted">${this._t("wzPhotosText")}</p>
         <div class="wz-choices">${opt(true, "🗑️", this._t("wzPhotoDelete"), this._t("wzPhotoDeleteSub"))}${opt(false, "🗂️", this._t("wzPhotoKeep"), this._t("wzPhotoKeepSub"))}</div>
+        <div class="feat-grid wz-priv">${this._privacyTile(this._wzPrivate(), "wz-priv")}</div>
         ${nav("finish", wz.busy ? this._t("wzWorking") : this._t("wzFinish"))}`;
     } else {
       body = `
@@ -1849,6 +1886,9 @@ class SternchenplanCard extends HTMLElement {
     try {
       if (wz.photo !== null && wz.photo !== this._data.photo_delete) {
         await this._hass.callService("sternchenplan", "set_photo_privacy", { delete: wz.photo });
+      }
+      if (wz.privatePush !== undefined && wz.privatePush !== !!this._data.private_push) {
+        await this._hass.callService("sternchenplan", "set_private_push", { enabled: wz.privatePush });
       }
       const features = [...wz.features].sort();
       if (features.join() !== this._features().slice().sort().join()) {
@@ -3095,6 +3135,27 @@ class SternchenplanCard extends HTMLElement {
     w.document.close();
   }
 
+  async _exportMember(id) {
+    const who = this._member(id);
+    try {
+      const data = await this._hass.connection.sendMessagePromise({ type: "sternchenplan/export", member: id });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sternchenplan-${(who?.name || id).toLowerCase().replace(/[^a-z0-9äöüß]+/gi, "-")}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } catch (err) {
+      this._notify(err.message);
+    }
+  }
+
+  _wzPrivate() {
+    return this._wz?.privatePush ?? !!this._data.private_push;
+  }
+
   _renderExtrasAdmin() {
     const d = this._data;
     const ro = this._config.readonly;
@@ -3162,7 +3223,27 @@ class SternchenplanCard extends HTMLElement {
     if (this._on("parents")) {
       sections.push(`<section class="extras-box"><div class="section-title">👨‍👩‍👧 ${esc(this._t("feat").parents[1])}</div><p class="muted small">${this._t("parentsHint")}</p></section>`);
     }
+    sections.push(this._renderPrivacy());
     return sections.join("");
+  }
+
+  _privacyTile(on, action) {
+    return `<button class="feat ${on ? "on" : ""}" data-action="${action}" aria-pressed="${on}">
+      <span class="feat-emoji">🔒</span><span class="feat-main"><strong>${this._t("privPush")}</strong><span class="muted small">${this._t("privPushSub")}</span></span>
+      <span class="feat-switch" aria-hidden="true"><i></i></span></button>`;
+  }
+
+  _renderPrivacy() {
+    const ro = this._config.readonly;
+    const people = this._data.members;
+    return `<section class="extras-box"><div class="section-title">🔒 ${this._t("privTitle")}</div>
+      <div class="feat-grid">${this._privacyTile(!!this._data.private_push, ro ? "noop" : "priv-push")}</div>
+      <p class="muted small">${this._t("privLocal")}</p>
+      ${ro ? "" : `<div class="small"><strong>${this._t("privPeople")}</strong></div>
+      <div class="extras-rows">${people.map((m) => `<div class="extras-row">${this._avatar(m, 32)}<strong>${esc(m.name)}</strong>
+        <span class="cert-links"><button class="link" data-action="priv-export" data-id="${esc(m.id)}">${this._t("privExport")}</button>
+        <button class="link bad" data-action="priv-delete" data-id="${esc(m.id)}">${this._t("privDelete")}</button></span></div>`).join("")}</div>`}
+    </section>`;
   }
 
   _children() {
@@ -4103,6 +4184,7 @@ const STYLE = `
   button.feat.on .feat-switch { background: var(--primary-color); }
   button.feat.on .feat-switch i { left: 21px; }
   .extras-box { margin: 0 0 18px; }
+  .wz-priv { margin-top: 14px; }
   .extras-rows { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
   .extras-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: var(--secondary-background-color); }
   .extras-row.wrap { flex-wrap: wrap; }
@@ -4114,7 +4196,7 @@ const STYLE = `
   .extras-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--secondary-background-color); flex-wrap: wrap; }
   .pet-overview { display: flex; flex-wrap: wrap; gap: 10px; }
   .pet-ov { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 20px; background: var(--secondary-background-color); }
-  .cert-links { margin-left: auto; }
+  .cert-links { margin-left: auto; display: flex; gap: 4px 14px; flex-wrap: wrap; justify-content: flex-end; }
   .pet-mini { font-size: .95em; }
 
   /* Haustier */

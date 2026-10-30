@@ -122,6 +122,8 @@ from .const import (
     SERVICE_START_VOTE,
     SERVICE_STOP_SCREEN_TIME,
     SERVICE_TRIGGER_CHORE,
+    SERVICE_FORGET_MEMBER,
+    SERVICE_SET_PRIVATE_PUSH,
 )
 from .consequences import next_release
 from .reminders import async_send_week_report, weather_is_bad
@@ -695,6 +697,18 @@ async def _clear_tag(hass, call, data, actor) -> None:
     data.family.set_tag(actor, call.data[ATTR_CHORE_ID], "")
 
 
+async def _set_private_push(hass, call, data, actor) -> None:
+    data.family.set_private_push(actor, call.data[ATTR_ENABLED])
+
+
+async def _forget_member(hass, call, data, actor) -> None:
+    """Person mit allen Spuren löschen, auch ihre Fotos."""
+    from .photos import async_discard  # noqa: PLC0415
+
+    for photo in data.family.remove_member(actor, _member_id(data, call.data[ATTR_MEMBER])):
+        await async_discard(hass, photo)
+
+
 async def _set_features(hass, call, data, actor) -> None:
     data.family.set_features(actor, call.data[ATTR_FEATURES])
 
@@ -797,5 +811,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_START_VOTE, _start_vote, VOTE_SCHEMA),
         (SERVICE_CAST_VOTE, _cast_vote, CAST_VOTE_SCHEMA),
         (SERVICE_END_VOTE, _end_vote, EMPTY_SCHEMA),
+        (SERVICE_SET_PRIVATE_PUSH, _set_private_push, vol.Schema({vol.Required(ATTR_ENABLED): cv.boolean})),
+        (SERVICE_FORGET_MEMBER, _forget_member, vol.Schema({vol.Required(ATTR_MEMBER): cv.string})),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

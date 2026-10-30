@@ -17,6 +17,7 @@ from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from .const import SIGNAL_UPDATED
+from .privacy import scrub
 from .core import SYSTEM, ChoreState, FamilyError, Recurrence
 
 if TYPE_CHECKING:
@@ -48,7 +49,7 @@ def async_setup_house(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> l
         service = member.notify_service.removeprefix("notify.")
         if hass.services.has_service("notify", service):
             await hass.services.async_call(
-                "notify", service, {"title": "Sternchenplan", "message": message}, blocking=False
+                "notify", service, scrub(hass, {"title": "Sternchenplan", "message": message}), blocking=False
             )
 
     async def changed(event: Event[EventStateChangedData]) -> None:

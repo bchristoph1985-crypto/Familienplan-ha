@@ -1,7 +1,7 @@
 """Konstanten für Sternchenplan."""
 
 DOMAIN = "sternchenplan"
-VERSION = "0.33.0"
+VERSION = "0.34.0"
 CARD_URL = "/sternchenplan/sternchenplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -156,3 +156,6 @@ SERVICE_TRIGGER_CHORE = "trigger_chore"
 SERVICE_START_VOTE = "start_vote"
 SERVICE_CAST_VOTE = "cast_vote"
 SERVICE_END_VOTE = "end_vote"
+# Datenschutz (0.34)
+SERVICE_SET_PRIVATE_PUSH = "set_private_push"
+SERVICE_FORGET_MEMBER = "forget_member"

@@ -1033,6 +1033,26 @@
     "end_vote": {
       "name": "End family vote",
       "description": "Closes the vote now, or hides a finished result."
+    },
+    "set_private_push": {
+      "name": "Sparing notifications",
+      "description": "No names, chores or photos in push messages (they travel via Google/Apple).",
+      "fields": {
+        "enabled": {
+          "name": "On",
+          "description": ""
+        }
+      }
+    },
+    "forget_member": {
+      "name": "Delete member data",
+      "description": "Removes a member and everything stored about them, including photos.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        }
+      }
     }
   }
 }

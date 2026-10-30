@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
+from .privacy import scrub
 from .core import Chore, ChoreState, FamilyError, Member, Role
 
 if TYPE_CHECKING:
@@ -135,7 +136,7 @@ async def _notify(hass: HomeAssistant, member: Member | None, message: str) -> N
     service = member.notify_service.removeprefix("notify.")
     if hass.services.has_service("notify", service):
         await hass.services.async_call(
-            "notify", service, {"title": "Sternchenplan", "message": message}, blocking=False
+            "notify", service, scrub(hass, {"title": "Sternchenplan", "message": message}), blocking=False
         )
 
 

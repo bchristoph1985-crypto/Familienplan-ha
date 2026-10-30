@@ -362,9 +362,11 @@ class Family(ExtrasMixin):
         member.birth_year = None if age is None else now.year - age
         return member
 
-    def remove_member(self, actor: Actor, member_id: str) -> None:
+    def remove_member(self, actor: Actor, member_id: str) -> list[str]:
+        """Person und alle ihre Spuren löschen. Gibt Fotos zurück, die weg müssen."""
         self._require_manager(actor)
         self.member(member_id)
+        photos = self._purge(member_id)
         del self.members[member_id]
         self.locked.pop(member_id, None)
         for reward in list(self.rewards.values()):
@@ -386,6 +388,7 @@ class Family(ExtrasMixin):
             if chore.claimed_by == member_id:
                 chore.claimed_by = None
                 chore.state = ChoreState.OPEN
+        return photos
 
     def set_absence(
         self,

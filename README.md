@@ -195,6 +195,14 @@ Im Willkommens-Assistenten (Schritt 2) und später im Reiter **✨ Extras** scha
 
 Neue Ereignisse für eigene Automationen: `sternchenplan_all_done`, `sternchenplan_screen_start`, `sternchenplan_screen_ending`, `sternchenplan_screen_over`, `sternchenplan_vote_started`, `sternchenplan_vote_result`, `sternchenplan_month_report`.
 
+## Datenschutz
+
+- **Alles bleibt zu Hause.** Sternchenplan läuft komplett in eurem Home Assistant. Es gibt keine Cloud, kein Konto und keine Statistik, und die Integration schickt nichts ins Internet.
+- **Fotos** sehen nur Eltern, über Links, die eine Stunde gelten. Standardmäßig werden sie nach der Entscheidung gelöscht, sonst nach der eingestellten Frist.
+- **Sparsame Push-Nachrichten:** Pushes ans Handy laufen über Google (Android) bzw. Apple (iPhone). Eingeschaltet (im Assistenten oder unter ✨ Extras → Datenschutz) stehen darin keine Namen, Aufgaben oder Fotos mehr, nur „Schau in Sternchenplan nach“. Die Knöpfe zum Freigeben bleiben. Hinweis: Ansagen über Alexa laufen über Amazon.
+- **Daten einer Person:** Unter ✨ Extras → Datenschutz lässt sich alles über eine Person als Datei exportieren oder komplett löschen (Verlauf, Sterne, Taschengeld, Einlösungen, Fotos). Dienst: `sternchenplan.forget_member`.
+- **Alles löschen:** Wer die Integration entfernt, löscht damit alle Familiendaten.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.
