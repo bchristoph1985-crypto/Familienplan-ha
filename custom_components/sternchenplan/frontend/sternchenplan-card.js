@@ -16,6 +16,7 @@ const T = {
   de: {
     hello: "Hallo {name}",
     points: "{n} Sterne",
+    pointsOne: "1 Stern",
     done: "Erledigt",
     allDone: "Alles erledigt 🎉",
     waiting: "Wartet auf Freigabe",
@@ -118,7 +119,7 @@ const T = {
     wzWorking: "Ich lege alles an …",
     wzDone: "Fertig! Euer Plan steht.",
     wzDoneText: "{n} Aufgaben und {r} Belohnungen sind angelegt.",
-    wzTips: ["Kinder öffnen in der Home-Assistant-App den Menüpunkt „Sternchenplan“.", "Neue Aufgaben legst du unter „Aufgaben“ an, mit Vorlagen nach Alter.", "Der ❓-Knopf erklärt jeden Bereich."],
+    wzTips: ["Kinder öffnen in der Home-Assistant-App den Menüpunkt „Sternchenplan“.", "Neue Aufgaben legst du unter „Aufgaben“ an, mit Vorlagen nach Alter.", "Unter „Einstellungen“ kannst du alles später ändern, auch Hilfe-Tipps einschalten."],
     wzGo: "Zum Plan",
     wzStep: "Schritt {n} von 5",
     themeTitle: "🎨 Mein Design",
@@ -423,6 +424,7 @@ const T = {
   en: {
     hello: "Hi {name}",
     points: "{n} stars",
+    pointsOne: "1 star",
     done: "Done",
     allDone: "All done 🎉",
     waiting: "Waiting for approval",
@@ -525,7 +527,7 @@ const T = {
     wzWorking: "Creating everything …",
     wzDone: "Done! Your plan is ready.",
     wzDoneText: "{n} chores and {r} rewards created.",
-    wzTips: ["Kids open “Sternchenplan” in the Home Assistant app.", "Add more chores under “Chores”, with templates by age.", "The ❓ button explains every section."],
+    wzTips: ["Kids open “Sternchenplan” in the Home Assistant app.", "Add more chores under “Chores”, with templates by age.", "You can change everything later under “Settings”, and switch on help tips there."],
     wzGo: "Go to the plan",
     wzStep: "Step {n} of 5",
     themeTitle: "🎨 My look",
@@ -2051,9 +2053,13 @@ class SternchenplanCard extends HTMLElement {
     const lang = this._lang();
     const call = (service, data) => this._hass.callService("sternchenplan", service, data);
     try {
+      // Gemeinsame Aufgaben reihum versetzt starten, sonst hat am ersten Tag ein Kind alle
+      let turn = 0;
       for (const c of plan.chores) {
+        const ids = c.who.map((k) => k.id);
+        const shift = c.rotation && ids.length > 1 ? turn++ % ids.length : 0;
         await call("create_chore", {
-          name: c.t.name[lang], assignees: c.who.map((k) => k.id), points: c.t.points, recurrence: c.t.rec,
+          name: c.t.name[lang], assignees: [...ids.slice(shift), ...ids.slice(0, shift)], points: c.t.points, recurrence: c.t.rec,
           due: this._nextAt(c.t.time).toISOString(), rotation: c.rotation, requires_photo: !!c.t.photo,
           min_age: c.t.age, icon: c.t.emoji, steps: c.t.steps?.[lang] || [], outdoor: !!c.t.outdoor,
         });
@@ -2829,7 +2835,7 @@ class SternchenplanCard extends HTMLElement {
           <div class="hero-text">
             <div class="hello">${esc(this._t("hello", { name: member.name }))} 👋</div>
             <div class="muted">${esc(line)}</div>
-            <div class="star">⭐ ${esc(this._t("points", { n: member.points }))}${streak ? ` · 🔥 ${streak}` : ""}</div>
+            <div class="star">⭐ ${esc(member.points === 1 ? this._t("pointsOne") : this._t("points", { n: member.points }))}${streak ? ` · 🔥 ${streak}` : ""}</div>
           </div>
           ${this._ring(done, total || open, color, 72)}
         </div>
@@ -3482,7 +3488,7 @@ class SternchenplanCard extends HTMLElement {
       .reduce((n, c) => n + (c.points || 0), 0);
     const now = new Date();
     const h = now.getHours();
-    const greet = this._t("greet")[h < 11 ? 0 : h < 17 ? 1 : 2];
+    const greet = this._t("greet")[h >= 5 && h < 11 ? 0 : h >= 11 && h < 17 ? 1 : 2];
     const me = this._member(d.me);
     const date = now.toLocaleDateString(this._locale(), { weekday: "long", day: "numeric", month: "long" });
     const tile = (emoji, value, label, cls = "", action = "") => `

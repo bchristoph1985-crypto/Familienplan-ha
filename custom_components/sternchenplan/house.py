@@ -11,6 +11,7 @@ import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_track_state_change_event
@@ -55,7 +56,11 @@ def async_setup_house(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> l
     async def changed(event: Event[EventStateChangedData]) -> None:
         entity_id = event.data["entity_id"]
         new, old = event.data["new_state"], event.data["old_state"]
-        if new is None or (old is not None and old.state == new.state):
+        if new is None or old is None or old.state == new.state:
+            return
+        if old.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+            # Gerät war kurz weg (WLAN, Neustart) und meldet sich zurück: das ist kein
+            # neues Ereignis. Sonst käme „Wäsche aufhängen“ nach jedem Aussetzer erneut.
             return
         now = dt_util.utcnow()
         save = False

@@ -141,8 +141,10 @@ async def _apply_screen(hass: HomeAssistant, family, now: datetime, context: Con
     for member in family.members.values():
         was_on = family.screen_on.get(member.id, [])
         if family.screen_active(member, now) and member.screen_devices:
-            to_on = [e for e in member.screen_devices if not _is(hass, e, STATE_ON)]
-            await _switch_any(hass, to_on, True, context)
+            # Nur beim Start einschalten. Schaltet jemand den Fernseher selbst aus,
+            # bleibt er aus und geht nicht jede Minute wieder an.
+            new = [e for e in member.screen_devices if e not in was_on]
+            await _switch_any(hass, [e for e in new if not _is(hass, e, STATE_ON)], True, context)
             if sorted(member.screen_devices) != sorted(was_on):
                 stale = [e for e in was_on if e not in member.screen_devices]
                 await _switch_any(hass, [e for e in stale if _is(hass, e, STATE_ON)], False, context)

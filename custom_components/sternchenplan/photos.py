@@ -51,8 +51,23 @@ def photo_dir(hass: HomeAssistant) -> Path:
     return Path(hass.config.path(PHOTO_DIR))
 
 
+# Dateiname -> (Link, gültig bis). Derselbe Link für eine Weile, sonst laden
+# Galerie und Freigaben bei jeder Änderung alle Bilder neu.
+_SIGNED: dict[str, tuple[str, float]] = {}
+
+
 def signed_url(hass: HomeAssistant, filename: str) -> str:
-    return async_sign_path(hass, f"{PHOTO_URL}/{filename}", timedelta(hours=1))
+    now = time.time()
+    hit = _SIGNED.get(filename)
+    if hit and hit[1] - now > 600:
+        return hit[0]
+    # Mit dem Inhalts-Benutzer signieren, nicht mit dem Konto, das die Änderung
+    # gerade ausgelöst hat: sonst hängt der Link der Eltern am Kinderkonto.
+    url = async_sign_path(hass, f"{PHOTO_URL}/{filename}", timedelta(hours=1), use_content_user=True)
+    if len(_SIGNED) > 500:
+        _SIGNED.clear()
+    _SIGNED[filename] = (url, now + 3600)
+    return url
 
 
 def _write(path: Path, data: bytes) -> None:

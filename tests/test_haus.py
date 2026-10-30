@@ -65,3 +65,25 @@ async def test_mehrere_dran_ohne_gutschrift(hass: HomeAssistant, entry) -> None:
     hass.states.async_set("binary_sensor.tuer", "off")
     await hass.async_block_till_done()
     assert chore.state is ChoreState.OPEN  # wer war es? unklar, also nichts gutschreiben
+
+
+async def test_geraet_kommt_zurueck_ist_kein_ereignis(hass: HomeAssistant, entry) -> None:  # noqa: F811
+    fam = entry.runtime_data.family
+    lucas = next(m for m in fam.members.values() if m.name == "Lucas")
+    fam.set_features(SYSTEM, [*fam.features, "demand"])
+    hass.states.async_set("sensor.waschmaschine", "fertig")
+    chore = fam.create_chore(SYSTEM, "Wäsche aufhängen", [lucas.id], recurrence=Recurrence.ON_DEMAND,
+                             house={"start_entity": "sensor.waschmaschine", "start_state": "fertig"})
+    await entry.runtime_data.async_save()
+    # WLAN-Aussetzer: kurz nicht erreichbar, dann wieder „fertig“ wie vorher
+    hass.states.async_set("sensor.waschmaschine", "unavailable")
+    await hass.async_block_till_done()
+    hass.states.async_set("sensor.waschmaschine", "fertig")
+    await hass.async_block_till_done()
+    assert chore.state is ChoreState.DONE  # ruht weiter
+    # Echte neue Wäsche
+    hass.states.async_set("sensor.waschmaschine", "läuft")
+    await hass.async_block_till_done()
+    hass.states.async_set("sensor.waschmaschine", "fertig")
+    await hass.async_block_till_done()
+    assert chore.state is not ChoreState.DONE

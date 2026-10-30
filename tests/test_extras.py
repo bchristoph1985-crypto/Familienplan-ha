@@ -258,6 +258,9 @@ async def test_bildschirmzeit_schaltet_geraete(
     )
     assert lucas.points == 3
     assert [c.data["entity_id"] for c in on] == ["switch.tv"]
+    # Kind macht den Fernseher früher selbst aus: er bleibt aus
+    await data.async_tick()
+    assert len(on) == 1
     hass.states.async_set("switch.tv", "on")
     lucas.screen_until = dt_util.utcnow() - timedelta(seconds=1)
     await data.async_tick()

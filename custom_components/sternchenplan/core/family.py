@@ -998,9 +998,9 @@ class Family(ExtrasMixin):
             self._rotate(chore, rotate_from)
             return
         # Wegen Regen verschoben: der Takt richtet sich weiter nach der alten Frist.
-        base = chore.due - timedelta(days=chore.weather_shift) if chore.due else None
+        base = _add_days(chore.due, -chore.weather_shift, self.tz) if chore.due else None
         chore.weather_shift = 0
-        chore.due = self._allowed_day(chore, _next_due(base, chore.recurrence, now))
+        chore.due = self._allowed_day(chore, _next_due(base, chore.recurrence, now, self.tz))
         self._rotate(chore, rotate_from)
         chore.state = ChoreState.OPEN
 
@@ -1116,7 +1116,7 @@ class Family(ExtrasMixin):
                 if chore.due >= start:
                     chore.due += end - start
             else:
-                chore.due = self._allowed_day(chore, _next_due(chore.due, chore.recurrence, end))
+                chore.due = self._allowed_day(chore, _next_due(chore.due, chore.recurrence, end, self.tz))
             if chore.state is ChoreState.OVERDUE and chore.due > now:
                 chore.state = ChoreState.OPEN
         start_day = start.astimezone(self.tz).date()
@@ -1135,7 +1135,7 @@ class Family(ExtrasMixin):
         for _ in range(7):
             if due.astimezone(self.tz).weekday() in chore.weekdays:
                 break
-            due += timedelta(days=1)
+            due = _add_days(due, 1, self.tz)
         return due
 
     # -- Wetter und Wochenbericht ---------------------------------------------
@@ -1149,7 +1149,7 @@ class Family(ExtrasMixin):
     def _postpone(self, chore: Chore, now: datetime) -> None:
         """Draußen-Aufgabe bei Regen: gleiche Uhrzeit, nächster passender Tag."""
         while chore.due is not None and chore.due < now:
-            chore.due = self._allowed_day(chore, chore.due + timedelta(days=1))
+            chore.due = self._allowed_day(chore, _add_days(chore.due, 1, self.tz))
             chore.weather_shift += 1
         self._log(chore, "postponed", None, now)
 
@@ -1263,7 +1263,7 @@ class Family(ExtrasMixin):
                         result.append((due, chore, who))
                 if step is None:
                     break
-                due += step
+                due = (due.astimezone(self.tz) + step).astimezone(UTC)
                 k += 1
         result.sort(key=lambda r: r[0])
         return result
@@ -1537,15 +1537,20 @@ def _clean_weekdays(days: list[int] | None) -> list[int]:
     return [] if len(cleaned) == 7 else cleaned
 
 
-def _next_due(due: datetime | None, recurrence: Recurrence, now: datetime) -> datetime:
+def _next_due(due: datetime | None, recurrence: Recurrence, now: datetime, tz: tzinfo = UTC) -> datetime:
     """Nächste Frist nach `now`, im festen Takt der ersten Frist.
 
     Wer eine Aufgabe zu spät erledigt, bekommt keine Frist in der
     Vergangenheit, und der Wochentag bzw. die Uhrzeit bleiben gleich.
+    Gerechnet wird in Ortszeit, damit 19 Uhr auch nach der Zeitumstellung 19 Uhr bleibt.
     """
     step = _INTERVALS[recurrence]
-    base = due or now
-    nxt = base + step
+    nxt = (due or now).astimezone(tz) + step
     while nxt <= now:
         nxt += step
-    return nxt
+    return nxt.astimezone(UTC)
+
+
+def _add_days(when: datetime, days: int, tz: tzinfo) -> datetime:
+    """Tage in Ortszeit addieren: gleiche Uhrzeit auch über die Zeitumstellung."""
+    return (when.astimezone(tz) + timedelta(days=days)).astimezone(UTC)
