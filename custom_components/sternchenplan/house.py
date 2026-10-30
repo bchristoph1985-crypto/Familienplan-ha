@@ -17,7 +17,7 @@ from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from .const import SIGNAL_UPDATED
-from .core import ChoreState, FamilyError
+from .core import SYSTEM, ChoreState, FamilyError, Recurrence
 
 if TYPE_CHECKING:
     from . import SternchenplanConfigEntry
@@ -69,6 +69,11 @@ def async_setup_house(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> l
                     save = True
                     await notify(member_id, text["done"].format(chore=chore.name, points=chore.points))
             if chore.start_entity == entity_id and _matches(new.state, chore.start_state):
+                if chore.recurrence is Recurrence.ON_DEMAND:
+                    # Bei Bedarf: Das Gerät macht die Aufgabe fällig, der Push kommt beim Speichern.
+                    if family.has("demand") and family.trigger_chore(SYSTEM, chore.id, now):
+                        save = True
+                    continue
                 if chore.state in (ChoreState.OPEN, ChoreState.OVERDUE):
                     for member_id in family.responsible(chore, now):
                         await notify(member_id, text["start"].format(chore=chore.name))

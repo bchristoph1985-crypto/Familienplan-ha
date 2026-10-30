@@ -127,7 +127,46 @@ async def async_apply(hass: HomeAssistant, entry: SternchenplanConfigEntry, now:
     for member_id in [m for m, devices in family.locked.items() if not devices]:
         del family.locked[member_id]
         changed = True
+    if await _apply_screen(hass, family, now, context):
+        changed = True
     return changed
+
+
+async def _apply_screen(hass: HomeAssistant, family, now: datetime, context: Context) -> bool:
+    """Bildschirmzeit: Geräte an, solange verdiente Zeit läuft, danach wieder aus.
+
+    Ausgeschaltet wird nur, was Sternchenplan selbst eingeschaltet hat.
+    """
+    changed = False
+    for member in family.members.values():
+        was_on = family.screen_on.get(member.id, [])
+        if family.screen_active(member, now) and member.screen_devices:
+            to_on = [e for e in member.screen_devices if not _is(hass, e, STATE_ON)]
+            await _switch_any(hass, to_on, True, context)
+            if sorted(member.screen_devices) != sorted(was_on):
+                stale = [e for e in was_on if e not in member.screen_devices]
+                await _switch_any(hass, [e for e in stale if _is(hass, e, STATE_ON)], False, context)
+                family.screen_on[member.id] = list(member.screen_devices)
+                changed = True
+        elif was_on:
+            await _switch_any(hass, [e for e in was_on if _is(hass, e, STATE_ON)], False, context)
+            del family.screen_on[member.id]
+            changed = True
+    return changed
+
+
+async def _switch_any(hass: HomeAssistant, entity_ids: list[str], on: bool, context: Context) -> None:
+    """Schalter, Steckdosen, Mediaplayer: jeweils mit dem passenden Dienst."""
+    for entity_id in entity_ids:
+        domain = entity_id.split(".", 1)[0]
+        domain = domain if domain in ("switch", "media_player", "input_boolean", "light", "fan") else "homeassistant"
+        try:
+            await hass.services.async_call(
+                domain, "turn_on" if on else "turn_off", {"entity_id": entity_id},
+                blocking=True, context=context,
+            )
+        except Exception:  # noqa: BLE001 – ein Gerät darf die anderen nicht aufhalten
+            _LOGGER.warning("Bildschirmzeit: %s ließ sich nicht schalten", entity_id)
 
 
 def _is(hass: HomeAssistant, entity_id: str, wanted: str) -> bool:

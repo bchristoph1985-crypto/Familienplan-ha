@@ -165,7 +165,8 @@
         "none": "Einmalig",
         "daily": "Täglich",
         "weekly": "Wöchentlich",
-        "biweekly": "Alle 2 Wochen"
+        "biweekly": "Alle 2 Wochen",
+        "on_demand": "Bei Bedarf (Gerät meldet)"
       }
     },
     "starter": {
@@ -892,6 +893,146 @@
           "description": "An: nach Bestätigen oder Ablehnen löschen. Aus: behalten."
         }
       }
+    },
+    "set_features": {
+      "name": "Funktionen",
+      "description": "Legt fest, welche Zusatzfunktionen die Familie nutzt.",
+      "fields": {
+        "features": {
+          "name": "Funktionen",
+          "description": "pet, lamp, screen, demand, vote, certificate, parents, money, goal."
+        }
+      }
+    },
+    "set_pet": {
+      "name": "Haustier",
+      "description": "Sucht das Sternchen-Haustier eines Kindes und seinen Namen aus.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        },
+        "pet": {
+          "name": "Tier",
+          "description": "Welches Tier."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Name des Haustiers."
+        }
+      }
+    },
+    "set_lamp": {
+      "name": "Zimmerlampe",
+      "description": "Lampe, die kurz orange (etwas offen) oder grün (alles geschafft) leuchtet.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        },
+        "entity": {
+          "name": "Lampe",
+          "description": "Leer schaltet es aus."
+        }
+      }
+    },
+    "set_screen": {
+      "name": "Bildschirmzeit",
+      "description": "Minuten Bildschirmzeit pro Stern (0 = aus) und Höchstwert pro Tag.",
+      "fields": {
+        "rate": {
+          "name": "Minuten pro Stern",
+          "description": "0 schaltet es aus."
+        },
+        "max_minutes": {
+          "name": "Höchstens pro Tag",
+          "description": "Minuten."
+        }
+      }
+    },
+    "set_screen_devices": {
+      "name": "Geräte für Bildschirmzeit",
+      "description": "Geräte, die während der verdienten Zeit an sind (Fernseher-Steckdose, Konsole, Internet-Schalter).",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        },
+        "devices": {
+          "name": "Geräte",
+          "description": "Schalter oder Mediaplayer."
+        }
+      }
+    },
+    "buy_screen_time": {
+      "name": "Bildschirmzeit holen",
+      "description": "Ein Kind tauscht Sterne gegen Bildschirmzeit.",
+      "fields": {
+        "minutes": {
+          "name": "Minuten",
+          "description": "In 5er-Schritten."
+        },
+        "member": {
+          "name": "Mitglied",
+          "description": "Nur für Eltern oder das Familientablet nötig."
+        }
+      }
+    },
+    "stop_screen_time": {
+      "name": "Bildschirmzeit beenden",
+      "description": "Beendet laufende Bildschirmzeit vorzeitig.",
+      "fields": {
+        "member": {
+          "name": "Mitglied",
+          "description": "Name oder ID."
+        }
+      }
+    },
+    "trigger_chore": {
+      "name": "Jetzt fällig machen",
+      "description": "Macht eine Aufgabe „bei Bedarf“ jetzt fällig, z. B. aus einer Automation.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID der Aufgabe."
+        }
+      }
+    },
+    "start_vote": {
+      "name": "Familienrat starten",
+      "description": "Stellt der Familie eine Frage mit 2 bis 6 Möglichkeiten.",
+      "fields": {
+        "question": {
+          "name": "Frage",
+          "description": "Z. B. Wohin am Samstag?"
+        },
+        "options": {
+          "name": "Möglichkeiten",
+          "description": "2 bis 6."
+        },
+        "hours": {
+          "name": "Offen für",
+          "description": "Stunden."
+        }
+      }
+    },
+    "cast_vote": {
+      "name": "Abstimmen",
+      "description": "Gibt eine Stimme im Familienrat ab.",
+      "fields": {
+        "option": {
+          "name": "Möglichkeit",
+          "description": "Nummer, beginnend bei 0."
+        },
+        "member": {
+          "name": "Mitglied",
+          "description": "Nur für das Familientablet nötig."
+        }
+      }
+    },
+    "end_vote": {
+      "name": "Familienrat beenden",
+      "description": "Beendet die Abstimmung jetzt oder blendet ein Ergebnis aus."
     }
   }
 }

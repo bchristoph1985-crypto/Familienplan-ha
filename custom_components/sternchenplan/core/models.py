@@ -24,6 +24,8 @@ class Recurrence(StrEnum):
     DAILY = "daily"
     WEEKLY = "weekly"
     BIWEEKLY = "biweekly"
+    # Bei Bedarf: ruht, bis ein Gerät (z. B. Waschmaschine fertig) oder Eltern sie fällig machen
+    ON_DEMAND = "on_demand"
 
 
 class ChoreState(StrEnum):
@@ -59,6 +61,17 @@ class Member:
     picture_mode: bool = False
     # Aussehen der eigenen Ansicht („“ = Standard)
     theme: str = ""
+    # Sternchen-Haustier: Tierart und Name, vom Kind ausgesucht
+    pet: str = ""
+    pet_name: str = ""
+    # Zimmerlampe als Ampel (light.*)
+    lamp: str = ""
+    # Bildschirmzeit: Geräte, die während der verdienten Zeit an sind, und bis wann
+    screen_devices: list[str] = field(default_factory=list)
+    screen_until: datetime | None = None
+    screen_warned: bool = False
+    screen_day: date | None = None
+    screen_used: int = 0  # Minuten an screen_day
 
     def age(self, now: datetime) -> int | None:
         """Alter in Jahren, auf das Jahr genau. None, wenn nicht bekannt."""
@@ -99,6 +112,14 @@ class Member:
             "allowance_paid": self.allowance_paid.isoformat() if self.allowance_paid else None,
             "picture_mode": self.picture_mode,
             "theme": self.theme,
+            "pet": self.pet,
+            "pet_name": self.pet_name,
+            "lamp": self.lamp,
+            "screen_devices": list(self.screen_devices),
+            "screen_until": self.screen_until.isoformat() if self.screen_until else None,
+            "screen_warned": self.screen_warned,
+            "screen_day": self.screen_day.isoformat() if self.screen_day else None,
+            "screen_used": self.screen_used,
         }
 
     @classmethod
@@ -126,6 +147,14 @@ class Member:
             ),
             picture_mode=bool(data.get("picture_mode", False)),
             theme=str(data.get("theme") or ""),
+            pet=str(data.get("pet") or ""),
+            pet_name=str(data.get("pet_name") or ""),
+            lamp=str(data.get("lamp") or ""),
+            screen_devices=list(data.get("screen_devices", [])),
+            screen_until=_parse_dt(data.get("screen_until")),
+            screen_warned=bool(data.get("screen_warned", False)),
+            screen_day=date.fromisoformat(data["screen_day"]) if data.get("screen_day") else None,
+            screen_used=int(data.get("screen_used", 0)),
         )
 
 

@@ -180,6 +180,21 @@ Jede Aufgabe kann mit einem Gerät oder Sensor aus Home Assistant verbunden werd
 
 Jedes Kind wählt unten in seiner Ansicht unter „🎨 Mein Design“ sein eigenes Aussehen: 🚀 Weltraum, 🌴 Dschungel, 🐠 Ozean, 🍭 Bonbon oder ✨ Klar. Eltern finden den 🎨-Knopf oben in der Reiterleiste und können zusätzlich „Elegant“ wählen. Die Wahl wird in Home Assistant gespeichert und gilt auf jedem Gerät. Per Dienst geht es auch: `sternchenplan.set_theme`.
 
+## Extras: Was ihr nutzen wollt
+
+Im Willkommens-Assistenten (Schritt 2) und später im Reiter **✨ Extras** schaltet ihr an oder aus, was ihr braucht. Was aus ist, verschwindet aus der Ansicht.
+
+- **🐉 Sternchen-Haustier:** Jedes Kind sucht sich ein Tier aus (Drache, Katze, Hund, Einhorn, Dino, Panda, Fuchs, Eule) und gibt ihm einen Namen. Es schlüpft aus dem Ei und wächst mit jedem Level. Es freut sich, wenn alles geschafft ist, hat Hunger, wenn noch etwas offen ist, ist traurig bei Überfälligem und schläft nachts.
+- **💡 Zimmerlampe als Ampel:** Pro Person eine Lampe. Sie leuchtet ein paar Sekunden orange bei Erinnerungen und überfälligen Aufgaben und grün, wenn heute alles geschafft ist. Danach ist sie wieder genau wie vorher. Zwischen 21 und 7 Uhr bleibt sie in Ruhe.
+- **📺 Bildschirmzeit verdienen:** Eltern legen fest, wie viele Minuten ein Stern wert ist und wie viel höchstens pro Tag geht, und wählen pro Kind Geräte (Fernseher-Steckdose, Konsole, Internet-Schalter). Das Kind tauscht Sterne gegen 10, 20, 30 oder 60 Minuten. Die Geräte gehen an und danach wieder aus, 5 Minuten vorher kommt ein Hinweis. Bei überfälligen Aufgaben gibt es keine Bildschirmzeit.
+- **🧺 Geräte melden Aufgaben:** Aufgaben mit Wiederholung „bei Bedarf“ ruhen, bis ein Gerät sie fällig macht (unter „Das Haus prüft selbst“ → „Jetzt dran, wenn …“, z. B. Waschmaschine fertig). Wer dran ist, bekommt sofort Bescheid und hat 2 Stunden Zeit. Reihum geht es danach weiter. Eltern können sie auch per Knopf oder Dienst `sternchenplan.trigger_chore` fällig machen.
+- **🗳️ Familienrat:** Eltern stellen eine Frage mit 2 bis 6 Möglichkeiten. Alle stimmen ab, auch die Eltern. Sind alle fertig oder ist die Zeit um, bekommen alle das Ergebnis per Push.
+- **🏅 Monatsurkunde:** Am Monatsersten gibt es pro Kind eine Urkunde mit erledigten Aufgaben, Sternen, bester Serie, Lieblingsaufgabe und neuen Abzeichen, zum Ansehen und Ausdrucken.
+- **👨‍👩‍👧 Eltern machen mit:** Eltern mit eigenen Aufgaben erscheinen bei „Heute“, in der Wochenwertung und auf der Urkunde. Ihre Sterne zählen fürs Familienziel.
+- **💶 Taschengeld** und **🎯 Familienziel** lassen sich ebenfalls abschalten.
+
+Neue Ereignisse für eigene Automationen: `sternchenplan_all_done`, `sternchenplan_screen_start`, `sternchenplan_screen_ending`, `sternchenplan_screen_over`, `sternchenplan_vote_started`, `sternchenplan_vote_result`, `sternchenplan_month_report`.
+
 ## Trinkgeld
 
 Gefällt euch Sternchenplan? Über ein kleines Trinkgeld freue ich mich sehr.

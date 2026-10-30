@@ -54,7 +54,21 @@ def snapshot(
     def iso(value: datetime | None) -> str | None:
         return value.isoformat() if value else None
 
+    today = now.astimezone(family.tz).date()
+    month = None
+    if family.has("certificate"):
+        year, mon = family.previous_month(today)
+        month = {
+            "prev": {"year": year, "month": mon, "rows": family.month_report(year, mon)},
+            "now": {"year": today.year, "month": today.month,
+                    "rows": family.month_report(today.year, today.month)},
+        }
+
     return {
+        "features": sorted(family.features),
+        "screen": {"rate": family.screen_rate, "max": family.screen_max},
+        "vote": family.vote,
+        "month": month,
         "me": actor.member.id if actor.member else None,
         "is_manager": actor.is_manager,
         "tablet": actor.tablet and not actor.is_manager,
@@ -96,6 +110,13 @@ def snapshot(
                 "money": m.money,
                 "picture_mode": m.picture_mode,
                 "theme": m.theme,
+                "pet": m.pet,
+                "pet_name": m.pet_name,
+                "lamp": m.lamp if actor.is_manager else "",
+                "screen_devices": list(m.screen_devices) if actor.is_manager else [],
+                "has_screen": bool(m.screen_devices),
+                "screen_until": iso(m.screen_until) if family.screen_active(m, now) else None,
+                "screen_left": family.screen_left_today(m, now),
                 # Bonus und Abzug sehen Eltern und das Kind selbst
                 "star_log": (
                     family.star_history(m.id, 10)
