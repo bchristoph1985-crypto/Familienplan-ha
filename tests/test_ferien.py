@@ -22,28 +22,28 @@ from .test_progress import _done
 
 
 def test_ferien_pause(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
+    finn = by_name(family, "Finn")
     chore = family.create_chore(
-        SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=NOW + timedelta(hours=2)
+        SYSTEM, "Müll", [finn.id], recurrence=Recurrence.DAILY, due=NOW + timedelta(hours=2)
     )
-    family.set_devices(SYSTEM, lucas.id, ["switch.ps5"])
-    _done(family, "Lucas", NOW - timedelta(days=1))  # Serie läuft
+    family.set_devices(SYSTEM, finn.id, ["switch.ps5"])
+    _done(family, "Finn", NOW - timedelta(days=1))  # Serie läuft
     with pytest.raises(PermissionDenied):
-        family.set_pause(actor(family, "Lucas"), NOW, NOW + timedelta(days=7))
+        family.set_pause(actor(family, "Finn"), NOW, NOW + timedelta(days=7))
     family.set_pause(SYSTEM, NOW, NOW + timedelta(days=7))
     later = NOW + timedelta(days=3)
     family.refresh(later)
     assert family.responsible(chore, later) == []
     assert chore.state is ChoreState.OPEN  # nicht überfällig
-    assert not family.should_lock(lucas.id, later)
+    assert not family.should_lock(finn.id, later)
 
     after = NOW + timedelta(days=7, minutes=1)
     assert family.refresh(after)
     assert family.pause_until is None
     assert chore.due > after
     assert chore.due.hour == 19  # Uhrzeit bleibt
-    _done(family, "Lucas", after)
-    assert lucas.progress.streak == 2  # Ferien reißen die Serie nicht
+    _done(family, "Finn", after)
+    assert finn.progress.streak == 2  # Ferien reißen die Serie nicht
 
 
 def test_pause_vorzeitig_beenden(family: Family) -> None:  # noqa: F811
@@ -60,26 +60,26 @@ def test_pause_vorzeitig_beenden(family: Family) -> None:  # noqa: F811
 
 
 def test_nur_an_schultagen(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
+    finn = by_name(family, "Finn")
     friday = NOW + timedelta(days=4)
     chore = family.create_chore(
-        SYSTEM, "Ranzen", [lucas.id], recurrence=Recurrence.DAILY,
+        SYSTEM, "Ranzen", [finn.id], recurrence=Recurrence.DAILY,
         due=friday, weekdays=[0, 1, 2, 3, 4],
     )
-    family.claim(actor(family, "Lucas"), chore.id, lucas.id, friday - timedelta(hours=1))
+    family.claim(actor(family, "Finn"), chore.id, finn.id, friday - timedelta(hours=1))
     assert chore.due.weekday() == 0  # Montag statt Samstag
     assert (chore.due - friday).days == 3
     # Start an einem Sonntag springt auf Montag
     sunday = NOW + timedelta(days=6)
-    c2 = family.create_chore(SYSTEM, "X", [lucas.id], recurrence=Recurrence.DAILY, due=sunday, weekdays=[0])
+    c2 = family.create_chore(SYSTEM, "X", [finn.id], recurrence=Recurrence.DAILY, due=sunday, weekdays=[0])
     assert c2.due.weekday() == 0
     with pytest.raises(FamilyError):
-        family.create_chore(SYSTEM, "Y", [lucas.id], weekdays=[7])
+        family.create_chore(SYSTEM, "Y", [finn.id], weekdays=[7])
 
 
 def test_bilder_modus(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
+    finn = by_name(family, "Finn")
     with pytest.raises(PermissionDenied):
-        family.set_picture_mode(actor(family, "Lucas"), lucas.id, True)
-    family.set_picture_mode(SYSTEM, lucas.id, True)
-    assert Family.from_dict(family.to_dict()).members[lucas.id].picture_mode
+        family.set_picture_mode(actor(family, "Finn"), finn.id, True)
+    family.set_picture_mode(SYSTEM, finn.id, True)
+    assert Family.from_dict(family.to_dict()).members[finn.id].picture_mode

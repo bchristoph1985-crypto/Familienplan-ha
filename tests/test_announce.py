@@ -33,12 +33,12 @@ async def _setup(hass: HomeAssistant, options: dict, admin, kid) -> MockConfigEn
     await hass.async_block_till_done()
     family = entry.runtime_data.family
     family.add_member(SYSTEM, "Papa", Role.PARENT, user_id=admin.id)
-    lucas = family.add_member(SYSTEM, "Lucas", Role.CHILD, user_id=kid.id)
-    osmo = family.add_member(SYSTEM, "Osmo", Role.CHILD)
+    finn = family.add_member(SYSTEM, "Finn", Role.CHILD, user_id=kid.id)
+    paul = family.add_member(SYSTEM, "Paul", Role.CHILD)
     now = dt_util.utcnow()
-    family.create_chore(SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=now.replace(hour=19))
-    family.create_chore(SYSTEM, "Tisch decken", [lucas.id], recurrence=Recurrence.DAILY, due=now.replace(hour=19))
-    family.create_chore(SYSTEM, "Bad", [osmo.id], due=now + timedelta(days=2))
+    family.create_chore(SYSTEM, "Müll", [finn.id], recurrence=Recurrence.DAILY, due=now.replace(hour=19))
+    family.create_chore(SYSTEM, "Tisch decken", [finn.id], recurrence=Recurrence.DAILY, due=now.replace(hour=19))
+    family.create_chore(SYSTEM, "Bad", [paul.id], due=now + timedelta(days=2))
     await entry.runtime_data.async_save()
     # Neu laden, damit die Zeitpläne mit den Optionen stehen.
     await hass.config_entries.async_reload(entry.entry_id)
@@ -72,7 +72,7 @@ async def test_ansage_ueber_tts_und_alexa(
     data = tts_calls[0].data
     assert data["entity_id"] == "tts.piper"
     assert data["media_player_entity_id"] == ["media_player.kueche", "media_player.flur"]
-    assert data["message"] == "Lucas, bei dir ist noch offen: Müll und Tisch decken."
+    assert data["message"] == "Finn, bei dir ist noch offen: Müll und Tisch decken."
     assert len(alexa_calls) == 1
     assert alexa_calls[0].data["data"] == {"type": "announce"}
 
@@ -118,7 +118,7 @@ async def test_dienst_ansage_nur_fuer_eltern(
     await hass.services.async_call(DOMAIN, "announce", {}, blocking=True)
     assert [c.data["message"] for c in tts_calls] == [
         "Essen ist fertig",
-        "Lucas, bei dir ist noch offen: Müll und Tisch decken.",
+        "Finn, bei dir ist noch offen: Müll und Tisch decken.",
     ]
 
 
@@ -150,8 +150,8 @@ async def test_einloesen_schickt_push_an_eltern(
     family = entry.runtime_data.family
     papa = next(m for m in family.members.values() if m.name == "Papa")
     papa.notify_service = "papa_handy"
-    lucas = next(m for m in family.members.values() if m.name == "Lucas")
-    lucas.points = 20
+    finn = next(m for m in family.members.values() if m.name == "Finn")
+    finn.points = 20
     reward = family.create_reward(SYSTEM, "Eis", 15)
     await entry.runtime_data.async_save()
     calls = async_mock_service(hass, "notify", "papa_handy")
@@ -161,8 +161,8 @@ async def test_einloesen_schickt_push_an_eltern(
         context=Context(user_id=hass_read_only_user.id),
     )
     await hass.async_block_till_done()
-    assert lucas.points == 5
-    assert calls[0].data["message"] == "Lucas möchte „Eis“ einlösen."
+    assert finn.points == 5
+    assert calls[0].data["message"] == "Finn möchte „Eis“ einlösen."
     redemption = family.pending_redemptions()[0]
 
     # Kind kann sich nicht selbst bestätigen

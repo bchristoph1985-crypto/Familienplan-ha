@@ -12,7 +12,7 @@ create_chore:
         text:
     assignees:
       required: true
-      example: "Lucas"
+      example: "Finn"
       selector:
         text:
           multiple: true

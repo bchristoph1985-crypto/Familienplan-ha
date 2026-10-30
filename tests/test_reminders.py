@@ -45,11 +45,11 @@ async def entry(hass: HomeAssistant, hass_admin_user, hass_read_only_user, freez
     await hass.async_block_till_done()
     family = entry.runtime_data.family
     family.add_member(SYSTEM, "Papa", Role.PARENT, user_id=hass_admin_user.id, notify_service="papa_handy")
-    lucas = family.add_member(SYSTEM, "Lucas", Role.CHILD, user_id=hass_read_only_user.id, notify_service="notify.lucas_handy")
-    family.add_member(SYSTEM, "Osmo", Role.CHILD, notify_service="osmo_handy")
+    finn = family.add_member(SYSTEM, "Finn", Role.CHILD, user_id=hass_read_only_user.id, notify_service="notify.lucas_handy")
+    family.add_member(SYSTEM, "Paul", Role.CHILD, notify_service="osmo_handy")
     now = dt_util.utcnow()
-    family.create_chore(SYSTEM, "Müll", [lucas.id], recurrence=Recurrence.DAILY, due=now.replace(hour=19))
-    family.create_chore(SYSTEM, "Morgen", [lucas.id], recurrence=Recurrence.DAILY, due=now + timedelta(days=1))
+    family.create_chore(SYSTEM, "Müll", [finn.id], recurrence=Recurrence.DAILY, due=now.replace(hour=19))
+    family.create_chore(SYSTEM, "Morgen", [finn.id], recurrence=Recurrence.DAILY, due=now + timedelta(days=1))
     await entry.runtime_data.async_save()
     return entry
 
@@ -65,14 +65,14 @@ async def test_erinnerung_nur_bei_offenen_aufgaben(hass: HomeAssistant, entry, f
     assert len(lucas_calls) == 1
     assert "Müll" in lucas_calls[0].data["message"]
     assert "Morgen" not in lucas_calls[0].data["message"]
-    assert osmo_calls == []  # Osmo hat nichts offen
+    assert osmo_calls == []  # Paul hat nichts offen
     assert papa_calls == []
 
     freezer.move_to("2026-11-02 19:00:00+00:00")
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert len(papa_calls) == 1
-    assert "Lucas: 1 offen" in papa_calls[0].data["message"]
+    assert "Finn: 1 offen" in papa_calls[0].data["message"]
 
 
 async def test_keine_erinnerung_bei_abwesenheit(
@@ -82,12 +82,12 @@ async def test_keine_erinnerung_bei_abwesenheit(
 
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(
-            DOMAIN, "set_absence", {"member": "Lucas", "until": "2026-11-03 12:00:00"},
+            DOMAIN, "set_absence", {"member": "Finn", "until": "2026-11-03 12:00:00"},
             blocking=True, context=Context(user_id=hass_read_only_user.id),
         )
     await hass.services.async_call(
         DOMAIN, "set_absence",
-        {"member": "Lucas", "until": "2026-11-03 12:00:00", "substitute": "Osmo"},
+        {"member": "Finn", "until": "2026-11-03 12:00:00", "substitute": "Paul"},
         blocking=True, context=Context(user_id=hass_admin_user.id),
     )
     osmo_calls = async_mock_service(hass, "notify", "osmo_handy")
@@ -96,14 +96,14 @@ async def test_keine_erinnerung_bei_abwesenheit(
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert lucas_calls == []
-    assert len(osmo_calls) == 1  # Osmo vertritt beim Müll
+    assert len(osmo_calls) == 1  # Paul vertritt beim Müll
 
     await hass.services.async_call(
-        DOMAIN, "end_absence", {"member": "lucas"},
+        DOMAIN, "end_absence", {"member": "finn"},
         blocking=True, context=Context(user_id=hass_admin_user.id),
     )
     assert not entry.runtime_data.family.members[
-        next(m.id for m in entry.runtime_data.family.members.values() if m.name == "Lucas")
+        next(m.id for m in entry.runtime_data.family.members.values() if m.name == "Finn")
     ].is_away(dt_util.utcnow())
 
 
@@ -137,7 +137,7 @@ async def test_level_und_abzeichen_feiern(hass: HomeAssistant, entry) -> None:
     chore = next(c for c in family.chores.values() if c.name == "Müll")
     chore.points = 5
     await hass.services.async_call(
-        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Lucas"}, blocking=True
+        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Finn"}, blocking=True
     )
     await hass.async_block_till_done()
     assert levels[0].data["level"] == 2
@@ -158,7 +158,7 @@ async def test_familienziel_per_dienst(hass: HomeAssistant, entry) -> None:
     family = entry.runtime_data.family
     chore = next(c for c in family.chores.values() if c.name == "Müll")
     await hass.services.async_call(
-        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Lucas"}, blocking=True
+        DOMAIN, "claim_chore", {"chore_id": chore.id, "member": "Finn"}, blocking=True
     )
     await hass.async_block_till_done()
     assert reached[0].data["name"] == "Zoo"
@@ -171,20 +171,20 @@ async def test_taschengeld_per_dienst(hass: HomeAssistant, entry, freezer) -> No
     lucas_calls = async_mock_service(hass, "notify", "lucas_handy")
     await hass.services.async_call(DOMAIN, "set_money", {"rate": 10, "payday": 0}, blocking=True)
     await hass.services.async_call(
-        DOMAIN, "set_allowance", {"member": "Lucas", "amount": 2.5}, blocking=True
+        DOMAIN, "set_allowance", {"member": "Finn", "amount": 2.5}, blocking=True
     )
     family = entry.runtime_data.family
-    lucas = next(m for m in family.members.values() if m.name == "Lucas")
-    lucas.points = 30
+    finn = next(m for m in family.members.values() if m.name == "Finn")
+    finn.points = 30
     await hass.services.async_call(
-        DOMAIN, "exchange_stars", {"member": "Lucas", "euros": 3}, blocking=True
+        DOMAIN, "exchange_stars", {"member": "Finn", "euros": 3}, blocking=True
     )
-    assert lucas.money == 300 and lucas.points == 0
+    assert finn.money == 300 and finn.points == 0
     # nächster Montag: Wochengeld per Takt
     freezer.move_to("2026-11-09 00:01:00+00:00")
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    assert lucas.money == 550
+    assert finn.money == 550
     assert any("2,50 € Taschengeld" in c.data["message"] for c in lucas_calls)
-    await hass.services.async_call(DOMAIN, "payout", {"member": "Lucas"}, blocking=True)
-    assert lucas.money == 0
+    await hass.services.async_call(DOMAIN, "payout", {"member": "Finn"}, blocking=True)
+    assert finn.money == 0

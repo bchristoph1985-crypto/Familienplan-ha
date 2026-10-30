@@ -35,8 +35,8 @@ async def setup(hass: HomeAssistant, hass_admin_user, hass_read_only_user, tmp_p
     await hass.async_block_till_done()
     family = entry.runtime_data.family
     family.add_member(SYSTEM, "Papa", Role.PARENT, user_id=hass_admin_user.id)
-    family.add_member(SYSTEM, "Lucas", Role.CHILD)
-    family.add_member(SYSTEM, "Osmo", Role.CHILD, user_id=hass_read_only_user.id)
+    family.add_member(SYSTEM, "Finn", Role.CHILD)
+    family.add_member(SYSTEM, "Paul", Role.CHILD, user_id=hass_read_only_user.id)
     await entry.runtime_data.async_save()
     return entry
 
@@ -57,8 +57,8 @@ async def test_uebernehmen_erst_ab_1630_doppelt_ab_19(
     hass: HomeAssistant, setup, hass_read_only_user, freezer: FrozenDateTimeFactory
 ) -> None:
     family, by = _ids(setup)
-    a = family.create_chore(SYSTEM, "Müll", [by["Lucas"]], points=2)
-    b = family.create_chore(SYSTEM, "Tisch", [by["Lucas"]], points=2)
+    a = family.create_chore(SYSTEM, "Müll", [by["Finn"]], points=2)
+    b = family.create_chore(SYSTEM, "Tisch", [by["Finn"]], points=2)
     ctx = Context(user_id=hass_read_only_user.id)
 
     freezer.move_to(_local(15, 0))
@@ -69,12 +69,12 @@ async def test_uebernehmen_erst_ab_1630_doppelt_ab_19(
 
     freezer.move_to(_local(17, 0))
     await hass.services.async_call(DOMAIN, "take_over_chore", {"chore_id": a.id}, blocking=True, context=ctx)
-    assert family.members[by["Osmo"]].points == 2
+    assert family.members[by["Paul"]].points == 2
 
     freezer.move_to(_local(19, 30))
     await hass.services.async_call(DOMAIN, "take_over_chore", {"chore_id": b.id}, blocking=True, context=ctx)
-    assert family.members[by["Osmo"]].points == 6
-    assert family.members[by["Lucas"]].points == 0
+    assert family.members[by["Paul"]].points == 6
+    assert family.members[by["Finn"]].points == 0
 
 
 async def _upload(client, chore_id: str, data: bytes = b"\xff\xd8fakejpeg", ctype: str = "image/jpeg", mode: str = "claim"):
@@ -90,7 +90,7 @@ async def test_foto_hochladen_und_nur_eltern_sehen_es(
 ) -> None:
     family, by = _ids(setup)
     chore = family.create_chore(
-        SYSTEM, "Bad", [by["Osmo"]], points=3, requires_photo=True, requires_approval=True
+        SYSTEM, "Bad", [by["Paul"]], points=3, requires_photo=True, requires_approval=True
     )
     await setup.runtime_data.async_save()
 
@@ -128,7 +128,7 @@ async def test_foto_hochladen_und_nur_eltern_sehen_es(
 
 async def test_fotos_werden_nach_frist_geloescht(hass: HomeAssistant, setup) -> None:
     family, by = _ids(setup)
-    chore = family.create_chore(SYSTEM, "Bad", [by["Osmo"]])
+    chore = family.create_chore(SYSTEM, "Bad", [by["Paul"]])
     folder = photo_dir(hass)
     folder.mkdir(parents=True, exist_ok=True)
     old = folder / "alt.jpg"
@@ -147,7 +147,7 @@ async def test_fotos_werden_nach_frist_geloescht(hass: HomeAssistant, setup) -> 
 
 async def _photo_claim(hass, setup, kid_client):
     family, by = _ids(setup)
-    chore = family.create_chore(SYSTEM, "Zimmer", [by["Osmo"]], points=2, requires_photo=True)
+    chore = family.create_chore(SYSTEM, "Zimmer", [by["Paul"]], points=2, requires_photo=True)
     await setup.runtime_data.async_save()
     resp = await _upload(kid_client, chore.id)
     assert resp.status == 200, await resp.text()

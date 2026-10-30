@@ -15,21 +15,21 @@ from .test_reminders import auto_enable_custom_integrations, entry  # noqa: F401
 
 
 def test_wiederholungen_und_rotation(family: Family) -> None:  # noqa: F811
-    lucas, osmo = by_name(family, "Lucas"), by_name(family, "Osmo")
+    finn, paul = by_name(family, "Finn"), by_name(family, "Paul")
     spuelen = family.create_chore(
-        SYSTEM, "Spülen", [lucas.id, osmo.id], rotation=True,
+        SYSTEM, "Spülen", [finn.id, paul.id], rotation=True,
         recurrence=Recurrence.DAILY, due=NOW + timedelta(hours=2),
     )
     family.create_chore(
-        SYSTEM, "Schultasche", [lucas.id], recurrence=Recurrence.DAILY,
+        SYSTEM, "Schultasche", [finn.id], recurrence=Recurrence.DAILY,
         due=NOW + timedelta(hours=1), weekdays=[0, 1, 2, 3, 4],
     )
     week = family.occurrences(NOW, NOW + timedelta(days=7))
     rotation = [who[0] for _, c, who in week if c is spuelen]
-    assert rotation == [lucas.id, osmo.id] * 3 + [lucas.id]
+    assert rotation == [finn.id, paul.id] * 3 + [finn.id]
     schul = [d.weekday() for d, c, _ in week if c.name == "Schultasche"]
     assert schul == [0, 1, 2, 3, 4]  # kein Wochenende
-    assert len(family.occurrences(NOW, NOW + timedelta(days=7), osmo.id)) == 3
+    assert len(family.occurrences(NOW, NOW + timedelta(days=7), paul.id)) == 3
 
     family.set_pause(SYSTEM, NOW + timedelta(days=2), NOW + timedelta(days=4))
     paused = family.occurrences(NOW, NOW + timedelta(days=7))
@@ -37,9 +37,9 @@ def test_wiederholungen_und_rotation(family: Family) -> None:  # noqa: F811
 
 
 def test_einmalige_aufgabe(family: Family) -> None:  # noqa: F811
-    lucas = by_name(family, "Lucas")
-    family.create_chore(SYSTEM, "Keller", [lucas.id], due=NOW + timedelta(days=1))
-    family.create_chore(SYSTEM, "Ohne Frist", [lucas.id])
+    finn = by_name(family, "Finn")
+    family.create_chore(SYSTEM, "Keller", [finn.id], due=NOW + timedelta(days=1))
+    family.create_chore(SYSTEM, "Ohne Frist", [finn.id])
     found = family.occurrences(NOW, NOW + timedelta(days=30))
     assert [c.name for _, c, _ in found] == ["Keller"]
 
@@ -49,7 +49,7 @@ async def test_kalender_entitaeten(hass: HomeAssistant, entry) -> None:  # noqa:
     await hass.async_block_till_done()
     states = {s.entity_id: s for s in hass.states.async_all("calendar")}
     assert any(e.endswith("_aufgaben") for e in states)
-    lucas_cal = next(e for e in states if "lucas" in e)
+    lucas_cal = next(e for e in states if "finn" in e)
     assert states[lucas_cal].attributes["message"].endswith("Müll")
     response = await hass.services.async_call(
         "calendar", "get_events",

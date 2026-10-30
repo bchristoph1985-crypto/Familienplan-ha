@@ -3,7 +3,7 @@
  *
  *   type: custom:sternchenplan-card
  *   mode: auto        # auto | kind | eltern  (auto: Eltern sehen die Eltern-Ansicht)
- *   member: Lucas     # optional: immer dieses Kind zeigen (z. B. Tablet im Kinderzimmer)
+ *   member: Finn     # optional: immer dieses Kind zeigen (z. B. Tablet im Kinderzimmer)
  *   readonly: false   # true: nur anzeigen, keine Knöpfe (z. B. Küchen-Tablet)
  *
  * Daten kommen per Websocket (sternchenplan/subscribe), Änderungen laufen über
@@ -169,7 +169,7 @@ const T = {
     nfcRemove: "lösen",
     nfcSaveFirst: "Erst speichern, dann Aufkleber anlernen.",
     voiceTitle: "🎙️ Sprachbefehle (Home Assistant Assist, auch über Alexa-Skill oder Sprach-Satelliten)",
-    voiceList: ["„Ich habe den Müll rausgebracht“", "„Lucas hat den Tisch gedeckt“", "„Was muss ich noch machen?“", "„Wie viele Sterne hat Osmo?“"],
+    voiceList: ["„Ich habe den Müll rausgebracht“", "„Finn hat den Tisch gedeckt“", "„Was muss ich noch machen?“", "„Wie viele Sterne hat Paul?“"],
     starsTitle: "Bonus oder Abzug für {name}",
     starsCustom: "Eigener Grund",
     starsAmount: "Sterne",
@@ -581,7 +581,7 @@ const T = {
     nfcRemove: "remove",
     nfcSaveFirst: "Save first, then learn the tag.",
     voiceTitle: "🎙️ Voice commands (Home Assistant Assist)",
-    voiceList: ["“I did the dishes”", "“Lucas did the trash”", "“What do I still have to do?”", "“How many stars does Osmo have?”"],
+    voiceList: ["“I did the dishes”", "“Finn did the trash”", "“What do I still have to do?”", "“How many stars does Paul have?”"],
     starsTitle: "Bonus or deduction for {name}",
     starsCustom: "Own reason",
     starsAmount: "Stars",

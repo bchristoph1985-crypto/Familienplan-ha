@@ -5,7 +5,7 @@ Gehört das Handy einem Kind, meldet es seine Aufgaben mit diesem Aufkleber.
 Ein Lesegerät ohne Konto (z. B. an der Haustür) meldet für das Kind, das gerade
 dran ist, wenn es genau eins ist.
 
-Sprache: Sätze wie „Ich habe den Müll rausgebracht“ oder „Lucas hat den Tisch
+Sprache: Sätze wie „Ich habe den Müll rausgebracht“ oder „Finn hat den Tisch
 gedeckt“. Rechte wie beim Abhaken am Handy, Fotos gehen nur in der App.
 """
 
@@ -77,7 +77,7 @@ TEXT = {
         "done": "Super, {name}! „{chore}“ ist erledigt. ⭐ +{points}",
         "waiting": "Danke, {name}! „{chore}“ wartet jetzt auf die Freigabe.",
         "unknown_chore": "Ich habe keine offene Aufgabe „{spoken}“ für {name} gefunden.",
-        "who": "Wer bist du? Sag zum Beispiel: Lucas hat den Müll rausgebracht.",
+        "who": "Wer bist du? Sag zum Beispiel: Finn hat den Müll rausgebracht.",
         "unknown_name": "Ich kenne kein Kind namens {spoken}.",
         "open": "{name}, bei dir ist noch offen: {list}.",
         "nothing": "{name}, für heute ist alles erledigt. Super!",
@@ -91,7 +91,7 @@ TEXT = {
         "done": "Great, {name}! “{chore}” is done. ⭐ +{points}",
         "waiting": "Thanks, {name}! “{chore}” is waiting for approval.",
         "unknown_chore": "I couldn't find an open chore “{spoken}” for {name}.",
-        "who": "Who are you? Say for example: Lucas did the dishes.",
+        "who": "Who are you? Say for example: Finn did the dishes.",
         "unknown_name": "I don't know a child called {spoken}.",
         "open": "{name}, still to do: {list}.",
         "nothing": "{name}, everything is done for today. Great!",
@@ -225,7 +225,7 @@ def _setup_voice(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> list[C
     sentences = SENTENCES[_lang(hass)]
 
     def who(user_input, result) -> tuple[Member | None, str | None]:
-        """Kind aus dem Satz („Lucas hat …“) oder aus dem HA-Konto des Geräts."""
+        """Kind aus dem Satz („Finn hat …“) oder aus dem HA-Konto des Geräts."""
         text = _text(hass)
         speaker = next(
             (m for m in family.members.values()
