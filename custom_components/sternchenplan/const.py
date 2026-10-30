@@ -1,7 +1,7 @@
 """Konstanten für Sternchenplan."""
 
 DOMAIN = "sternchenplan"
-VERSION = "0.34.0"
+VERSION = "0.35.0"
 CARD_URL = "/sternchenplan/sternchenplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"

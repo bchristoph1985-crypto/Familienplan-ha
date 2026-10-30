@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.34.0";
+const VERSION = "0.35.0";
 
 const T = {
   de: {
@@ -28,6 +28,20 @@ const T = {
     tabApprove: "Freigaben",
     tabChores: "Aufgaben",
     tabAway: "Abwesend",
+    tabFamily: "Familie",
+    tabSettings: "Einstellungen",
+    tabShort: { today: "Heute", chores: "Aufgaben", rewards: "Belohnen", family: "Familie", settings: "Einstellen" },
+    kidTabs: { today: "✅ Heute", rewards: "🎁 Belohnen", me: "🙂 Ich" },
+    doneToday: "✓ {n} heute geschafft",
+    openShort: "{n} offen",
+    waitShort: "{n} wartet",
+    nextUp: "Als Nächstes: {name}",
+    showMore: "Aufgaben zeigen",
+    showLess: "Weniger zeigen",
+    awayMenu: "🏖️ Abwesend melden",
+    awaySection: "🏖️ Ferien und Abwesenheit",
+    moneySection: "💶 Taschengeld",
+    helpToggle: "💡 Hilfe-Tipps anzeigen",
     approve: "Freigeben",
     reject: "Ablehnen",
     nothingToApprove: "Nichts freizugeben.",
@@ -123,6 +137,8 @@ const T = {
       money: "Optional: Sterne in Taschengeld tauschen und wöchentliches Taschengeld verwalten.",
       away: "Ferien eintragen (dann ruht alles) oder ein Kind abwesend melden, z. B. bei Krankheit oder Übernachtung.",
       extras: "Hier schaltest du Zusatzfunktionen an oder aus und stellst sie ein: Haustier, Lampe, Bildschirmzeit, Familienrat, Urkunden.",
+      family: "Ferien eintragen, ein Kind abwesend melden und Taschengeld verwalten.",
+      settings: "Zusatzfunktionen, Wetter, Wochenbericht, Bonus-Knöpfe und dein Design. Musst du meistens nur einmal einstellen.",
     },
     house: "🏠 Das Haus prüft selbst",
     houseHint: "Ohne Automation: Ein Gerät oder Sensor hakt die Aufgabe ab oder sagt dem Kind, dass es dran ist.",
@@ -406,6 +422,20 @@ const T = {
     tabApprove: "Approvals",
     tabChores: "Chores",
     tabAway: "Away",
+    tabFamily: "Family",
+    tabSettings: "Settings",
+    tabShort: { today: "Today", chores: "Chores", rewards: "Rewards", family: "Family", settings: "Settings" },
+    kidTabs: { today: "✅ Today", rewards: "🎁 Rewards", me: "🙂 Me" },
+    doneToday: "✓ {n} done today",
+    openShort: "{n} open",
+    waitShort: "{n} waiting",
+    nextUp: "Next: {name}",
+    showMore: "Show chores",
+    showLess: "Show less",
+    awayMenu: "🏖️ Mark as away",
+    awaySection: "🏖️ Holidays and absence",
+    moneySection: "💶 Pocket money",
+    helpToggle: "💡 Show help tips",
     approve: "Approve",
     reject: "Reject",
     nothingToApprove: "Nothing to approve.",
@@ -501,6 +531,8 @@ const T = {
       money: "Optional: exchange stars for pocket money and manage weekly allowance.",
       away: "Enter holidays (everything pauses) or mark a child as away, e.g. sick or at a sleepover.",
       extras: "Turn extra features on or off and set them up: pet, lamp, screen time, family vote, certificates.",
+      family: "Enter holidays, mark a child as away and manage pocket money.",
+      settings: "Extra features, weather, weekly report, bonus buttons and your design. Usually set once.",
     },
     house: "🏠 The house checks itself",
     houseHint: "No automation needed: a device or sensor checks the chore off or tells the child it's their turn.",
@@ -845,6 +877,10 @@ class SternchenplanCard extends HTMLElement {
     this._data = null;
     this._error = null;
     this._tab = "today";
+    // Kinderansicht: Heute, Belohnen, Ich
+    this._kidTab = "today";
+    // Elternansicht: aufgeklappte Kinderkarten
+    this._openCards = new Set();
     this._form = this._emptyForm();
     this._awayForm = {};
     this._rewardForm = this._emptyReward();
@@ -1030,6 +1066,7 @@ class SternchenplanCard extends HTMLElement {
     switch (action) {
       case "pick":
         this._actingAs = id;
+        this._kidTab = "today";
         this._touchIdle();
         this._render();
         break;
@@ -1040,6 +1077,15 @@ class SternchenplanCard extends HTMLElement {
         break;
       case "tab":
         this._tab = id;
+        this._render();
+        break;
+      case "kid-tab":
+        this._kidTab = id;
+        this._render();
+        break;
+      case "kid-expand":
+        if (this._openCards.has(id)) this._openCards.delete(id);
+        else this._openCards.add(id);
         this._render();
         break;
       case "claim": {
@@ -1198,7 +1244,7 @@ class SternchenplanCard extends HTMLElement {
         if (set.has(id)) set.delete(id);
         else set.add(id);
         this._data.features = [...set].sort();
-        if (this._tab === "money" && !set.has("money")) this._tab = "extras";
+        if (this._tab === "money" && !set.has("money")) this._tab = "settings";
         this._render();
         this._hass.callService("sternchenplan", "set_features", { features: this._data.features }).catch((err) => this._notify(err.message));
         break;
@@ -2046,7 +2092,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   // Einstellungen für Wetter und Wochenbericht, oben im Aufgaben-Reiter.
-  _renderSettings() {
+  _renderSettings(open = false) {
     const d = this._data;
     const weathers = Object.keys(this._hass?.states || {}).filter((id) => id.startsWith("weather."));
     const current = d.weather?.entity || "";
@@ -2055,7 +2101,7 @@ class SternchenplanCard extends HTMLElement {
     const days = this._t("days");
     const name = (id) => this._hass?.states?.[id]?.attributes?.friendly_name || id;
     return `
-      <details class="form settings-box">
+      <details class="form settings-box" ${open ? "open" : ""}>
         <summary>${this._t("settings")}</summary>
         <div class="grid">
           <label>${this._t("weatherEntity")}<select data-field="set.weather">
@@ -2654,11 +2700,61 @@ class SternchenplanCard extends HTMLElement {
     const chores = this._openFor(member.id);
     const color = this._color(member.id);
     const { done, open, total } = this._todayStats(member.id);
-    const left = chores.filter((c) => c.state !== "claimed").length;
+    const todo = chores.filter((c) => c.state !== "claimed");
+    const left = todo.length;
     const line = !left ? this._t("allDoneToday") : left === 1 ? this._t("leftOne") : this._t("leftToday", { n: left });
-    const list = chores.length
-      ? `<ul class="tasks">${chores.map((c) => this._choreRow(c, member.id, { showClaim: c.state !== "claimed" })).join("")}</ul>`
-      : `<div class="done-card"><div class="done-emoji">🎉</div><div class="done-title">${this._t("allDoneKid")}</div><div class="muted">${this._t("allDoneKidSub")}</div></div>`;
+    const streak = member.progress?.streak;
+    const tab = ["today", "rewards", "me"].includes(this._kidTab) ? this._kidTab : "today";
+    const labels = this._t("kidTabs");
+    const points = member.points || 0;
+    const affordable = (this._data.rewards || []).filter(
+      (r) => (!r.members.length || r.members.includes(member.id)) && r.cost <= points,
+    ).length;
+    const nav = `<nav class="tabs kid-tabs">${["today", "rewards", "me"]
+      .map((id) => `<button class="tab ${tab === id ? "on" : ""}" data-action="kid-tab" data-id="${id}" aria-pressed="${tab === id}">${esc(labels[id])}${
+        id === "rewards" && affordable && tab !== "rewards" ? ` <span class="count">${affordable}</span>` : ""
+      }</button>`)
+      .join("")}</nav>`;
+    let body;
+    if (tab === "rewards") {
+      body = `
+        ${this._renderGoal(member)}
+        ${this._renderFamilyGoal()}
+        ${this._renderScreen(member)}
+        ${this._renderChildRewards(member)}
+        ${this._renderMoney(member)}`;
+    } else if (tab === "me") {
+      body = `
+        ${this._renderPet(member)}
+        ${this._renderLevel(member)}
+        ${this._certTeaser(member)}
+        ${this._renderBadges(member)}
+        ${this._renderChildStarLog(member)}
+        ${this._renderThemePicker(member)}`;
+    } else {
+      // Erledigtes klappt zu: oben steht nur, was noch zu tun ist
+      const finished = this._data.chores.filter(
+        (c) => c.last_completed_by === member.id && this._isToday(c.last_completed_at) && !chores.includes(c),
+      );
+      const waiting = chores.filter((c) => c.state === "claimed");
+      const doneCount = finished.length + waiting.length;
+      const list = todo.length
+        ? `<ul class="tasks">${todo.map((c) => this._choreRow(c, member.id, { showClaim: true })).join("")}</ul>`
+        : `<div class="done-card"><div class="done-emoji">🎉</div><div class="done-title">${this._t("allDoneKid")}</div><div class="muted">${this._t("allDoneKidSub")}</div></div>`;
+      const doneBox = doneCount
+        ? `<details class="done-box"><summary>${esc(this._t("doneToday", { n: doneCount }))}</summary>
+            ${waiting.length ? `<ul class="tasks">${waiting.map((c) => this._choreRow(c, member.id, { showClaim: false })).join("")}</ul>` : ""}
+            ${finished.length ? `<ul class="done-list">${finished.map((c) => `<li><span>${esc(this._choreIcon(c))}</span><span>${esc(c.name)}</span><span class="muted small">+${c.points} ⭐</span></li>`).join("")}</ul>` : ""}
+          </details>`
+        : "";
+      body = `
+        ${this._pauseBanner()}${this._rainBanner()}
+        ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
+        ${list}
+        ${doneBox}
+        ${this._renderVote()}
+        ${this._renderTakeOver(member)}`;
+    }
     return `
       <div class="kid" style="--kid:${color}">
         <div class="hero">
@@ -2666,27 +2762,12 @@ class SternchenplanCard extends HTMLElement {
           <div class="hero-text">
             <div class="hello">${esc(this._t("hello", { name: member.name }))} 👋</div>
             <div class="muted">${esc(line)}</div>
-            <div class="star">⭐ ${esc(this._t("points", { n: member.points }))}</div>
+            <div class="star">⭐ ${esc(this._t("points", { n: member.points }))}${streak ? ` · 🔥 ${streak}` : ""}</div>
           </div>
           ${this._ring(done, total || open, color, 72)}
         </div>
-        ${this._renderLevel(member)}
-        ${this._renderPet(member)}
-        ${this._pauseBanner()}${this._rainBanner()}
-        ${this._renderVote()}
-        ${this._certTeaser(member)}
-        ${this._renderGoal(member)}
-        ${this._renderFamilyGoal()}
-        ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
-        <div class="section-title">${this._t("todayTitle")}</div>
-        ${list}
-        ${this._renderTakeOver(member)}
-        ${this._renderScreen(member)}
-        ${this._renderChildRewards(member)}
-        ${this._renderMoney(member)}
-        ${this._renderBadges(member)}
-        ${this._renderChildStarLog(member)}
-        ${this._renderThemePicker(member)}
+        ${nav}
+        ${body}
         ${this._renderCert()}
       </div>`;
   }
@@ -2883,34 +2964,48 @@ class SternchenplanCard extends HTMLElement {
   _renderParent() {
     const d = this._data;
     if (this._welcomeActive()) return this._renderWelcome();
-    const waiting = d.chores.filter((c) => c.state === "claimed");
-    const open = waiting.length + (d.redemptions || []).length;
+    // Alte Reiter von früher landen am neuen Ort
+    const moved = { approve: "today", money: "family", away: "family", extras: "settings" };
+    if (moved[this._tab]) this._tab = moved[this._tab];
+    const open = d.chores.filter((c) => c.state === "claimed").length + (d.redemptions || []).length;
+    // Auf dem Handy: Symbol über kurzem Namen, damit alle 5 ohne Wischen passen
+    const short = this._t("tabShort");
     const tabs = [
-      ["today", this._t("tabToday")],
-      ["approve", `${this._t("tabApprove")}${open ? ` <span class="count">${open}</span>` : ""}`],
-      ["chores", this._t("tabChores")],
-      ["rewards", this._t("tabRewards")],
-      ...(this._on("money") ? [["money", this._t("tabMoney")]] : []),
-      ["away", this._t("tabAway")],
-      ["extras", `✨ ${this._t("tabExtras")}`],
-    ];
+      ["today", "🏠", this._t("tabToday"), open && this._tab !== "today" ? ` <span class="count">${open}</span>` : ""],
+      ["chores", "📝", this._t("tabChores"), ""],
+      ["rewards", "🎁", this._t("tabRewards"), ""],
+      ["family", "👨‍👩‍👧", this._t("tabFamily"), ""],
+      ["settings", "⚙️", this._t("tabSettings"), ""],
+    ].map(([id, ico, label, badge]) => [id,
+      `<span class="tab-ico" aria-hidden="true">${ico}</span><span class="tab-long">${esc(label)}</span><span class="tab-short" aria-hidden="true">${esc(short[id])}</span>${badge}`]);
     let body = "";
-    if (this._tab === "approve") body = this._renderApprovals(waiting);
-    else if (this._tab === "chores") body = this._renderChores();
+    if (this._tab === "chores") body = this._renderChores();
     else if (this._tab === "rewards") body = this._renderRewardAdmin();
-    else if (this._tab === "money") body = this._renderMoneyAdmin();
-    else if (this._tab === "away") body = this._renderAway();
-    else if (this._tab === "extras") body = this._renderExtrasAdmin();
+    else if (this._tab === "family") body = this._renderFamilyTab();
+    else if (this._tab === "settings") body = this._renderSettingsTab();
     else body = this._renderToday();
     return `
-      <nav class="tabs">${tabs
+      <nav class="tabs parent-tabs">${tabs
         .map(([id, label]) => `<button class="tab ${this._tab === id ? "on" : ""}" data-action="tab" data-id="${id}">${label}</button>`)
-        .join("")}<button class="tab theme-btn ${this._themeOpen ? "on" : ""}" data-action="theme-toggle" title="${this._t("themeParent")}" aria-label="${this._t("themeParent")}">🎨</button><button class="tab help-btn ${this._help ? "on" : ""}" data-action="help" title="${this._t("help")}" aria-label="${this._t("help")}">❓</button></nav>
+        .join("")}</nav>
       ${this._helpTip()}
-      ${this._themeOpen && this._member(d.me) ? this._renderThemePicker(this._member(d.me)) : ""}
       ${body}
       ${this._renderCert()}
       ${this._donateLine()}`;
+  }
+
+  _renderFamilyTab() {
+    const money = this._on("money") ? `<div class="section-title">${this._t("moneySection")}</div>${this._renderMoneyAdmin()}` : "";
+    return `<div class="section-title">${this._t("awaySection")}</div>${this._renderAway()}${money}`;
+  }
+
+  _renderSettingsTab() {
+    const me = this._member(this._data.me);
+    const help = `<button class="feat help-switch ${this._help ? "on" : ""}" data-action="help" aria-pressed="${!!this._help}">
+      <span class="feat-main"><strong>${this._t("helpToggle")}</strong></span><span class="feat-switch" aria-hidden="true"><i></i></span></button>`;
+    const design = me && !this._config.readonly ? `<section class="extras-box">${this._renderThemePicker(me)}</section>` : "";
+    // Was man öfter anfasst zuerst, die Zusatzfunktionen danach
+    return `<section class="extras-box">${this._renderSettings(true)}</section>${design}<section class="extras-box">${help}</section>${this._renderExtrasAdmin()}`;
   }
 
   // -- Zusatzfunktionen ------------------------------------------------------
@@ -3277,7 +3372,7 @@ class SternchenplanCard extends HTMLElement {
         </div>
         <div class="ck-stats">
           ${tile("📝", open, this._t("ckOpen"))}
-          ${tile("📬", toApprove, this._t("ckWaiting"), toApprove ? "hot" : "", toApprove ? "approve" : "")}
+          ${tile("📬", toApprove, this._t("ckWaiting"), toApprove ? "hot" : "")}
           ${tile("🎉", `${done}/${kids.length}`, this._t("ckKidsDone"), kids.length && done === kids.length ? "good" : "")}
           ${tile("⭐", stars, this._t("ckStars"))}
         </div>
@@ -3293,7 +3388,8 @@ class SternchenplanCard extends HTMLElement {
     const parents = this._on("parents")
       ? this._data.members.filter((m) => m.role === "parent" && this._data.chores.some((c) => c.responsible.includes(m.id)))
       : [];
-    return [...this._children(), ...parents]
+    const cards = [...this._children(), ...parents];
+    return cards
       .map((m) => {
         const chores = this._openFor(m.id);
         let status = m.away ? `<span class="chip">${esc(this._awayText(m))}</span>` : "";
@@ -3311,14 +3407,34 @@ class SternchenplanCard extends HTMLElement {
         if (!this._config.readonly && m.role === "child") {
           passBtn += `<button class="menu-item" data-action="stars-open" data-id="${esc(m.id)}">${this._t("starsBtn")}</button>`;
         }
+        if (!this._config.readonly && m.role === "child") {
+          passBtn += `<button class="menu-item" data-action="tab" data-id="family">${this._t("awayMenu")}</button>`;
+        }
         if (m.has_devices && !this._config.readonly) {
           passBtn += m.pass_until
             ? `<button class="menu-item" data-action="revoke-pass" data-id="${esc(m.id)}">🎟️ ${this._t("takePass")}</button>`
             : `<button class="menu-item" data-action="pass" data-id="${esc(m.id)}">🎟️ ${this._t("givePass")}</button>`;
         }
-        const list = chores.length
-          ? `<ul>${chores.map((c) => this._choreRow(c, m.id, { showClaim: c.state !== "claimed", forName: m.name })).join("")}</ul>`
-          : `<p class="kid-done">🎉 ${this._t("allDone").replace(" 🎉", "")}</p>`;
+        // Mehrere Karten: zugeklappt, damit die ganze Familie auf einen Blick passt
+        const expanded = cards.length === 1 || this._openCards.has(m.id);
+        const todo = chores.filter((c) => c.state !== "claimed");
+        const waits = chores.length - todo.length;
+        const late = todo.filter((c) => c.state === "overdue").length;
+        const summary = [
+          todo.length ? `<strong>${esc(this._t("openShort", { n: todo.length }))}</strong>` : "",
+          late ? `<span class="chip bad">${esc(this._t("overdue"))}</span>` : "",
+          waits ? `<span class="chip wait">${esc(this._t("waitShort", { n: waits }))}</span>` : "",
+          todo.length && !expanded ? `<span class="muted">${esc(this._t("nextUp", { name: todo[0].name }))}</span>` : "",
+        ].filter(Boolean).join("");
+        const toggle = cards.length > 1 && chores.length
+          ? `<button class="kid-summary" data-action="kid-expand" data-id="${esc(m.id)}" aria-expanded="${expanded}">
+              <span class="kid-sum">${summary}</span><span class="kid-chev">${expanded ? this._t("showLess") : this._t("showMore")} ${expanded ? "▴" : "▾"}</span></button>`
+          : "";
+        const list = !chores.length
+          ? `<p class="kid-done">🎉 ${this._t("allDone").replace(" 🎉", "")}</p>`
+          : expanded
+            ? `<ul>${chores.map((c) => this._choreRow(c, m.id, { showClaim: c.state !== "claimed", forName: m.name })).join("")}</ul>`
+            : "";
         const { done, open, total } = this._todayStats(m.id);
         const menu = passBtn
           ? `<details class="kid-menu"><summary aria-label="${esc(this._t("moreActions", { name: m.name }))}" title="${esc(this._t("moreActions", { name: m.name }))}">⋯</summary><div class="menu">${passBtn}</div></details>`
@@ -3335,6 +3451,7 @@ class SternchenplanCard extends HTMLElement {
             </div>
             ${status ? `<div class="kidcard-status">${status}</div>` : ""}
             ${this._starsOpen === m.id ? this._renderStarsPanel(m) : ""}
+            ${toggle}
             ${list}
           </section>`;
       })
@@ -3403,7 +3520,7 @@ class SternchenplanCard extends HTMLElement {
       .join("");
     const rec = this._t("rec");
     return `
-      ${f.editId ? "" : this._renderSettings() + this._renderTemplates()}
+      ${f.editId ? "" : this._renderTemplates()}
       <details class="form chore-form" ${this._data.chores.length && !f.editId && !f.name ? "" : "open"}>
         <summary>${f.editId ? this._t("editChore") : "+ " + this._t("newChore")}</summary>
         <label>${this._t("name")}<input data-field="name" value="${esc(f.name)}" maxlength="60"></label>
@@ -4280,6 +4397,32 @@ const STYLE = `
     gap: 14px; padding: 16px; overflow: auto; animation: fade .25s ease-out; }
   .cert-actions { display: flex; gap: 12px; align-items: center; }
   .cert-actions .link { color: #fff; }
+  /* -- Aufräumen (0.35) -- */
+  .kid-tabs { position: sticky; top: 0; z-index: 2; margin: 4px 0 12px; }
+  .kid-tabs .tab { flex: 1 1 0; font-size: 1em; min-height: 44px; }
+  .done-box { margin: 10px 0; padding: 4px 12px; border-radius: 14px; background: var(--secondary-background-color); }
+  .done-box summary { cursor: pointer; padding: 8px 0; font-weight: 600; color: var(--success-color, #2e7d32); list-style: none; }
+  .done-box summary::-webkit-details-marker { display: none; }
+  .done-list { list-style: none; margin: 0 0 8px; padding: 0; }
+  .done-list li { display: flex; gap: 10px; align-items: center; padding: 6px 0; text-decoration: line-through; opacity: .75; }
+  .done-list li .small { margin-left: auto; text-decoration: none; }
+  button.kid-summary { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--secondary-background-color);
+    color: var(--primary-text-color); text-align: left; font-weight: 500; }
+  .kid-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .kid-sum .chip { margin: 0; }
+  .hero .star { white-space: nowrap; }
+  .kid-chev { color: var(--kid); font-size: 0.9em; white-space: nowrap; }
+  .help-switch { width: 100%; }
+  .tab-ico, .tab-short { display: none; }
+  @media (max-width: 600px) {
+    .tabs.parent-tabs { overflow: visible; gap: 2px; }
+    .parent-tabs .tab { flex: 1 1 0; min-width: 0; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.72em; position: relative; }
+    .parent-tabs .tab-ico { display: block; font-size: 1.5em; line-height: 1.1; }
+    .parent-tabs .tab-long { display: none; }
+    .parent-tabs .tab-short { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .parent-tabs .count { position: absolute; top: 2px; right: 6px; }
+  }
   /* -- Urkunde -- */
   .cert { width: min(560px, 100%); padding: 14px; border-radius: 10px; background: #fffaf0; color: #2b2118; font-family: Georgia, "Times New Roman", serif;
     box-shadow: 0 18px 50px rgba(0,0,0,.35); box-sizing: border-box; }
