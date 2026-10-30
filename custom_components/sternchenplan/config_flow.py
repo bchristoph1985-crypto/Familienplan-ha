@@ -240,6 +240,7 @@ class SternchenplanConfigFlow(ConfigFlow, domain=DOMAIN):
             [],
             dt_util.utcnow(),
             english=english,
+            currency=self.hass.config.currency,
             tablet_users=self._tablet,
             tablet_approval=self._tablet_approval,
         )

@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.util import dt as dt_util, slugify
 
+from .money import format_money
 from .core import SYSTEM, Family, Recurrence, Role
 
 
@@ -79,7 +80,7 @@ STARTER_REWARDS: dict[str, tuple[str, int]] = {
     "bedtime": ("30 Minuten später ins Bett", 20),
     "dinner": ("Abendessen aussuchen", 25),
     "movie": ("Filmabend aussuchen", 40),
-    "pocket": ("1 € Taschengeld extra", 40),
+    "pocket": ("{one} Taschengeld extra", 40),
     "friend": ("Freund oder Freundin einladen", 50),
     "trip": ("Ausflug aussuchen", 100),
 }
@@ -89,7 +90,7 @@ REWARD_NAMES_EN = {
     "bedtime": "Stay up 30 minutes longer",
     "dinner": "Choose dinner",
     "movie": "Choose movie night",
-    "pocket": "1 extra pocket money",
+    "pocket": "{one} extra pocket money",
     "friend": "Invite a friend",
     "trip": "Choose a day trip",
 }
@@ -129,6 +130,7 @@ def build_family(
     ages: dict[str, int] | None = None,
     rewards: list[str] | None = None,
     english: bool = False,
+    currency: str | None = None,
     tablet_users: list[str] | None = None,
     tablet_approval: bool = False,
 ) -> Family:
@@ -154,7 +156,13 @@ def build_family(
         for key in rewards or []:
             if key in STARTER_REWARDS:
                 name, cost = STARTER_REWARDS[key]
-                family.create_reward(SYSTEM, REWARD_NAMES_EN[key] if english else name, cost)
+                family.create_reward(
+                    SYSTEM,
+                    (REWARD_NAMES_EN[key] if english else name).replace(
+                        "{one}", format_money(100, currency, "en" if english else "de", whole=True)
+                    ),
+                    cost,
+                )
     for child in children:
         if child.name in ages:
             family.set_age(SYSTEM, child.id, ages[child.name], now)

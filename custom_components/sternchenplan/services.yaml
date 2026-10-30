@@ -487,6 +487,19 @@ set_photo_privacy:
       required: true
       selector:
         boolean:
+set_lock:
+  fields:
+    enabled:
+      selector:
+        boolean:
+    lock_time:
+      example: "20:00"
+      selector:
+        time:
+    release_time:
+      example: "05:00"
+      selector:
+        time:
 set_weather:
   fields:
     entity:

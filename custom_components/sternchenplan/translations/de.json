@@ -657,7 +657,7 @@
       "description": "Tauschkurs für Sterne und Zahltag fürs Wochengeld.",
       "fields": {
         "rate": {
-          "name": "Sterne pro Euro",
+          "name": "Sterne pro 1 Geldeinheit (z. B. 1 €)",
           "description": "Wie viele Sterne ein Kind für 1 € tauscht. 0 schaltet das Tauschen aus."
         },
         "payday": {
@@ -676,7 +676,7 @@
         },
         "amount": {
           "name": "Betrag",
-          "description": "Euro pro Woche. 0 schaltet es aus."
+          "description": "Betrag pro Woche in eurer Währung. 0 schaltet es aus."
         }
       }
     },
@@ -685,8 +685,8 @@
       "description": "Ein Kind tauscht Sterne zum Familienkurs in Taschengeld.",
       "fields": {
         "euros": {
-          "name": "Euro",
-          "description": "Wie viele ganze Euro."
+          "name": "Betrag",
+          "description": "Wie viele ganze Einheiten eurer Währung."
         },
         "member": {
           "name": "Kind",
@@ -704,7 +704,7 @@
         },
         "amount": {
           "name": "Betrag",
-          "description": "Euro. Leer zahlt alles aus."
+          "description": "Betrag in eurer Währung. Leer zahlt alles aus."
         }
       }
     },
@@ -718,7 +718,7 @@
         },
         "amount": {
           "name": "Betrag",
-          "description": "Euro, negativ bucht ab."
+          "description": "Betrag in eurer Währung, negativ bucht ab."
         },
         "note": {
           "name": "Notiz",
@@ -891,6 +891,24 @@
         "delete": {
           "name": "Löschen",
           "description": "An: nach Bestätigen oder Ablehnen löschen. Aus: behalten."
+        }
+      }
+    },
+    "set_lock": {
+      "name": "Internetsperre",
+      "description": "Schaltet die Internetsperre an oder aus und legt die Zeiten fest.",
+      "fields": {
+        "enabled": {
+          "name": "Aktiv",
+          "description": "An: Offene Aufgaben sperren die Geräte des Kindes."
+        },
+        "lock_time": {
+          "name": "Sperre ab",
+          "description": "Ab dieser Uhrzeit wird gesperrt, wenn noch Aufgaben offen sind."
+        },
+        "release_time": {
+          "name": "Freigabe um",
+          "description": "Spätestens um diese Uhrzeit werden die Geräte wieder freigegeben."
         }
       }
     },

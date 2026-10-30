@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.35.1";
+const VERSION = "0.35.3";
 
 const T = {
   de: {
@@ -110,8 +110,8 @@ const T = {
     wzRewards: "Worauf sparen die Kinder?",
     wzRewardsText: "Belohnungen tauschen die Kinder gegen Sterne ein. Du bestätigst jedes Einlösen.",
     wzMoney: "Taschengeld",
-    wzMoneySub: "{n} ⭐ = 1 €",
-    wzMoneyRate: "Wie viele Sterne sind 1 €?",
+    wzMoneySub: "{n} ⭐ = {one}",
+    wzMoneyRate: "Wie viele Sterne sind {one}?",
     wzMoneyHint: "Wochengeld und Auszahlen stellst du später unter „Familie“ ein.",
     wzPhotos: "Fotos und Datenschutz",
     wzPhotosText: "Bei manchen Aufgaben machen Kinder ein Foto als Nachweis. Nur Eltern sehen es. Was soll danach passieren?",
@@ -321,6 +321,15 @@ const T = {
     screenMax: "Höchstens pro Tag (Minuten)",
     screenDevices: "Geräte (Fernseher, Konsole, Internet …)",
     screenAdd: "Gerät hinzufügen …",
+    lockTitle: "Internetsperre",
+    lockSub: "Offene Aufgaben sperren abends Konsole, Fernseher & Co.",
+    lockFrom: "Sperre ab",
+    lockUntil: "Freigabe spätestens",
+    lockAdd: "Internet-Schalter hinzufügen …",
+    lockHint: "Sind um die Sperrzeit noch Aufgaben offen, schaltet Sternchenplan das Internet dieser Geräte aus (z. B. FRITZ!Box-Schalter „Internetzugang“). Sobald alles erledigt ist, oder spätestens zur Freigabezeit, geht es wieder an. Handys besser nicht eintragen, damit dein Kind erreichbar bleibt.",
+    lockNoDevices: "Noch keinem Kind ist ein Gerät zugeordnet, deshalb wird nichts gesperrt.",
+    lockNoSwitches: "In Home Assistant gibt es noch keine Schalter. Für die FRITZ!Box: Integration „AVM FRITZ!Box Tools“ hinzufügen und dort „Internetzugang“ je Gerät aktivieren.",
+    wzLockHint: "Welche Geräte gesperrt werden, wählst du danach unter Einstellungen.",
     screenHint: "Während der verdienten Zeit schaltet Sternchenplan diese Geräte ein und danach wieder aus. Bei überfälligen Aufgaben gibt es keine Bildschirmzeit.",
     lampTitle: "Zimmerlampe als Ampel",
     lampNone: "keine Lampe",
@@ -370,12 +379,12 @@ const T = {
     parentsHint: "Eltern mit eigenen Aufgaben erscheinen bei „Heute“ und in der Wochenwertung. Ihre Sterne zählen fürs Familienziel.",
     money: "Taschengeld",
     weekly: "{amount} Wochengeld, jeden {day}",
-    exchange: "{stars} ⭐ → 1 € tauschen",
-    confirmExchange: "{stars} Sterne gegen 1 € tauschen?",
+    exchange: "{stars} ⭐ → {one} tauschen",
+    confirmExchange: "{stars} Sterne gegen {one} tauschen?",
     rate: "Sterne pro Euro",
     rateHint: "0 = Sterne lassen sich nicht in Geld tauschen",
     payday: "Zahltag fürs Wochengeld",
-    perWeek: "€ pro Woche",
+    perWeek: "{cur} pro Woche",
     payout: "Auszahlen",
     confirmPayout: "{amount} an {name} auszahlen? Gib das Geld bar oder überweise es.",
     book: "Buchen",
@@ -522,8 +531,8 @@ const T = {
     wzRewards: "What do the kids save up for?",
     wzRewardsText: "Kids trade stars for rewards. You confirm every redemption.",
     wzMoney: "Pocket money",
-    wzMoneySub: "{n} ⭐ = €1",
-    wzMoneyRate: "How many stars make €1?",
+    wzMoneySub: "{n} ⭐ = {one}",
+    wzMoneyRate: "How many stars make {one}?",
     wzMoneyHint: "Set weekly allowance and payouts later under “Family”.",
     wzPhotos: "Photos and privacy",
     wzPhotosText: "Some chores need a photo as proof. Only parents see it. What happens afterwards?",
@@ -733,6 +742,15 @@ const T = {
     screenMax: "Per day at most (minutes)",
     screenDevices: "Devices (TV, console, internet …)",
     screenAdd: "Add a device …",
+    lockTitle: "Internet lock",
+    lockSub: "Unfinished chores lock consoles, TVs & co. in the evening.",
+    lockFrom: "Lock from",
+    lockUntil: "Release at the latest",
+    lockAdd: "Add an internet switch …",
+    lockHint: "If chores are still open at lock time, Sternchenplan turns off the internet for these devices (e.g. FRITZ!Box “internet access” switch). As soon as everything is done, or at release time at the latest, it comes back on. Better not add phones so your child stays reachable.",
+    lockNoDevices: "No child has a device yet, so nothing gets locked.",
+    lockNoSwitches: "Home Assistant has no switches yet. For a FRITZ!Box: add the “AVM FRITZ!Box Tools” integration and enable “internet access” per device.",
+    wzLockHint: "You pick which devices get locked later under Settings.",
     screenHint: "During earned time Sternchenplan turns these devices on and off again afterwards. No screen time while chores are overdue.",
     lampTitle: "Room lamp signal",
     lampNone: "no lamp",
@@ -782,12 +800,12 @@ const T = {
     parentsHint: "Parents with their own chores appear under “Today” and in the weekly ranking. Their stars count towards the family goal.",
     money: "Pocket money",
     weekly: "{amount} allowance, every {day}",
-    exchange: "Exchange {stars} ⭐ → 1 €",
-    confirmExchange: "Exchange {stars} stars for 1 €?",
+    exchange: "Exchange {stars} ⭐ → {one}",
+    confirmExchange: "Exchange {stars} stars for {one}?",
     rate: "Stars per euro",
     rateHint: "0 = stars can't be exchanged for money",
     payday: "Payday for the allowance",
-    perWeek: "€ per week",
+    perWeek: "{cur} per week",
     payout: "Pay out",
     confirmPayout: "Pay {amount} to {name}? Hand over cash or transfer it.",
     book: "Book",
@@ -999,6 +1017,7 @@ class SternchenplanCard extends HTMLElement {
     const lang = (this._hass?.locale?.language || this._hass?.language || "de").startsWith("de") ? "de" : "en";
     let text = T[lang][key] ?? key;
     if (typeof text === "string") {
+      if (text.includes("{one}") || text.includes("{cur}")) vars = { one: this._money(100, 0), cur: this._currencySymbol(), ...vars };
       for (const [k, v] of Object.entries(vars)) text = text.replace(`{${k}}`, v);
     }
     return text;
@@ -1275,6 +1294,27 @@ class SternchenplanCard extends HTMLElement {
         this._render();
         break;
       }
+      case "lock-toggle": {
+        const lock = { ...(this._data.lock || {}) };
+        lock.enabled = !lock.enabled;
+        this._data.lock = lock;
+        this._render();
+        this._hass.callService("sternchenplan", "set_lock", { enabled: lock.enabled }).catch((err) => this._notify(err.message));
+        break;
+      }
+      case "lock-dev-remove": {
+        const kid = this._member(id);
+        if (!kid) break;
+        kid.devices = (kid.devices || []).filter((e) => e !== el.dataset.entity);
+        kid.has_devices = kid.devices.length > 0;
+        this._render();
+        this._hass.callService("sternchenplan", "set_devices", { member: id, devices: kid.devices }).catch((err) => this._notify(err.message));
+        break;
+      }
+      case "wz-lock":
+        this._wz.lock = !this._wzLock();
+        this._render();
+        break;
       case "wz-money":
         // Kachel und Funktion „Taschengeld“ sind dasselbe: an/aus gilt für beides
         if (this._wz.features.has("money")) this._wz.features.delete("money");
@@ -1518,7 +1558,7 @@ class SternchenplanCard extends HTMLElement {
       }
       case "payout": {
         const k = this._member(id);
-        if (k && confirm(this._t("confirmPayout", { amount: this._euro(k.money), name: k.name }))) {
+        if (k && confirm(this._t("confirmPayout", { amount: this._money(k.money), name: k.name }))) {
           this._call("payout", { member: id });
         }
         break;
@@ -1618,6 +1658,26 @@ class SternchenplanCard extends HTMLElement {
     }
     if (field.startsWith("vote.")) {
       this._voteForm = { ...(this._voteForm || {}), [field.slice(5)]: el.value };
+      return;
+    }
+    if (field.startsWith("lockdev.") || field.startsWith("lock.")) {
+      if (ev.type !== "change") return;
+      const send = (service, data) =>
+        this._hass.callService("sternchenplan", service, data).catch((err) => this._notify(err.message));
+      if (field.startsWith("lockdev.")) {
+        const kid = this._member(field.slice(8));
+        const entity = el.value.trim();
+        if (!kid || !entity.startsWith("switch.") || !this._hass.states[entity]) return;
+        kid.devices = [...new Set([...(kid.devices || []), entity])];
+        kid.has_devices = true;
+        el.value = "";
+        this._render();
+        send("set_devices", { member: kid.id, devices: kid.devices });
+      } else if (el.value) {
+        const key = field.slice(5);
+        this._data.lock = { ...(this._data.lock || {}), [key]: el.value };
+        send("set_lock", { [key]: el.value });
+      }
       return;
     }
     if (field.startsWith("lamp.") || field.startsWith("screendev.") || field.startsWith("screen.")) {
@@ -1967,7 +2027,9 @@ class SternchenplanCard extends HTMLElement {
       body = `<h2>${this._t("wzKids")}</h2><p class="muted">${this._t("wzKidsText")}</p><div class="wz-kid-list">${cards}</div>${nav(2)}`;
     } else if (wz.step === 2) {
       body = `<h2>${this._t("featTitle")}</h2><p class="muted">${this._t("featText")}</p>
-        ${this._featureTiles(wz.features, "wz-feat")}${nav(3)}`;
+        ${this._featureTiles(wz.features, "wz-feat")}
+        ${this._data.lock ? `<div class="feat-grid wz-lock">${this._lockTile(this._wzLock(), "wz-lock")}</div>
+        ${this._wzLock() ? `<p class="muted small">${this._t("wzLockHint")}</p>` : ""}` : ""}${nav(3)}`;
     } else if (wz.step === 3) {
       const plan = this._starterPlan();
       const item = (c) => {
@@ -2030,6 +2092,10 @@ class SternchenplanCard extends HTMLElement {
       <span class="muted small">${this._t("wzMoneyHint")}</span></div>`;
   }
 
+  _wzLock() {
+    return this._wz?.lock ?? !!this._data.lock?.enabled;
+  }
+
   async _finishWelcome() {
     const wz = this._wz;
     if (wz.busy) return;
@@ -2042,6 +2108,9 @@ class SternchenplanCard extends HTMLElement {
       }
       if (wz.privatePush !== undefined && wz.privatePush !== !!this._data.private_push) {
         await this._hass.callService("sternchenplan", "set_private_push", { enabled: wz.privatePush });
+      }
+      if (wz.lock !== undefined && this._data.lock && wz.lock !== !!this._data.lock.enabled) {
+        await this._hass.callService("sternchenplan", "set_lock", { enabled: wz.lock });
       }
       const features = [...wz.features].sort();
       if (features.join() !== this._features().slice().sort().join()) {
@@ -2905,8 +2974,28 @@ class SternchenplanCard extends HTMLElement {
       </div>`;
   }
 
-  _euro(cents) {
-    return new Intl.NumberFormat(this._locale(), { style: "currency", currency: "EUR" }).format(cents / 100);
+  // Währung aus Home Assistant (Einstellungen → System → Allgemein), sonst Euro
+  _currency() {
+    return this._hass?.config?.currency || "EUR";
+  }
+
+  _money(cents, digits) {
+    const opts = { style: "currency", currency: this._currency() };
+    if (digits !== undefined) Object.assign(opts, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    try {
+      return new Intl.NumberFormat(this._locale(), opts).format(cents / 100);
+    } catch (e) {
+      return `${(cents / 100).toFixed(digits ?? 2)} ${this._currency()}`;
+    }
+  }
+
+  _currencySymbol() {
+    try {
+      const parts = new Intl.NumberFormat(this._locale(), { style: "currency", currency: this._currency() }).formatToParts(1);
+      return parts.find((x) => x.type === "currency")?.value || this._currency();
+    } catch (e) {
+      return this._currency();
+    }
   }
 
   _moneyLog(member) {
@@ -2917,7 +3006,7 @@ class SternchenplanCard extends HTMLElement {
       .slice(0, 10)
       .map(
         (e) => `<li><span>${esc(e.note || kinds[e.kind] || e.kind)}${e.stars ? ` · ${e.stars} ⭐` : ""}<span class="muted small"> · ${new Date(e.at).toLocaleDateString(this._locale())}</span></span>
-          <b class="${e.cents < 0 ? "minus" : "plus"}">${e.cents > 0 ? "+" : ""}${esc(this._euro(e.cents))}</b></li>`,
+          <b class="${e.cents < 0 ? "minus" : "plus"}">${e.cents > 0 ? "+" : ""}${esc(this._money(e.cents))}</b></li>`,
       )
       .join("")}</ul>`;
   }
@@ -2931,8 +3020,8 @@ class SternchenplanCard extends HTMLElement {
       <section class="money">
         <div class="section-title">💶 ${this._t("money")}</div>
         <div class="wallet">
-          <div class="wallet-sum">${esc(this._euro(member.money || 0))}</div>
-          ${member.allowance ? `<div class="muted small">${esc(this._t("weekly", { amount: this._euro(member.allowance), day: this._t("days")[m.payday ?? 6] }))}</div>` : ""}
+          <div class="wallet-sum">${esc(this._money(member.money || 0))}</div>
+          ${member.allowance ? `<div class="muted small">${esc(this._t("weekly", { amount: this._money(member.allowance), day: this._t("days")[m.payday ?? 6] }))}</div>` : ""}
           ${m.rate && !ro ? `<button class="primary" data-action="exchange" ${can ? "" : "disabled"}>${esc(this._t("exchange", { stars: m.rate }))}</button>` : ""}
         </div>
         <details class="ledger-box"><summary class="muted small">${this._t("history")}</summary>${this._moneyLog(member)}</details>
@@ -2949,7 +3038,7 @@ class SternchenplanCard extends HTMLElement {
           <div class="kidcard-head">
             ${this._avatar(k, 40)}
             <div class="kidcard-name"><strong>${esc(k.name)}</strong><span class="muted small">⭐ ${k.points}</span></div>
-            <div class="wallet-sum small-sum">${esc(this._euro(k.money || 0))}</div>
+            <div class="wallet-sum small-sum">${esc(this._money(k.money || 0))}</div>
           </div>
           <div class="money-row">
             <label>${this._t("perWeek")}<input type="number" min="0" step="0.5" data-field="allow.${esc(k.id)}" value="${(k.allowance || 0) / 100}"></label>
@@ -3487,8 +3576,40 @@ class SternchenplanCard extends HTMLElement {
     if (this._on("parents")) {
       sections.push(`<section class="extras-box"><div class="section-title">👨‍👩‍👧 ${esc(this._t("feat").parents[1])}</div><p class="muted small">${this._t("parentsHint")}</p></section>`);
     }
+    sections.push(this._renderLock());
     sections.push(this._renderPrivacy());
     return sections.join("");
+  }
+
+  _lockTile(on, action) {
+    return `<button class="feat ${on ? "on" : ""}" data-action="${action}" aria-pressed="${on}">
+      <span class="feat-emoji">🌐</span><span class="feat-main"><strong>${this._t("lockTitle")}</strong><span class="muted small">${this._t("lockSub")}</span></span>
+      <span class="feat-switch" aria-hidden="true"><i></i></span></button>`;
+  }
+
+  _renderLock() {
+    const lock = this._data.lock;
+    if (!lock) return "";
+    const ro = this._config.readonly;
+    const states = this._hass?.states || {};
+    const name = (id) => states[id]?.attributes?.friendly_name || id;
+    const head = `<section class="extras-box"><div class="section-title">🌐 ${this._t("lockTitle")}</div>
+      <div class="feat-grid">${this._lockTile(!!lock.enabled, ro ? "noop" : "lock-toggle")}</div>`;
+    if (!lock.enabled) return `${head}</section>`;
+    const kids = this._children();
+    const switches = Object.keys(states).filter((id) => id.startsWith("switch.")).sort();
+    const time = (v) => String(v || "").slice(0, 5);
+    return `${head}
+      <div class="grid">
+        <label>${this._t("lockFrom")}<input type="time" data-field="lock.lock_time" value="${esc(time(lock.lock_time))}" ${ro ? "disabled" : ""}></label>
+        <label>${this._t("lockUntil")}<input type="time" data-field="lock.release_time" value="${esc(time(lock.release_time))}" ${ro ? "disabled" : ""}></label>
+      </div>
+      <datalist id="lock-devices">${switches.map((id) => `<option value="${esc(id)}">${esc(name(id))}</option>`).join("")}</datalist>
+      <div class="extras-rows">${kids.map((k) => `<div class="extras-row wrap">${this._avatar(k, 32)}<strong>${esc(k.name)}</strong>
+        <div class="chips">${(k.devices || []).map((e) => `<span class="chip dev">${esc(name(e))}${ro ? "" : ` <button class="x" data-action="lock-dev-remove" data-id="${esc(k.id)}" data-entity="${esc(e)}" aria-label="×">×</button>`}</span>`).join("")}</div>
+        ${ro ? "" : `<input list="lock-devices" data-field="lockdev.${esc(k.id)}" placeholder="${esc(this._t("lockAdd"))}" aria-label="${esc(this._t("lockAdd"))}">`}</div>`).join("")}</div>
+      ${!switches.length ? `<p class="help-tip">${this._t("lockNoSwitches")}</p>` : kids.length && !kids.some((k) => (k.devices || []).length) ? `<p class="help-tip">${this._t("lockNoDevices")}</p>` : ""}
+      <p class="muted small">${this._t("lockHint")}</p></section>`;
   }
 
   _privacyTile(on, action) {
@@ -4480,7 +4601,7 @@ const STYLE = `
   button.feat.on .feat-switch { background: var(--primary-color); }
   button.feat.on .feat-switch i { left: 21px; }
   .extras-box { margin: 0 0 18px; }
-  .wz-priv { margin-top: 14px; }
+  .wz-priv, .wz-lock { margin-top: 14px; }
   .extras-rows { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
   .extras-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: var(--secondary-background-color); }
   .extras-row.wrap { flex-wrap: wrap; }

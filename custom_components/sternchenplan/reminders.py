@@ -26,6 +26,7 @@ from .const import (
 from .actions import async_ask_parents
 from .lamp import GREEN, ORANGE, async_flash
 from .privacy import scrub
+from .money import format_money
 from .core import ChoreState, Family, Role
 
 if TYPE_CHECKING:
@@ -212,9 +213,7 @@ async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict
                  "level": event["level"], "title": title},
             )
         elif event["type"] == "allowance":
-            amount = f"{event['cents'] / 100:.2f} €"
-            if _lang(hass) == "de":
-                amount = amount.replace(".", ",")
+            amount = format_money(event["cents"], hass.config.currency, _lang(hass))
             message = text["allowance"].format(amount=amount)
         elif event["type"] == "stars":
             key = "bonus" if event["stars"] > 0 else "penalty"
