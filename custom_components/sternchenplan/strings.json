@@ -893,6 +893,20 @@
           "description": "From the card."
         }
       }
+    },
+    "set_theme": {
+      "name": "Theme",
+      "description": "Chooses the look of a member's own view. Children may pick their own.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        },
+        "theme": {
+          "name": "Theme",
+          "description": "space, jungle, ocean, candy, elegant or empty for Clear."
+        }
+      }
     }
   }
 }

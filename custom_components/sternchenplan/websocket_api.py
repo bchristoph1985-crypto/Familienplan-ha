@@ -94,6 +94,7 @@ def snapshot(
                 "goal": m.goal_reward_id if m.goal_reward_id in family.rewards else None,
                 "money": m.money,
                 "picture_mode": m.picture_mode,
+                "theme": m.theme,
                 # Bonus und Abzug sehen Eltern und das Kind selbst
                 "star_log": (
                     family.star_history(m.id, 10)

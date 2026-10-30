@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.28.0";
+const VERSION = "0.29.0";
 
 const T = {
   de: {
@@ -62,6 +62,9 @@ const T = {
     givePass: "Freikarte",
     starsBtn: "⭐ Bonus oder Abzug",
     moreActions: "Mehr für {name}",
+    themeTitle: "🎨 Mein Design",
+    themeParent: "Design",
+    themeNames: { "": "Klar", space: "Weltraum", jungle: "Dschungel", ocean: "Ozean", candy: "Bonbon", elegant: "Elegant" },
     allDoneKid: "Alles geschafft für heute!",
     allDoneKidSub: "Super gemacht. Morgen geht’s weiter.",
     nfc: "📱 NFC-Aufkleber",
@@ -298,6 +301,9 @@ const T = {
     givePass: "Free pass",
     starsBtn: "⭐ Bonus or deduction",
     moreActions: "More for {name}",
+    themeTitle: "🎨 My look",
+    themeParent: "Look",
+    themeNames: { "": "Clear", space: "Space", jungle: "Jungle", ocean: "Ocean", candy: "Candy", elegant: "Elegant" },
     allDoneKid: "All done for today!",
     allDoneKidSub: "Great job. See you tomorrow.",
     nfc: "📱 NFC tag",
@@ -822,6 +828,19 @@ class SternchenplanCard extends HTMLElement {
         this._help = !this._help;
         this._render();
         break;
+      case "theme-toggle":
+        this._themeOpen = !this._themeOpen;
+        this._render();
+        break;
+      case "theme": {
+        // Sofort umschalten, der Server bestätigt gleich danach.
+        const who = this._member(id);
+        if (who) who.theme = el.dataset.theme;
+        this._themeOpen = true;
+        this._render();
+        this._call("set_theme", { member: id, theme: el.dataset.theme });
+        break;
+      }
       case "starter-go":
         el.disabled = true;
         this._runStarter();
@@ -1456,6 +1475,7 @@ class SternchenplanCard extends HTMLElement {
         ${this._renderChildRewards(member)}
         ${this._renderBadges(member)}
         ${this._renderChildStarLog(member)}
+        ${this._renderThemePicker(member)}
       </div>`;
   }
 
@@ -1907,6 +1927,31 @@ class SternchenplanCard extends HTMLElement {
     return new Date(chore.due) <= end;
   }
 
+  _themeId() {
+    if (!this._data) return "";
+    const kid = this._shownChild();
+    if (kid) return this._member(kid)?.theme || "";
+    if (this._data.tablet && !this._data.is_manager) return "";
+    return this._member(this._data.me)?.theme || "";
+  }
+
+  _renderThemePicker(member) {
+    if (this._config.readonly) return "";
+    const names = this._t("themeNames");
+    const current = member.theme || "";
+    const list = THEMES.filter((t) => member.role === "parent" || t.id !== "elegant");
+    return `
+      <details class="theme-box" ${this._themeOpen ? "open" : ""}>
+        <summary><strong>${this._t("themeTitle")}</strong><span class="muted small">${esc(names[current])}</span></summary>
+        <div class="theme-grid">${list
+          .map(
+            (t) => `<button class="theme-swatch ${t.id === current ? "on" : ""}" data-action="theme" data-id="${esc(member.id)}" data-theme="${t.id}" aria-pressed="${t.id === current}">
+              <span class="sw sw-${t.id || "clear"}">${t.emoji}</span><span class="sw-name">${esc(names[t.id])}</span></button>`,
+          )
+          .join("")}</div>
+      </details>`;
+  }
+
   _renderTablet() {
     const kid = this._actingAs && this._member(this._actingAs);
     if (kid) {
@@ -1961,6 +2006,7 @@ class SternchenplanCard extends HTMLElement {
         ${this._renderMoney(member)}
         ${this._renderBadges(member)}
         ${this._renderChildStarLog(member)}
+        ${this._renderThemePicker(member)}
       </div>`;
   }
 
@@ -2175,8 +2221,9 @@ class SternchenplanCard extends HTMLElement {
     return `
       <nav class="tabs">${tabs
         .map(([id, label]) => `<button class="tab ${this._tab === id ? "on" : ""}" data-action="tab" data-id="${id}">${label}</button>`)
-        .join("")}<button class="tab help-btn ${this._help ? "on" : ""}" data-action="help" title="${this._t("help")}" aria-label="${this._t("help")}">❓</button></nav>
+        .join("")}<button class="tab theme-btn ${this._themeOpen ? "on" : ""}" data-action="theme-toggle" title="${this._t("themeParent")}" aria-label="${this._t("themeParent")}">🎨</button><button class="tab help-btn ${this._help ? "on" : ""}" data-action="help" title="${this._t("help")}" aria-label="${this._t("help")}">❓</button></nav>
       ${this._helpTip()}
+      ${this._themeOpen && this._member(d.me) ? this._renderThemePicker(this._member(d.me)) : ""}
       ${body}
       ${this._donateLine()}`;
   }
@@ -2404,7 +2451,11 @@ class SternchenplanCard extends HTMLElement {
       this.shadowRoot.innerHTML = `<style>${STYLE}</style><ha-card></ha-card><div class="fx" aria-hidden="true"></div>`;
       this._cardEl = this.shadowRoot.querySelector("ha-card");
     }
-    this._cardEl.innerHTML = `${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div>`;
+    const theme = THEMES.find((t) => t.id === this._themeId()) || THEMES[0];
+    if (theme.id) this._cardEl.dataset.theme = theme.id;
+    else delete this._cardEl.dataset.theme;
+    const deco = theme.deco.length ? `<div class="deco" aria-hidden="true">${theme.deco.map((e) => `<span>${e}</span>`).join("")}</div>` : "";
+    this._cardEl.innerHTML = `${deco}${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div>`;
   }
 }
 
@@ -2476,6 +2527,16 @@ const CHORE_EMOJI = [
 ];
 
 // Kräftige Farben, die auf hell und dunkel funktionieren (weiße Schrift darauf).
+// Designs zum Aussuchen. deco = kleine Bilder, die im Hintergrund schweben.
+const THEMES = [
+  { id: "", emoji: "✨", deco: [] },
+  { id: "space", emoji: "🚀", deco: ["🪐", "⭐", "🌙", "🚀", "✨", "☄️"] },
+  { id: "jungle", emoji: "🌴", deco: ["🌴", "🦜", "🍃", "🐒", "🌺", "🦋"] },
+  { id: "ocean", emoji: "🐠", deco: ["🐠", "🫧", "🐳", "🐚", "🫧", "🐙"] },
+  { id: "candy", emoji: "🍭", deco: ["🍭", "🍬", "🧁", "🌈", "💖", "🍩"] },
+  { id: "elegant", emoji: "🤍", deco: [] },
+];
+
 const PALETTE = ["#4f7cff", "#ff7a45", "#22a565", "#a259ff", "#e5a100", "#f0508c", "#13a8b8"];
 
 const REWARD_EMOJI = [
@@ -2817,6 +2878,136 @@ const STYLE = `
   button.menu-item:hover { background: var(--secondary-background-color); }
   section.week, .starter { border-radius: 18px; }
   @media (prefers-reduced-motion: reduce) { .done-emoji { animation: none; } }
+  /* -- Designs zum Aussuchen (0.29) -- */
+  ha-card { position: relative; display: block; }
+  ha-card > .content, ha-card > h1 { position: relative; z-index: 1; }
+  .deco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; border-radius: inherit; }
+  .deco span { position: absolute; font-size: 46px; opacity: .16; animation: drift 11s ease-in-out infinite; }
+  .deco span:nth-child(1) { top: 1%; right: 4%; font-size: 64px; }
+  .deco span:nth-child(2) { top: 22%; left: -8px; animation-delay: -3s; }
+  .deco span:nth-child(3) { top: 44%; right: -6px; font-size: 54px; animation-delay: -6s; }
+  .deco span:nth-child(4) { top: 63%; left: 6%; animation-delay: -2s; }
+  .deco span:nth-child(5) { top: 80%; right: 12%; font-size: 38px; animation-delay: -8s; }
+  .deco span:nth-child(6) { bottom: 1%; left: 38%; font-size: 40px; animation-delay: -5s; }
+  @keyframes drift { 50% { transform: translateY(-14px) rotate(8deg); } }
+  ha-card[data-theme] { border-radius: 24px; }
+  ha-card[data-theme] input, ha-card[data-theme] select, ha-card[data-theme] textarea { background: var(--card-background-color); color: var(--primary-text-color); }
+  ha-card[data-theme] .tabs { background: var(--secondary-background-color); }
+  ha-card[data-theme] .tab.on { background: var(--card-background-color); }
+
+  ha-card[data-theme="space"] {
+    --primary-text-color: #eef1ff; --secondary-text-color: #aab3da; --card-background-color: rgba(255,255,255,.08);
+    --secondary-background-color: rgba(255,255,255,.06); --divider-color: rgba(255,255,255,.14); --primary-color: #8aa4ff;
+    color: var(--primary-text-color);
+    background:
+      radial-gradient(1.6px 1.6px at 12% 18%, #fff 50%, transparent 52%),
+      radial-gradient(1.2px 1.2px at 64% 9%, #fff 50%, transparent 52%),
+      radial-gradient(1.4px 1.4px at 86% 42%, #fff 50%, transparent 52%),
+      radial-gradient(1px 1px at 33% 61%, #fff 50%, transparent 52%),
+      radial-gradient(1.8px 1.8px at 52% 83%, #ffe9a8 50%, transparent 52%),
+      radial-gradient(1px 1px at 8% 92%, #fff 50%, transparent 52%),
+      radial-gradient(ellipse 70% 45% at 90% 0%, rgba(124, 77, 255, .45), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 150, 255, .3), transparent 70%),
+      linear-gradient(180deg, #0b1026, #15123a 60%, #0d1530);
+    background-size: 240px 240px, 300px 300px, 260px 260px, 180px 180px, 340px 340px, 220px 220px, 100% 100%, 100% 100%, 100% 100%;
+  }
+  ha-card[data-theme="space"] .deco span { opacity: .3; }
+  ha-card[data-theme="space"] ul.tasks .row.task, ha-card[data-theme="space"] section.kidcard { backdrop-filter: blur(6px);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.1); }
+  ha-card[data-theme="space"] .hero { background: linear-gradient(135deg, color-mix(in srgb, var(--kid) 45%, transparent), rgba(255,255,255,.04));
+    box-shadow: 0 0 30px color-mix(in srgb, var(--kid) 35%, transparent); }
+
+  ha-card[data-theme="jungle"] {
+    --primary-text-color: #173a22; --secondary-text-color: #4e6d57; --card-background-color: rgba(255,255,255,.86);
+    --secondary-background-color: rgba(255,255,255,.55); --divider-color: rgba(23,58,34,.12); --primary-color: #2e9b57;
+    color: var(--primary-text-color);
+    background:
+      radial-gradient(circle at 100% 0%, rgba(255, 214, 102, .55), transparent 35%),
+      radial-gradient(ellipse 60% 40% at 0% 100%, rgba(46, 155, 87, .35), transparent 70%),
+      linear-gradient(165deg, #f1fbe9, #d3f0cf 55%, #b4e2bb);
+  }
+  ha-card[data-theme="jungle"] .deco span { opacity: .22; }
+
+  ha-card[data-theme="ocean"] {
+    --primary-text-color: #0c3450; --secondary-text-color: #3d6984; --card-background-color: rgba(255,255,255,.84);
+    --secondary-background-color: rgba(255,255,255,.5); --divider-color: rgba(12,52,80,.12); --primary-color: #1c8fd6;
+    color: var(--primary-text-color);
+    background:
+      radial-gradient(circle at 14% 76%, transparent 9px, rgba(255,255,255,.7) 10px, transparent 12px),
+      radial-gradient(circle at 82% 58%, transparent 6px, rgba(255,255,255,.7) 7px, transparent 9px),
+      radial-gradient(circle at 46% 90%, transparent 12px, rgba(255,255,255,.6) 13px, transparent 15px),
+      radial-gradient(ellipse 80% 30% at 50% 0%, rgba(255,255,255,.7), transparent 70%),
+      linear-gradient(180deg, #e6f7ff, #a6dcf4 55%, #63bde6);
+    background-size: 320px 420px, 260px 360px, 380px 500px, 100% 100%, 100% 100%;
+  }
+  ha-card[data-theme="ocean"] .deco span { opacity: .24; }
+
+  ha-card[data-theme="candy"] {
+    --primary-text-color: #4a1f4f; --secondary-text-color: #8a678f; --card-background-color: rgba(255,255,255,.9);
+    --secondary-background-color: rgba(255,255,255,.6); --divider-color: rgba(74,31,79,.1); --primary-color: #e0559a;
+    color: var(--primary-text-color);
+    background:
+      radial-gradient(circle, rgba(255, 105, 180, .16) 2.5px, transparent 3.5px),
+      radial-gradient(circle, rgba(140, 110, 255, .14) 2.5px, transparent 3.5px),
+      linear-gradient(135deg, #fff0f6, #f6e9ff 50%, #e7f3ff);
+    background-size: 28px 28px, 28px 28px, 100% 100%;
+    background-position: 0 0, 14px 14px, 0 0;
+  }
+  ha-card[data-theme="candy"] ul.tasks .row.task, ha-card[data-theme="candy"] .reward, ha-card[data-theme="candy"] .level,
+  ha-card[data-theme="candy"] .goal { border-radius: 22px; }
+  ha-card[data-theme="candy"] button.primary { box-shadow: 0 3px 0 color-mix(in srgb, var(--kid, var(--primary-color)) 55%, #000); }
+  ha-card[data-theme="candy"] .deco span { opacity: .26; }
+
+  ha-card[data-theme="elegant"] {
+    --primary-text-color: #2b2722; --secondary-text-color: #7a7067; --card-background-color: #fffdf9;
+    --secondary-background-color: #f1ebe2; --divider-color: #e6ddd1; --primary-color: #8a6d4b;
+    color: var(--primary-text-color); background: linear-gradient(180deg, #faf7f2, #f3eee6);
+  }
+  ha-card[data-theme="elegant"] .hello, ha-card[data-theme="elegant"] .section-title, ha-card[data-theme="elegant"] .kidcard-name strong,
+  ha-card[data-theme="elegant"] .fgoal-top strong, ha-card[data-theme="elegant"] .starter-title { font-family: Georgia, "Times New Roman", serif; letter-spacing: .01em; }
+  ha-card[data-theme="elegant"] section.kidcard { box-shadow: 0 10px 30px rgba(60, 40, 20, .07), 0 0 0 1px #ece4d8; }
+
+  ha-card[data-theme="jungle"] .hero { background: linear-gradient(135deg, #23864a, #6cc35f 70%, #b8de6a); }
+  ha-card[data-theme="ocean"] .hero { background: linear-gradient(135deg, #1374c2, #22a9d8 60%, #57d5d2); }
+  ha-card[data-theme="candy"] .hero { background: linear-gradient(135deg, #ff6fae, #c286ff 70%, #8fb8ff); }
+  ha-card[data-theme="jungle"] .hero, ha-card[data-theme="ocean"] .hero, ha-card[data-theme="candy"] .hero {
+    --primary-text-color: #fff; --secondary-text-color: rgba(255,255,255,.88); --divider-color: rgba(255,255,255,.35);
+    color: #fff; box-shadow: 0 10px 24px rgba(0,0,0,.12); }
+  ha-card[data-theme] .hero .star { background: rgba(255,255,255,.25); color: #fff; }
+  ha-card[data-theme] .hero .avatar { box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 4px 10px rgba(0,0,0,.2); }
+  ha-card[data-theme="jungle"] .section-title, ha-card[data-theme="jungle"] .section-head strong { color: #1f6b3a; }
+  ha-card[data-theme="ocean"] .section-title, ha-card[data-theme="ocean"] .section-head strong { color: #0f5d8f; }
+  ha-card[data-theme="candy"] .section-title, ha-card[data-theme="candy"] .section-head strong { color: #c23d84; }
+  ha-card[data-theme="space"] .section-title, ha-card[data-theme="space"] .section-head strong { color: #c9d4ff; text-shadow: 0 0 12px rgba(138,164,255,.6); }
+  /* Schmale Kinderkarten: Knopf unter die Aufgabe, damit der Name lesbar bleibt */
+  section.kidcard { container-type: inline-size; }
+  .kidgrid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+  @container (max-width: 440px) {
+    .kidcard .row.task { display: grid; grid-template-columns: auto 1fr auto; column-gap: 12px; row-gap: 6px; align-items: center; }
+    .kidcard .row.task > .actions { grid-column: 2 / -1; width: auto; justify-content: flex-end; }
+    .kidcard .row.task > .actions:empty { display: none; }
+    .kidcard .row.task > ol.steps { grid-column: 1 / -1; }
+  }
+  .theme-box { margin-top: 18px; padding: 12px 14px; border-radius: 18px; background: var(--secondary-background-color); }
+  .theme-box summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+  .theme-box summary::-webkit-details-marker { display: none; }
+  .theme-box summary::after { content: "▾"; margin-left: auto; color: var(--secondary-text-color); }
+  .theme-box[open] summary::after { transform: rotate(180deg); }
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin-top: 12px; }
+  button.theme-swatch { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 10px; min-height: auto;
+    border-radius: 16px; background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 1px var(--divider-color); }
+  button.theme-swatch.on { box-shadow: 0 0 0 3px var(--kid, var(--primary-color)); }
+  .sw { width: 100%; height: 58px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8em; }
+  .sw-clear { background: linear-gradient(135deg, #eef3ff, #ffffff); }
+  .sw-space { background: radial-gradient(1.5px 1.5px at 30% 30%, #fff 50%, transparent 52%), radial-gradient(1.5px 1.5px at 75% 65%, #fff 50%, transparent 52%), linear-gradient(135deg, #0b1026, #3b2a7a); }
+  .sw-jungle { background: linear-gradient(135deg, #f1fbe9, #9fd9a8); }
+  .sw-ocean { background: linear-gradient(180deg, #e6f7ff, #63bde6); }
+  .sw-candy { background: radial-gradient(circle, rgba(255,105,180,.3) 2px, transparent 3px) 0 0 / 12px 12px, linear-gradient(135deg, #ffe0ef, #ead9ff); }
+  .sw-elegant { background: linear-gradient(135deg, #faf7f2, #e9dfd1); }
+  .sw-name { font-size: 0.85em; font-weight: 600; }
+  .theme-btn { flex: 0 0 auto; margin-left: auto; }
+  .theme-btn + .help-btn { margin-left: 0; }
+  @media (prefers-reduced-motion: reduce) { .deco span { animation: none; } }
   @media (max-width: 480px) {
     ul.tasks .row.task { display: grid; grid-template-columns: auto 1fr auto; column-gap: 12px; row-gap: 8px; align-items: center; }
     ul.tasks .row.task > .actions { grid-column: 1 / -1; width: 100%; justify-content: stretch; }

@@ -893,6 +893,20 @@
           "description": "Aus der Karte."
         }
       }
+    },
+    "set_theme": {
+      "name": "Design",
+      "description": "Wählt das Design der eigenen Ansicht. Kinder dürfen ihr eigenes Design wählen.",
+      "fields": {
+        "member": {
+          "name": "Person",
+          "description": "Name oder ID."
+        },
+        "theme": {
+          "name": "Design",
+          "description": "space, jungle, ocean, candy, elegant oder leer für Klar."
+        }
+      }
     }
   }
 }
