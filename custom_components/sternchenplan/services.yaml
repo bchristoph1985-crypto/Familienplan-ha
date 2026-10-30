@@ -481,6 +481,12 @@ set_theme:
             - ocean
             - candy
             - elegant
+set_photo_privacy:
+  fields:
+    delete:
+      required: true
+      selector:
+        boolean:
 set_weather:
   fields:
     entity:

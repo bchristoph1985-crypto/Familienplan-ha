@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.29.0";
+const VERSION = "0.30.0";
 
 const T = {
   de: {
@@ -62,6 +62,36 @@ const T = {
     givePass: "Freikarte",
     starsBtn: "⭐ Bonus oder Abzug",
     moreActions: "Mehr für {name}",
+    wzHello: "Willkommen bei Sternchenplan!",
+    wzHelloText: "In einer Minute ist euer Familienplan startklar. Ich stelle dir vier kurze Fragen, alles lässt sich später ändern.",
+    wzStart: "Los geht’s",
+    wzSkip: "Ich richte alles selbst ein",
+    wzNext: "Weiter",
+    wzBack: "Zurück",
+    wzKids: "Wer macht mit?",
+    wzKidsText: "Mit dem Alter schlage ich passende Aufgaben vor. Jedes Kind kann sich auch gleich sein Design aussuchen.",
+    wzNoKids: "Noch keine Kinder angelegt. Das geht unter Einstellungen → Geräte & Dienste → Sternchenplan → Konfigurieren → Mitglied hinzufügen.",
+    wzAge: "Alter",
+    wzAgeNone: "–",
+    wzChores: "Welche Aufgaben passen zu euch?",
+    wzChoresText: "Gemeinsame Aufgaben wechseln reihum, eigene bekommt jedes Kind selbst. Tippe an, was weg soll.",
+    wzShared: "Gemeinsam, reihum",
+    wzOwn: "Für jedes Kind",
+    wzRewards: "Worauf sparen die Kinder?",
+    wzRewardsText: "Belohnungen tauschen die Kinder gegen Sterne ein. Du bestätigst jedes Einlösen.",
+    wzPhotos: "Fotos vom Erledigen",
+    wzPhotosText: "Bei manchen Aufgaben machen Kinder ein Foto als Nachweis. Nur Eltern sehen es. Was soll danach passieren?",
+    wzPhotoDelete: "Nach meiner Entscheidung löschen",
+    wzPhotoDeleteSub: "Empfohlen. Es bleibt nichts gespeichert.",
+    wzPhotoKeep: "Behalten",
+    wzPhotoKeepSub: "Fotos bleiben im Home Assistant, bis du sie löschst.",
+    wzFinish: "✨ Alles anlegen",
+    wzWorking: "Ich lege alles an …",
+    wzDone: "Fertig! Euer Plan steht.",
+    wzDoneText: "{n} Aufgaben und {r} Belohnungen sind angelegt.",
+    wzTips: ["Kinder öffnen in der Home-Assistant-App den Menüpunkt „Sternchenplan“.", "Neue Aufgaben legst du unter „Aufgaben“ an, mit Vorlagen nach Alter.", "Der ❓-Knopf erklärt jeden Bereich."],
+    wzGo: "Zum Plan",
+    wzStep: "Schritt {n} von 4",
     themeTitle: "🎨 Mein Design",
     themeParent: "Design",
     themeNames: { "": "Klar", space: "Weltraum", jungle: "Dschungel", ocean: "Ozean", candy: "Bonbon", elegant: "Elegant" },
@@ -301,6 +331,36 @@ const T = {
     givePass: "Free pass",
     starsBtn: "⭐ Bonus or deduction",
     moreActions: "More for {name}",
+    wzHello: "Welcome to Sternchenplan!",
+    wzHelloText: "Your family plan is ready in a minute. Four quick questions, and you can change everything later.",
+    wzStart: "Let’s go",
+    wzSkip: "I’ll set it up myself",
+    wzNext: "Next",
+    wzBack: "Back",
+    wzKids: "Who’s joining?",
+    wzKidsText: "With their age I can suggest fitting chores. Each child can pick their look right away.",
+    wzNoKids: "No children yet. Add them under Settings → Devices & services → Sternchenplan → Configure → Add member.",
+    wzAge: "Age",
+    wzAgeNone: "–",
+    wzChores: "Which chores fit your family?",
+    wzChoresText: "Shared chores rotate, personal ones go to each child. Tap to leave one out.",
+    wzShared: "Shared, rotating",
+    wzOwn: "For each child",
+    wzRewards: "What do the kids save up for?",
+    wzRewardsText: "Kids trade stars for rewards. You confirm every redemption.",
+    wzPhotos: "Proof photos",
+    wzPhotosText: "Some chores need a photo as proof. Only parents see it. What happens afterwards?",
+    wzPhotoDelete: "Delete after my decision",
+    wzPhotoDeleteSub: "Recommended. Nothing stays stored.",
+    wzPhotoKeep: "Keep",
+    wzPhotoKeepSub: "Photos stay in Home Assistant until you delete them.",
+    wzFinish: "✨ Create everything",
+    wzWorking: "Creating everything …",
+    wzDone: "Done! Your plan is ready.",
+    wzDoneText: "{n} chores and {r} rewards created.",
+    wzTips: ["Kids open “Sternchenplan” in the Home Assistant app.", "Add more chores under “Chores”, with templates by age.", "The ❓ button explains every section."],
+    wzGo: "Go to the plan",
+    wzStep: "Step {n} of 4",
     themeTitle: "🎨 My look",
     themeParent: "Look",
     themeNames: { "": "Clear", space: "Space", jungle: "Jungle", ocean: "Ocean", candy: "Candy", elegant: "Elegant" },
@@ -828,6 +888,44 @@ class SternchenplanCard extends HTMLElement {
         this._help = !this._help;
         this._render();
         break;
+      case "wz-step":
+        this._wz.step = Math.max(0, Number(id));
+        this._render();
+        this.scrollIntoView?.({ block: "start", behavior: "smooth" });
+        break;
+      case "wz-chore":
+      case "wz-reward": {
+        const set = action === "wz-chore" ? this._wz.offChores : this._wz.offRewards;
+        if (set.has(id)) set.delete(id);
+        else set.add(id);
+        this._render();
+        break;
+      }
+      case "wz-photo":
+        this._wz.photo = !!id;
+        this._render();
+        break;
+      case "wz-finish":
+        this._finishWelcome();
+        break;
+      case "wz-skip":
+      case "wz-close":
+        try {
+          localStorage.setItem("sternchenplan-welcome-done", "1");
+        } catch (e) {
+          /* egal */
+        }
+        if (action === "wz-skip") {
+          try {
+            localStorage.removeItem("sternchenplan-starter-hidden");
+          } catch (e) {
+            /* egal */
+          }
+        }
+        this._wz = null;
+        this._tab = "today";
+        this._render();
+        break;
       case "theme-toggle":
         this._themeOpen = !this._themeOpen;
         this._render();
@@ -836,7 +934,7 @@ class SternchenplanCard extends HTMLElement {
         // Sofort umschalten, der Server bestätigt gleich danach.
         const who = this._member(id);
         if (who) who.theme = el.dataset.theme;
-        this._themeOpen = true;
+        if (!this._wz) this._themeOpen = true;
         this._render();
         this._call("set_theme", { member: id, theme: el.dataset.theme });
         break;
@@ -961,6 +1059,13 @@ class SternchenplanCard extends HTMLElement {
 
   _onInput(ev) {
     const el = ev.target;
+    if (el.dataset?.wzAge) {
+      const who = this._member(el.dataset.wzAge);
+      const age = el.value === "" ? null : Number(el.value);
+      if (who) who.age = age;
+      this._call("set_age", { member: el.dataset.wzAge, age });
+      return;
+    }
     const field = el.dataset?.field;
     if (!field) return;
     if (field.startsWith("away.")) {
@@ -1227,6 +1332,137 @@ class SternchenplanCard extends HTMLElement {
     return { chores, rewards: this._data.rewards.length ? [] : rewards };
   }
 
+  // -- Willkommens-Assistent -------------------------------------------------
+
+  _welcomeActive() {
+    const d = this._data;
+    if (this._wz?.step === 5) return true; // „Fertig“ noch zeigen, auch wenn jetzt Aufgaben da sind
+    if (this._config.readonly || !d.is_manager || d.chores.length || d.rewards.length) return false;
+    try {
+      if (localStorage.getItem("sternchenplan-welcome-done")) return false;
+    } catch (e) {
+      /* ohne Speicher einfach zeigen */
+    }
+    return true;
+  }
+
+  _wzKey(c) {
+    return `${c.t.name.de}|${c.who.map((k) => k.id).join(",")}`;
+  }
+
+  _wzPlan() {
+    const wz = this._wz;
+    const plan = this._starterPlan();
+    return {
+      chores: plan.chores.filter((c) => !wz.offChores.has(this._wzKey(c))),
+      rewards: plan.rewards.filter(([n]) => !wz.offRewards.has(n)),
+      all: plan,
+    };
+  }
+
+  _renderWelcome() {
+    if (!this._wz) this._wz = { step: 0, offChores: new Set(), offRewards: new Set(), photo: null };
+    const wz = this._wz;
+    const lang = this._lang();
+    const kids = this._children();
+    const dots = wz.step >= 1 && wz.step <= 4
+      ? `<div class="wz-top"><span class="muted small">${this._t("wzStep", { n: wz.step })}</span><div class="wz-dots">${[1, 2, 3, 4]
+          .map((i) => `<i class="${i <= wz.step ? "on" : ""}"></i>`).join("")}</div></div>`
+      : "";
+    const nav = (next, label = this._t("wzNext")) => `
+      <div class="wz-nav">
+        <button class="link" data-action="wz-step" data-id="${wz.step - 1}">← ${this._t("wzBack")}</button>
+        <button class="primary big" data-action="${next === "finish" ? "wz-finish" : "wz-step"}" data-id="${next}">${label}</button>
+      </div>`;
+    let body = "";
+    if (wz.step === 0) {
+      body = `
+        <div class="wz-hero">
+          <div class="wz-star" aria-hidden="true">⭐</div>
+          <h2>${this._t("wzHello")}</h2>
+          <p>${this._t("wzHelloText")}</p>
+          <div class="wz-kids-row">${kids.map((k) => this._avatar(k, 52)).join("")}</div>
+          <button class="primary big" data-action="wz-step" data-id="1">${this._t("wzStart")} →</button>
+          <button class="link" data-action="wz-skip">${this._t("wzSkip")}</button>
+        </div>`;
+    } else if (wz.step === 1) {
+      const names = this._t("themeNames");
+      const cards = kids.length
+        ? kids.map((k) => `
+            <div class="wz-kid" style="--kid:${this._color(k.id)}">
+              <div class="wz-kid-head">${this._avatar(k, 48)}<strong>${esc(k.name)}</strong>
+                <label class="wz-age">${this._t("wzAge")}
+                  <select data-wz-age="${esc(k.id)}"><option value="">${this._t("wzAgeNone")}</option>${Array.from({ length: 16 }, (_, i) => i + 3)
+                    .map((a) => `<option value="${a}" ${k.age === a ? "selected" : ""}>${a}</option>`).join("")}</select></label>
+              </div>
+              <div class="muted small wz-caption">${this._t("themeParent")}</div>
+              <div class="wz-themes">${THEMES.filter((t) => t.id !== "elegant")
+                .map((t) => `<button class="wz-theme ${(k.theme || "") === t.id ? "on" : ""}" data-action="theme" data-id="${esc(k.id)}" data-theme="${t.id}" title="${esc(names[t.id])}" aria-label="${esc(names[t.id])}"><span class="sw sw-${t.id || "clear"}">${t.emoji}</span></button>`)
+                .join("")}</div>
+            </div>`).join("")
+        : `<p class="help-tip">${this._t("wzNoKids")}</p>`;
+      body = `<h2>${this._t("wzKids")}</h2><p class="muted">${this._t("wzKidsText")}</p><div class="wz-kid-list">${cards}</div>${nav(2)}`;
+    } else if (wz.step === 2) {
+      const plan = this._starterPlan();
+      const item = (c) => {
+        const off = wz.offChores.has(this._wzKey(c));
+        return `<button class="wz-pick ${off ? "off" : ""}" data-action="wz-chore" data-id="${esc(this._wzKey(c))}" aria-pressed="${!off}">
+          <span class="wz-pick-icon">${esc(c.t.emoji)}</span><span class="wz-pick-main"><strong>${esc(c.t.name[lang])}</strong>
+          <span class="muted small">${esc(c.who.map((k) => k.name).join(", "))} · +${c.t.points} ⭐</span></span><span class="wz-check">${off ? "" : "✓"}</span></button>`;
+      };
+      const shared = plan.chores.filter((c) => c.rotation || c.who.length > 1 || ["Tisch decken", "Spülmaschine ausräumen", "Müll rausbringen", "Staubsaugen"].includes(c.t.name.de));
+      const own = plan.chores.filter((c) => !shared.includes(c));
+      body = `<h2>${this._t("wzChores")}</h2><p class="muted">${this._t("wzChoresText")}</p>
+        ${shared.length ? `<div class="wz-group">${this._t("wzShared")}</div><div class="wz-picks">${shared.map(item).join("")}</div>` : ""}
+        ${own.length ? `<div class="wz-group">${this._t("wzOwn")}</div><div class="wz-picks">${own.map(item).join("")}</div>` : ""}
+        ${nav(3)}`;
+    } else if (wz.step === 3) {
+      const plan = this._starterPlan();
+      body = `<h2>${this._t("wzRewards")}</h2><p class="muted">${this._t("wzRewardsText")}</p>
+        <div class="wz-rewards">${plan.rewards.map(([n, c]) => {
+          const off = wz.offRewards.has(n);
+          return `<button class="wz-reward ${off ? "off" : ""}" data-action="wz-reward" data-id="${esc(n)}" aria-pressed="${!off}">
+            <span class="wz-reward-emoji">${this._rewardEmoji(n)}</span><strong>${esc(n)}</strong><span class="muted small">⭐ ${c}</span><span class="wz-check">${off ? "" : "✓"}</span></button>`;
+        }).join("")}</div>${nav(4)}`;
+    } else if (wz.step === 4) {
+      const del = wz.photo ?? this._data.photo_delete ?? true;
+      const opt = (val, emoji, title, sub) => `<button class="wz-choice ${del === val ? "on" : ""}" data-action="wz-photo" data-id="${val ? "1" : ""}">
+        <span class="wz-choice-emoji">${emoji}</span><span><strong>${title}</strong><span class="muted small">${sub}</span></span></button>`;
+      body = `<h2>${this._t("wzPhotos")}</h2><p class="muted">${this._t("wzPhotosText")}</p>
+        <div class="wz-choices">${opt(true, "🗑️", this._t("wzPhotoDelete"), this._t("wzPhotoDeleteSub"))}${opt(false, "🗂️", this._t("wzPhotoKeep"), this._t("wzPhotoKeepSub"))}</div>
+        ${nav("finish", wz.busy ? this._t("wzWorking") : this._t("wzFinish"))}`;
+    } else {
+      body = `
+        <div class="wz-hero">
+          <div class="wz-star" aria-hidden="true">🎉</div>
+          <h2>${this._t("wzDone")}</h2>
+          <p>${esc(this._t("wzDoneText", { n: wz.made?.n ?? 0, r: wz.made?.r ?? 0 }))}</p>
+          <ul class="wz-tips">${this._t("wzTips").map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+          <button class="primary big" data-action="wz-close">${this._t("wzGo")} →</button>
+        </div>`;
+    }
+    return `<section class="wizard">${dots}${body}</section>`;
+  }
+
+  async _finishWelcome() {
+    const wz = this._wz;
+    if (wz.busy) return;
+    wz.busy = true;
+    this._render();
+    const { chores, rewards } = this._wzPlan();
+    try {
+      if (wz.photo !== null && wz.photo !== this._data.photo_delete) {
+        await this._hass.callService("sternchenplan", "set_photo_privacy", { delete: wz.photo });
+      }
+      await this._runStarter({ chores, rewards }, true);
+      wz.made = { n: chores.length, r: rewards.length };
+      wz.step = 5;
+    } finally {
+      wz.busy = false;
+      this._render();
+    }
+  }
+
   _renderStarter() {
     if (this._config.readonly || this._data.chores.length) return "";
     try {
@@ -1258,9 +1494,8 @@ class SternchenplanCard extends HTMLElement {
       </section>`;
   }
 
-  async _runStarter() {
+  async _runStarter(plan = this._starterPlan(), quiet = false) {
     const lang = this._lang();
-    const plan = this._starterPlan();
     const call = (service, data) => this._hass.callService("sternchenplan", service, data);
     try {
       for (const c of plan.chores) {
@@ -1271,7 +1506,7 @@ class SternchenplanCard extends HTMLElement {
         });
       }
       for (const [name, cost] of plan.rewards) await call("create_reward", { name, cost });
-      this._notify(this._t("starterDone", { n: plan.chores.length, r: plan.rewards.length }));
+      if (!quiet) this._notify(this._t("starterDone", { n: plan.chores.length, r: plan.rewards.length }));
     } catch (err) {
       this._notify(err.message);
     }
@@ -2201,6 +2436,7 @@ class SternchenplanCard extends HTMLElement {
 
   _renderParent() {
     const d = this._data;
+    if (this._welcomeActive()) return this._renderWelcome();
     const waiting = d.chores.filter((c) => c.state === "claimed");
     const open = waiting.length + (d.redemptions || []).length;
     const tabs = [
@@ -2988,6 +3224,62 @@ const STYLE = `
     .kidcard .row.task > .actions:empty { display: none; }
     .kidcard .row.task > ol.steps { grid-column: 1 / -1; }
   }
+  /* -- Willkommens-Assistent (0.29) -- */
+  .wizard { max-width: 720px; margin: 0 auto; padding: 22px 6px 10px; }
+  .wizard h2 { font-size: 1.7em; line-height: 1.15; margin: 6px 0 6px; font-weight: 800; letter-spacing: -.02em; }
+  .wizard > p.muted { margin: 0 0 18px; font-size: 1.02em; }
+  .wz-hero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 26px 12px 18px;
+    border-radius: 28px; background: radial-gradient(circle at 50% 0%, rgba(255, 214, 102, .45), transparent 55%),
+    linear-gradient(160deg, color-mix(in srgb, #4f7cff 16%, var(--card-background-color)), color-mix(in srgb, #a259ff 12%, var(--card-background-color))); }
+  .wz-hero h2 { font-size: 2em; }
+  .wz-hero p { max-width: 460px; margin: 0; color: var(--secondary-text-color); font-size: 1.05em; }
+  .wz-star { font-size: 4.4em; line-height: 1; filter: drop-shadow(0 8px 18px rgba(229, 161, 0, .45)); animation: wzfloat 3s ease-in-out infinite; }
+  @keyframes wzfloat { 50% { transform: translateY(-10px) rotate(6deg); } }
+  .wz-kids-row { display: flex; gap: 0; margin: 6px 0 8px; }
+  .wz-kids-row .avatar { margin-left: -8px; border: 3px solid var(--card-background-color); }
+  .wz-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .wz-dots { display: flex; gap: 6px; }
+  .wz-dots i { width: 28px; height: 6px; border-radius: 3px; background: var(--divider-color, #e0e0e0); }
+  .wz-dots i.on { background: linear-gradient(90deg, #4f7cff, #a259ff); }
+  .wz-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+  .wz-kid-list { display: grid; gap: 12px; }
+  .wz-kid { padding: 14px; border-radius: 20px; background: var(--card-background-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 6%, transparent); border-left: 6px solid var(--kid); }
+  .wz-kid-head { display: flex; align-items: center; gap: 12px; }
+  .wz-kid-head strong { flex: 1; font-size: 1.2em; }
+  .wz-age { display: flex; align-items: center; gap: 8px; font-size: 0.9em; color: var(--secondary-text-color); }
+  .wz-age select { font-size: 1.05em; min-width: 64px; }
+  .wz-caption { margin-top: 12px; }
+  .wz-themes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 6px; }
+  button.wz-theme { padding: 3px; min-height: auto; border-radius: 14px; background: none; }
+  button.wz-theme .sw { height: 46px; font-size: 1.4em; }
+  button.wz-theme.on { box-shadow: 0 0 0 3px var(--kid); }
+  .wz-group { font-weight: 700; margin: 14px 0 8px; color: var(--secondary-text-color); font-size: 0.9em; text-transform: uppercase; letter-spacing: .06em; }
+  .wz-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  button.wz-pick { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px; min-height: 64px; border-radius: 16px;
+    background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 2px #22a565; transition: transform .1s, opacity .2s; }
+  button.wz-pick:active, button.wz-reward:active, button.wz-choice:active { transform: scale(.98); }
+  button.wz-pick.off, button.wz-reward.off { box-shadow: 0 0 0 1px var(--divider-color, #e0e0e0); opacity: .5; }
+  .wz-pick-icon { font-size: 1.6em; width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    background: var(--secondary-background-color); flex: 0 0 auto; }
+  .wz-pick-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .wz-check { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #fff; background: #22a565; font-size: 0.85em; }
+  .off .wz-check { background: none; box-shadow: inset 0 0 0 2px var(--divider-color, #ccc); }
+  .wz-rewards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  button.wz-reward { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 10px 14px; min-height: 150px;
+    border-radius: 20px; background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 2px #e5a100; text-align: center; }
+  .wz-reward-emoji { font-size: 2.6em; }
+  button.wz-reward .wz-check { position: absolute; top: 10px; right: 10px; background: #e5a100; }
+  .wz-choices { display: grid; gap: 12px; }
+  button.wz-choice { display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px; min-height: 76px; border-radius: 18px;
+    background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 1px var(--divider-color, #e0e0e0); }
+  button.wz-choice > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+  button.wz-choice.on { box-shadow: 0 0 0 3px var(--primary-color); background: color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color)); }
+  .wz-choice-emoji { font-size: 2em; }
+  ul.wz-tips { text-align: left; margin: 4px 0 8px; padding-left: 20px; color: var(--secondary-text-color); display: grid; gap: 6px; max-width: 460px; }
+  @media (prefers-reduced-motion: reduce) { .wz-star { animation: none; } }
+  @media (max-width: 480px) { .wizard h2 { font-size: 1.4em; } .wz-hero h2 { font-size: 1.6em; } .wz-themes { gap: 5px; } button.wz-theme .sw { height: 40px; } }
   .theme-box { margin-top: 18px; padding: 12px 14px; border-radius: 18px; background: var(--secondary-background-color); }
   .theme-box summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
   .theme-box summary::-webkit-details-marker { display: none; }

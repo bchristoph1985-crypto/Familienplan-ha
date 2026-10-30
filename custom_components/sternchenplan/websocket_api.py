@@ -20,7 +20,7 @@ from homeassistant.util import dt as dt_util
 from .const import DOMAIN, DONATE_URL, HOUSE_FIELDS, SIGNAL_UPDATED
 from .core import Family, Member, badge_status, level_floor
 from .handsfree import learning
-from .photos import signed_url
+from .photos import delete_after_review, signed_url
 from .takeover import takeover_terms
 
 
@@ -76,6 +76,7 @@ def snapshot(
         "week": family.week_report(now) if actor.is_manager else [],
         "presets": [dict(p) for p in family.presets] if actor.is_manager else [],
         "learning_tag": learning(hass) if actor.is_manager else None,
+        "photo_delete": delete_after_review(entry) if actor.is_manager else None,
         "members": [
             {
                 "id": m.id,

@@ -13,6 +13,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_PHOTO_DELETE_AFTER_REVIEW,
     ATTR_ASSIGNEES,
     ATTR_CHORE_ID,
     ATTR_DEVICES,
@@ -73,8 +74,10 @@ from .const import (
     SERVICE_SET_PAUSE,
     SERVICE_SET_PICTURE_MODE,
     SERVICE_SET_THEME,
+    SERVICE_SET_PHOTO_PRIVACY,
     ATTR_ENABLED,
     ATTR_THEME,
+    ATTR_DELETE,
     ATTR_ICON,
     ATTR_OUTDOOR,
     ATTR_ENTITY,
@@ -234,6 +237,7 @@ GIVE_STARS_SCHEMA = vol.Schema(
 ADD_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, vol.Required(ATTR_STARS): _STARS})
 DELETE_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_PRESET_ID): cv.string})
 PICTURE_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_ENABLED): cv.boolean})
+PHOTO_PRIVACY_SCHEMA = vol.Schema({vol.Required(ATTR_DELETE): cv.boolean})
 THEME_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_THEME, default=""): vol.In(THEMES)})
 _EURO = vol.All(vol.Coerce(float), vol.Range(min=-10000, max=10000))
 MONEY_SCHEMA = vol.Schema(
@@ -586,6 +590,16 @@ async def _set_theme(hass, call, data, actor) -> None:
     data.family.set_theme(actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_THEME])
 
 
+async def _set_photo_privacy(hass, call, data, actor) -> None:
+    """Fotos nach der Entscheidung löschen oder behalten (Willkommens-Assistent)."""
+    if not actor.is_manager:
+        raise PermissionDenied("Nur Eltern.")
+    hass.config_entries.async_update_entry(
+        data.entry,
+        options={**data.entry.options, CONF_PHOTO_DELETE_AFTER_REVIEW: call.data[ATTR_DELETE]},
+    )
+
+
 async def _set_weather(hass, call, data, actor) -> None:
     data.family.set_weather(actor, call.data[ATTR_ENTITY])
     data.family.bad_weather = weather_is_bad(hass, data.family.weather_entity)
@@ -661,6 +675,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_END_PAUSE, _end_pause, EMPTY_SCHEMA),
         (SERVICE_SET_PICTURE_MODE, _set_picture_mode, PICTURE_SCHEMA),
         (SERVICE_SET_THEME, _set_theme, THEME_SCHEMA),
+        (SERVICE_SET_PHOTO_PRIVACY, _set_photo_privacy, PHOTO_PRIVACY_SCHEMA),
         (SERVICE_SET_WEATHER, _set_weather, WEATHER_SCHEMA),
         (SERVICE_SET_REPORT, _set_report, REPORT_SCHEMA),
         (SERVICE_SEND_REPORT, _send_report, EMPTY_SCHEMA),

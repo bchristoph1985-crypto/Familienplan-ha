@@ -26,31 +26,6 @@
           "parents": "Eltern"
         }
       },
-      "chores": {
-        "title": "Womit wollt ihr starten?",
-        "description": "Vorschläge passend zum Alter der Kinder. Gemeinsame Aufgaben wechseln reihum, zu junge Kinder werden übersprungen. Eure eigenen Aufgaben legt ihr danach in der Seitenleiste unter Sternchenplan → Aufgaben an.",
-        "data": {
-          "starters": "Startaufgaben"
-        }
-      },
-      "ages": {
-        "title": "Wie alt sind die Kinder?",
-        "description": "Alter in Jahren. Damit bekommt jedes Kind nur Aufgaben, die zu seinem Alter passen, und rückt automatisch in neue Aufgaben nach, wenn es älter wird. Leer lassen geht auch."
-      },
-      "rewards": {
-        "title": "Welche Belohnungen gibt es?",
-        "description": "Kinder sammeln mit erledigten Aufgaben Punkte und lösen sie hier ein. Ihr bestätigt jede Einlösung. Eigene Belohnungen und andere Punktepreise legt ihr später unter Sternchenplan → Belohnungen fest.",
-        "data": {
-          "rewards": "Belohnungen"
-        }
-      },
-      "photos": {
-        "title": "Fotos und Datenschutz",
-        "description": "Bei Aufgaben mit Fotonachweis machen Kinder ein Foto, das nur Eltern sehen. Die Fotos bleiben in eurem Home Assistant und gehen nirgendwohin. Ob eine Aufgabe einen Fotonachweis braucht, legt ihr je Aufgabe fest, standardmäßig ist er aus.",
-        "data": {
-          "photo_privacy": "Was passiert mit den Fotos?"
-        }
-      },
       "tablet": {
         "title": "Familientablet",
         "description": "Haben Kinder kein eigenes Handy? Dann wähle das HA-Konto des gemeinsamen Tablets (z. B. in der Küche). Dort tippen die Kinder ihren Namen an und haken ab. Ohne Tablet einfach leer lassen. Eltern können außerdem jederzeit für ein Kind abhaken.",
@@ -905,6 +880,16 @@
         "theme": {
           "name": "Design",
           "description": "space, jungle, ocean, candy, elegant oder leer für Klar."
+        }
+      }
+    },
+    "set_photo_privacy": {
+      "name": "Fotos löschen",
+      "description": "Ob Fotos vom Fotonachweis nach der Entscheidung der Eltern gelöscht werden.",
+      "fields": {
+        "delete": {
+          "name": "Löschen",
+          "description": "An: nach Bestätigen oder Ablehnen löschen. Aus: behalten."
         }
       }
     }

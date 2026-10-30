@@ -1,7 +1,7 @@
 """Konstanten für Sternchenplan."""
 
 DOMAIN = "sternchenplan"
-VERSION = "0.29.0"
+VERSION = "0.30.0"
 CARD_URL = "/sternchenplan/sternchenplan-card.js"
 STORAGE_VERSION = 1
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
@@ -109,6 +109,7 @@ SERVICE_SET_PAUSE = "set_pause"
 SERVICE_END_PAUSE = "end_pause"
 SERVICE_SET_PICTURE_MODE = "set_picture_mode"
 SERVICE_SET_THEME = "set_theme"
+SERVICE_SET_PHOTO_PRIVACY = "set_photo_privacy"
 ATTR_WEEKDAYS = "weekdays"
 ATTR_ICON = "icon"
 ATTR_OUTDOOR = "outdoor"
@@ -134,3 +135,4 @@ BAD_WEATHER = {
 }
 ATTR_ENABLED = "enabled"
 ATTR_THEME = "theme"
+ATTR_DELETE = "delete"

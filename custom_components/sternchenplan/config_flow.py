@@ -59,15 +59,10 @@ from homeassistant.util import dt as dt_util
 from .core import SYSTEM, FamilyError, Role
 from .reminders import parse_times
 from .setup_helpers import (
-    DEFAULT_REWARDS,
-    DEFAULT_STARTERS,
-    STARTER_CHORES,
-    STARTER_REWARDS,
     Person,
     build_family,
     find_people,
     split_names,
-    suitable_starters,
 )
 
 
@@ -99,11 +94,12 @@ NO_USER = "__none__"
 
 
 class SternchenplanConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Einrichtung in vier kurzen Schritten.
+    """Einrichtung in wenigen kurzen Schritten.
 
     1. Familienname  2. Wer gehört dazu (aus den HA-Personen, plus Kinder ohne
-    Konto)  3. Wer davon sind Eltern  4. Startaufgaben ankreuzen.
-    Handys für Push-Nachrichten werden automatisch zugeordnet.
+    Konto)  3. Wer davon sind Eltern  4. Familientablet (nur wenn möglich).
+    Handys für Push-Nachrichten werden automatisch zugeordnet. Den Rest
+    (Alter, Aufgaben, Belohnungen, Fotos) erledigt der Willkommens-Assistent.
     """
 
     VERSION = 1
@@ -114,9 +110,6 @@ class SternchenplanConfigFlow(ConfigFlow, domain=DOMAIN):
         self._selected: list[str] = []
         self._extra: list[str] = []
         self._parents: list[str] = []
-        self._ages: dict[str, int] = {}
-        self._starters: list[str] = []
-        self._rewards: list[str] = []
         self._tablet: list[str] = []
         self._tablet_approval = False
 
@@ -207,7 +200,7 @@ class SternchenplanConfigFlow(ConfigFlow, domain=DOMAIN):
             p for p in self._people if p.user_id and p.entity_id not in self._parents
         ]
         if not candidates:
-            return await self.async_step_ages()
+            return self._create()
         if user_input is not None:
             chosen = [p for p in candidates if p.entity_id in user_input.get(CONF_TABLET, [])]
             self._tablet = [p.user_id for p in chosen]
@@ -215,7 +208,7 @@ class SternchenplanConfigFlow(ConfigFlow, domain=DOMAIN):
             self._selected = [
                 e for e in self._selected if e not in {p.entity_id for p in chosen}
             ]
-            return await self.async_step_ages()
+            return self._create()
         return self.async_show_form(
             step_id="tablet",
             data_schema=vol.Schema(
@@ -235,119 +228,25 @@ class SternchenplanConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    def _child_names(self) -> list[str]:
-        people = [
-            p.name
-            for p in self._people
-            if p.entity_id in self._selected and p.entity_id not in self._parents
-        ]
-        return list(dict.fromkeys([*people, *self._extra]))
-
-    async def async_step_ages(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Alter der Kinder. Freiwillig, hilft bei passenden Aufgaben."""
-        names = self._child_names()
-        if not names:
-            return await self.async_step_chores()
-        if user_input is not None:
-            self._ages = {
-                name: int(value) for name, value in user_input.items() if value not in (None, "")
-            }
-            return await self.async_step_chores()
-        return self.async_show_form(
-            step_id="ages",
-            data_schema=vol.Schema({vol.Optional(name): _age_selector() for name in names}),
+    def _create(self) -> ConfigFlowResult:
+        """Familie anlegen. Alter, Aufgaben, Belohnungen und Fotos fragt danach
+        der Willkommens-Assistent im Menüpunkt „Sternchenplan“ ab."""
+        english = not (self.hass.config.language or "").startswith("de")
+        people = [p for p in self._people if p.entity_id in self._selected]
+        family = build_family(
+            people,
+            self._parents,
+            self._extra,
+            [],
+            dt_util.utcnow(),
+            english=english,
+            tablet_users=self._tablet,
+            tablet_approval=self._tablet_approval,
         )
-
-    async def async_step_rewards(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Belohnungen, die Kinder mit ihren Punkten einlösen können."""
-        if user_input is not None:
-            self._rewards = user_input.get(CONF_REWARDS, [])
-            return await self.async_step_photos()
-        return self.async_show_form(
-            step_id="rewards",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(CONF_REWARDS, default=DEFAULT_REWARDS): SelectSelector(
-                        SelectSelectorConfig(
-                            options=list(STARTER_REWARDS),
-                            translation_key="reward",
-                            multiple=True,
-                            mode=SelectSelectorMode.LIST,
-                        )
-                    )
-                }
-            ),
-        )
-
-    async def async_step_photos(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Datenschutz: Was passiert mit Fotos vom Fotonachweis?"""
-        if user_input is not None:
-            english = not (self.hass.config.language or "").startswith("de")
-            people = [p for p in self._people if p.entity_id in self._selected]
-            family = build_family(
-                people,
-                self._parents,
-                self._extra,
-                self._starters,
-                dt_util.utcnow(),
-                ages=self._ages,
-                rewards=self._rewards,
-                english=english,
-                tablet_users=self._tablet,
-                tablet_approval=self._tablet_approval,
-            )
-            return self.async_create_entry(
-                title=self._title,
-                data={DATA_INITIAL_FAMILY: family.to_dict()},
-                options={
-                    CONF_PHOTO_DELETE_AFTER_REVIEW: user_input[CONF_PHOTO_PRIVACY] == PHOTO_DELETE,
-                },
-            )
-        return self.async_show_form(
-            step_id="photos",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_PHOTO_PRIVACY, default=PHOTO_DELETE): SelectSelector(
-                        SelectSelectorConfig(
-                            options=[PHOTO_DELETE, PHOTO_KEEP],
-                            translation_key="photo_privacy",
-                            mode=SelectSelectorMode.LIST,
-                        )
-                    )
-                }
-            ),
-        )
-
-    async def async_step_chores(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        if user_input is not None:
-            self._starters = user_input.get(CONF_STARTERS, [])
-            return await self.async_step_rewards()
-        names = self._child_names()
-        fitting = suitable_starters([self._ages.get(n) for n in names])
-        return self.async_show_form(
-            step_id="chores",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        CONF_STARTERS, default=[k for k in DEFAULT_STARTERS if k in fitting]
-                    ): SelectSelector(
-                        SelectSelectorConfig(
-                            options=fitting,
-                            translation_key="starter",
-                            multiple=True,
-                            mode=SelectSelectorMode.LIST,
-                        )
-                    )
-                }
-            ),
+        return self.async_create_entry(
+            title=self._title,
+            data={DATA_INITIAL_FAMILY: family.to_dict()},
+            options={CONF_PHOTO_DELETE_AFTER_REVIEW: DEFAULT_PHOTO_DELETE_AFTER_REVIEW},
         )
 
     @staticmethod
