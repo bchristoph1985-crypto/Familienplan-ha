@@ -157,3 +157,8 @@
 .rules p{margin:4px 0 0;color:var(--muted);font-size:15px;line-height:1.6}
 @media(max-width:900px){.guide{grid-template-columns:1fr;gap:10px}.guide-toc{position:static;max-height:none;padding:16px 18px;border:1px solid var(--line);border-radius:14px}.guide-toc ol{columns:2;column-gap:20px}.steps.four{grid-template-columns:1fr 1fr}}
 @media(max-width:640px){.guide-hero{padding:40px 0 20px}.guide-toc ol{columns:1}.steps.four{grid-template-columns:1fr}.table td:first-child{white-space:normal}.rules li{padding-left:58px}.guide-help .btn{width:100%}}
+/* Sprachumschalter */
+.links a.lang{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:9px;font-size:13px;font-weight:700;color:var(--ink)}
+.links a.lang:hover{border-color:var(--blue);color:var(--blue)}
+@media(max-width:640px){.links{gap:8px}.links a.lang{display:inline-flex;min-width:34px;height:30px;padding:0 6px;font-size:12px}.links .btn{white-space:nowrap}}
+@media(max-width:380px){.brand{font-size:18px}}
