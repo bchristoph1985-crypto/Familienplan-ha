@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.30.0";
+const VERSION = "0.31.0";
 
 const T = {
   de: {
@@ -62,6 +62,12 @@ const T = {
     givePass: "Freikarte",
     starsBtn: "⭐ Bonus oder Abzug",
     moreActions: "Mehr für {name}",
+    greet: ["Guten Morgen", "Hallo", "Guten Abend"],
+    ckOpen: "Aufgaben offen",
+    ckWaiting: "warten auf dich",
+    ckKidsDone: "Kinder fertig",
+    ckStars: "Sterne heute",
+    ckWaitingTitle: "📬 Wartet auf dich",
     wzHello: "Willkommen bei Sternchenplan!",
     wzHelloText: "In einer Minute ist euer Familienplan startklar. Ich stelle dir vier kurze Fragen, alles lässt sich später ändern.",
     wzStart: "Los geht’s",
@@ -331,6 +337,12 @@ const T = {
     givePass: "Free pass",
     starsBtn: "⭐ Bonus or deduction",
     moreActions: "More for {name}",
+    greet: ["Good morning", "Hello", "Good evening"],
+    ckOpen: "chores open",
+    ckWaiting: "waiting for you",
+    ckKidsDone: "kids done",
+    ckStars: "stars today",
+    ckWaitingTitle: "📬 Waiting for you",
     wzHello: "Welcome to Sternchenplan!",
     wzHelloText: "Your family plan is ready in a minute. Four quick questions, and you can change everything later.",
     wzStart: "Let’s go",
@@ -2468,8 +2480,43 @@ class SternchenplanCard extends HTMLElement {
     return this._data.members.filter((m) => m.role === "child");
   }
 
+  _renderCockpit() {
+    const d = this._data;
+    const kids = this._children().filter((k) => !k.away);
+    const waiting = d.chores.filter((c) => c.state === "claimed");
+    const toApprove = waiting.length + (d.redemptions || []).length;
+    const open = kids.reduce((n, k) => n + this._openFor(k.id).filter((c) => c.state !== "claimed").length, 0);
+    const done = kids.filter((k) => !this._openFor(k.id).some((c) => c.state !== "claimed")).length;
+    const stars = d.chores
+      .filter((c) => c.last_completed_by && this._isToday(c.last_completed_at))
+      .reduce((n, c) => n + (c.points || 0), 0);
+    const now = new Date();
+    const h = now.getHours();
+    const greet = this._t("greet")[h < 11 ? 0 : h < 17 ? 1 : 2];
+    const me = this._member(d.me);
+    const date = now.toLocaleDateString(this._locale(), { weekday: "long", day: "numeric", month: "long" });
+    const tile = (emoji, value, label, cls = "", action = "") => `
+      <${action ? `button data-action="tab" data-id="${action}"` : "div"} class="ck-tile ${cls}">
+        <span class="ck-emoji">${emoji}</span><span class="ck-value">${value}</span><span class="ck-label">${label}</span>
+      </${action ? "button" : "div"}>`;
+    return `
+      <section class="cockpit">
+        <div class="ck-hello">
+          <div class="ck-greet">${esc(greet)}${me ? `, ${esc(me.name)}` : ""} 👋</div>
+          <div class="muted">${esc(date)}</div>
+        </div>
+        <div class="ck-stats">
+          ${tile("📝", open, this._t("ckOpen"))}
+          ${tile("📬", toApprove, this._t("ckWaiting"), toApprove ? "hot" : "", toApprove ? "approve" : "")}
+          ${tile("🎉", `${done}/${kids.length}`, this._t("ckKidsDone"), kids.length && done === kids.length ? "good" : "")}
+          ${tile("⭐", stars, this._t("ckStars"))}
+        </div>
+        ${toApprove && !this._config.readonly ? `<div class="ck-approve"><div class="section-title">${this._t("ckWaitingTitle")}</div>${this._renderApprovals(waiting)}</div>` : ""}
+      </section>`;
+  }
+
   _renderToday() {
-    return `${this._renderStarter()}${this._pauseBanner()}${this._rainBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>${this._renderWeek()}`;
+    return `${this._renderStarter()}${this._renderCockpit()}${this._pauseBanner()}${this._rainBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>${this._renderWeek()}`;
   }
 
   _renderTodayCards() {
@@ -3280,6 +3327,26 @@ const STYLE = `
   ul.wz-tips { text-align: left; margin: 4px 0 8px; padding-left: 20px; color: var(--secondary-text-color); display: grid; gap: 6px; max-width: 460px; }
   @media (prefers-reduced-motion: reduce) { .wz-star { animation: none; } }
   @media (max-width: 480px) { .wizard h2 { font-size: 1.4em; } .wz-hero h2 { font-size: 1.6em; } .wz-themes { gap: 5px; } button.wz-theme .sw { height: 40px; } }
+  /* -- Eltern-Cockpit (0.31) -- */
+  .cockpit { margin: 0 0 14px; }
+  .ck-hello { display: flex; flex-direction: column; gap: 2px; margin: 6px 2px 12px; }
+  .ck-greet { font-size: 1.6em; font-weight: 800; letter-spacing: -.02em; }
+  .ck-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .ck-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px 14px 12px; border-radius: 18px; text-align: left;
+    background: var(--card-background-color); color: var(--primary-text-color); min-height: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 6%, transparent); }
+  button.ck-tile { cursor: pointer; font: inherit; }
+  .ck-emoji { font-size: 1.3em; }
+  .ck-value { font-size: 1.9em; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
+  .ck-label { font-size: 0.82em; color: var(--secondary-text-color); }
+  .ck-tile.hot { background: linear-gradient(135deg, #ff7a45, #ffb03a); color: #fff; box-shadow: 0 6px 18px rgba(255,122,69,.35); }
+  .ck-tile.hot .ck-label { color: rgba(255,255,255,.9); }
+  .ck-tile.good { background: linear-gradient(135deg, #22a565, #6cc35f); color: #fff; }
+  .ck-tile.good .ck-label { color: rgba(255,255,255,.9); }
+  .ck-approve { margin-top: 14px; padding: 6px 16px 8px; border-radius: 18px; background: var(--card-background-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, #ff7a45 45%, transparent); }
+  .ck-approve .section-title { margin: 10px 0 2px; }
+  @media (max-width: 560px) { .ck-stats { grid-template-columns: repeat(2, 1fr); } .ck-greet { font-size: 1.35em; } }
   .theme-box { margin-top: 18px; padding: 12px 14px; border-radius: 18px; background: var(--secondary-background-color); }
   .theme-box summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
   .theme-box summary::-webkit-details-marker { display: none; }
