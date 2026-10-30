@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.35.0";
+const VERSION = "0.35.1";
 
 const T = {
   de: {
@@ -109,6 +109,10 @@ const T = {
     wzOwn: "Für jedes Kind",
     wzRewards: "Worauf sparen die Kinder?",
     wzRewardsText: "Belohnungen tauschen die Kinder gegen Sterne ein. Du bestätigst jedes Einlösen.",
+    wzMoney: "Taschengeld",
+    wzMoneySub: "{n} ⭐ = 1 €",
+    wzMoneyRate: "Wie viele Sterne sind 1 €?",
+    wzMoneyHint: "Wochengeld und Auszahlen stellst du später unter „Familie“ ein.",
     wzPhotos: "Fotos und Datenschutz",
     wzPhotosText: "Bei manchen Aufgaben machen Kinder ein Foto als Nachweis. Nur Eltern sehen es. Was soll danach passieren?",
     wzPhotoDelete: "Nach meiner Entscheidung löschen",
@@ -517,6 +521,10 @@ const T = {
     wzOwn: "For each child",
     wzRewards: "What do the kids save up for?",
     wzRewardsText: "Kids trade stars for rewards. You confirm every redemption.",
+    wzMoney: "Pocket money",
+    wzMoneySub: "{n} ⭐ = €1",
+    wzMoneyRate: "How many stars make €1?",
+    wzMoneyHint: "Set weekly allowance and payouts later under “Family”.",
     wzPhotos: "Photos and privacy",
     wzPhotosText: "Some chores need a photo as proof. Only parents see it. What happens afterwards?",
     wzPhotoDelete: "Delete after my decision",
@@ -1267,6 +1275,17 @@ class SternchenplanCard extends HTMLElement {
         this._render();
         break;
       }
+      case "wz-money":
+        // Kachel und Funktion „Taschengeld“ sind dasselbe: an/aus gilt für beides
+        if (this._wz.features.has("money")) this._wz.features.delete("money");
+        else this._wz.features.add("money");
+        this._render();
+        break;
+      case "wz-rate":
+        this._wz.rate = Number(id) || 10;
+        this._wz.features.add("money");
+        this._render();
+        break;
       case "wz-photo":
         this._wz.photo = !!id;
         this._render();
@@ -1905,7 +1924,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderWelcome() {
-    if (!this._wz) this._wz = { step: 0, offChores: new Set(), offRewards: new Set(), photo: null, features: new Set(this._features()) };
+    if (!this._wz) this._wz = { step: 0, offChores: new Set(), offRewards: new Set(), photo: null, features: new Set(this._features()), rate: 10 };
     const wz = this._wz;
     const lang = this._lang();
     const kids = this._children();
@@ -1970,7 +1989,7 @@ class SternchenplanCard extends HTMLElement {
           const off = wz.offRewards.has(n);
           return `<button class="wz-reward ${off ? "off" : ""}" data-action="wz-reward" data-id="${esc(n)}" aria-pressed="${!off}">
             <span class="wz-reward-emoji">${this._rewardEmoji(n)}</span><strong>${esc(n)}</strong><span class="muted small">⭐ ${c}</span><span class="wz-check">${off ? "" : "✓"}</span></button>`;
-        }).join("")}</div>${nav(5)}`;
+        }).join("")}${this._wzMoneyTile()}</div>${this._wzMoneyRate()}${nav(5)}`;
     } else if (wz.step === 5) {
       const del = wz.photo ?? this._data.photo_delete ?? true;
       const opt = (val, emoji, title, sub) => `<button class="wz-choice ${del === val ? "on" : ""}" data-action="wz-photo" data-id="${val ? "1" : ""}">
@@ -1992,6 +2011,25 @@ class SternchenplanCard extends HTMLElement {
     return `<section class="wizard">${dots}${body}</section>`;
   }
 
+  // Taschengeld im Assistenten: ohne Kurs sähen die Kinder sonst gar nichts davon
+  _wzMoneyOffer() {
+    return !this._data.money?.rate;
+  }
+
+  _wzMoneyTile() {
+    if (!this._wzMoneyOffer()) return "";
+    const on = this._wz.features.has("money");
+    return `<button class="wz-reward ${on ? "" : "off"}" data-action="wz-money" aria-pressed="${on}">
+      <span class="wz-reward-emoji">💶</span><strong>${this._t("wzMoney")}</strong><span class="muted small">${esc(this._t("wzMoneySub", { n: this._wz.rate }))}</span><span class="wz-check">${on ? "✓" : ""}</span></button>`;
+  }
+
+  _wzMoneyRate() {
+    if (!this._wzMoneyOffer() || !this._wz.features.has("money")) return "";
+    return `<div class="wz-rate"><span class="small"><strong>${this._t("wzMoneyRate")}</strong></span>
+      <div class="wz-rate-opts">${[5, 10, 20].map((n) => `<button class="wz-rate-btn ${this._wz.rate === n ? "on" : ""}" data-action="wz-rate" data-id="${n}" aria-pressed="${this._wz.rate === n}">${n} ⭐</button>`).join("")}</div>
+      <span class="muted small">${this._t("wzMoneyHint")}</span></div>`;
+  }
+
   async _finishWelcome() {
     const wz = this._wz;
     if (wz.busy) return;
@@ -2008,6 +2046,9 @@ class SternchenplanCard extends HTMLElement {
       const features = [...wz.features].sort();
       if (features.join() !== this._features().slice().sort().join()) {
         await this._hass.callService("sternchenplan", "set_features", { features });
+      }
+      if (features.includes("money") && !this._data.money?.rate) {
+        await this._hass.callService("sternchenplan", "set_money", { rate: wz.rate, payday: this._data.money?.payday ?? 6 });
       }
       await this._runStarter({ chores, rewards }, true);
       wz.made = { n: chores.length, r: rewards.length };
@@ -4356,6 +4397,11 @@ const STYLE = `
   button.wz-reward { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 10px 14px; min-height: 150px;
     border-radius: 20px; background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 2px #e5a100; text-align: center; }
   .wz-reward-emoji { font-size: 2.6em; }
+  .wz-rate { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--secondary-background-color, rgba(127,127,127,.08)); }
+  .wz-rate-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+  button.wz-rate-btn { min-width: 64px; min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--divider-color, #ccc);
+    background: var(--card-background-color, #fff); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+  button.wz-rate-btn.on { border-color: #e5a100; box-shadow: 0 0 0 2px #e5a100 inset; }
   button.wz-reward .wz-check { position: absolute; top: 10px; right: 10px; background: #e5a100; }
   .wz-choices { display: grid; gap: 12px; }
   button.wz-choice { display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px; min-height: 76px; border-radius: 18px;
