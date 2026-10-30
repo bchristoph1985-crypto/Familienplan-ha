@@ -10,7 +10,7 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.27.0";
+const VERSION = "0.28.0";
 
 const T = {
   de: {
@@ -60,7 +60,10 @@ const T = {
     locked: "🔒 Internet gesperrt",
     pass: "Freikarte bis {time}",
     givePass: "Freikarte",
-    starsBtn: "± Sterne",
+    starsBtn: "⭐ Bonus oder Abzug",
+    moreActions: "Mehr für {name}",
+    allDoneKid: "Alles geschafft für heute!",
+    allDoneKidSub: "Super gemacht. Morgen geht’s weiter.",
     nfc: "📱 NFC-Aufkleber",
     moreOptions: "Mehr Optionen (Freigabe, Foto, Tage, Routine, NFC, Haus …)",
     starterTitle: "✨ In einer Minute startklar",
@@ -293,7 +296,10 @@ const T = {
     locked: "🔒 Internet locked",
     pass: "Free pass until {time}",
     givePass: "Free pass",
-    starsBtn: "± Stars",
+    starsBtn: "⭐ Bonus or deduction",
+    moreActions: "More for {name}",
+    allDoneKid: "All done for today!",
+    allDoneKidSub: "Great job. See you tomorrow.",
     nfc: "📱 NFC tag",
     moreOptions: "More options (approval, photo, days, routine, NFC, house …)",
     starterTitle: "✨ Ready in one minute",
@@ -666,6 +672,9 @@ class SternchenplanCard extends HTMLElement {
   // -- Bedienung -------------------------------------------------------------
 
   _onClick(ev) {
+    // Offene „⋯“-Menüs schließen, sobald woanders getippt wird.
+    const keep = ev.target.closest("details.kid-menu");
+    this.shadowRoot.querySelectorAll("details.kid-menu[open]").forEach((d) => d !== keep && d.removeAttribute("open"));
     const el = ev.target.closest("[data-action]");
     if (!el) return;
     const { action, id, member } = el.dataset;
@@ -1684,14 +1693,14 @@ class SternchenplanCard extends HTMLElement {
     const steps = chore.steps?.length && chore.state !== "claimed" ? this._steps(chore, memberId, ro || !showClaim) : "";
     return `
       <li class="row task ${chore.state}">
-        ${chore.state === "claimed" ? this._thumb(chore) : ""}
+        ${chore.state === "claimed" && chore.photo_url ? this._thumb(chore) : `<span class="task-icon" aria-hidden="true">${esc(this._choreIcon(chore))}</span>`}
         <div class="main">
           <div class="title">${esc(chore.name)}${this._photoIcon(chore)}</div>
           <div class="sub">${
             chore.state === "claimed" ? `<span class="chip wait">${this._t("waiting")}</span>` : this._dueLabel(chore)
           }${this._takenInfo(chore)}</div>
         </div>
-        <span class="pts-pill">+${chore.points}</span>
+        <span class="pts-pill">+${chore.points} ⭐</span>
         <div class="actions">${action}</div>
         ${steps}
       </li>`;
@@ -1757,12 +1766,13 @@ class SternchenplanCard extends HTMLElement {
         const owner = c.responsible.map((id) => this._member(id)?.name).filter(Boolean).join(", ");
         const pts = c.points * (t.multiplier || 1);
         return `
-        <li class="row task ${c.state}" style="border-left-color:${this._color(c.responsible[0])}">
+        <li class="row task ${c.state}">
+          <span class="task-icon" aria-hidden="true" style="--kid:${this._color(c.responsible[0])}">${esc(this._choreIcon(c))}</span>
           <div class="main">
             <div class="title">${esc(c.name)}${this._photoIcon(c)}</div>
             <div class="sub muted">${esc(owner)}</div>
           </div>
-          <span class="pts-pill">+${pts}</span>
+          <span class="pts-pill">+${pts} ⭐</span>
           <div class="actions"><button class="primary" data-action="take" data-id="${esc(c.id)}">${this._t("takeOver")}${
             t.multiplier > 1 ? " x" + t.multiplier : ""
           }</button></div>
@@ -1927,7 +1937,7 @@ class SternchenplanCard extends HTMLElement {
     const line = !left ? this._t("allDoneToday") : left === 1 ? this._t("leftOne") : this._t("leftToday", { n: left });
     const list = chores.length
       ? `<ul class="tasks">${chores.map((c) => this._choreRow(c, member.id, { showClaim: c.state !== "claimed" })).join("")}</ul>`
-      : `<div class="done-big">🎉<div>${this._t("allDone")}</div></div>`;
+      : `<div class="done-card"><div class="done-emoji">🎉</div><div class="done-title">${this._t("allDoneKid")}</div><div class="muted">${this._t("allDoneKidSub")}</div></div>`;
     return `
       <div class="kid" style="--kid:${color}">
         <div class="hero">
@@ -2191,22 +2201,25 @@ class SternchenplanCard extends HTMLElement {
         }
         let passBtn = "";
         if (!this._config.readonly) {
-          passBtn += `<button class="link" data-action="picture" data-id="${esc(m.id)}" data-on="${m.picture_mode ? "" : "1"}">${
+          passBtn += `<button class="menu-item" data-action="picture" data-id="${esc(m.id)}" data-on="${m.picture_mode ? "" : "1"}">${
             m.picture_mode ? this._t("pictureOff") : this._t("pictureOn")
           }</button>`;
         }
         if (!this._config.readonly) {
-          passBtn += `<button class="link" data-action="stars-open" data-id="${esc(m.id)}">${this._t("starsBtn")}</button>`;
+          passBtn += `<button class="menu-item" data-action="stars-open" data-id="${esc(m.id)}">${this._t("starsBtn")}</button>`;
         }
         if (m.has_devices && !this._config.readonly) {
           passBtn += m.pass_until
-            ? `<button class="link" data-action="revoke-pass" data-id="${esc(m.id)}">${this._t("takePass")}</button>`
-            : `<button class="link" data-action="pass" data-id="${esc(m.id)}">${this._t("givePass")}</button>`;
+            ? `<button class="menu-item" data-action="revoke-pass" data-id="${esc(m.id)}">🎟️ ${this._t("takePass")}</button>`
+            : `<button class="menu-item" data-action="pass" data-id="${esc(m.id)}">🎟️ ${this._t("givePass")}</button>`;
         }
         const list = chores.length
           ? `<ul>${chores.map((c) => this._choreRow(c, m.id, { showClaim: c.state !== "claimed", forName: m.name })).join("")}</ul>`
-          : `<p class="empty small">${this._t("allDone")}</p>`;
+          : `<p class="kid-done">🎉 ${this._t("allDone").replace(" 🎉", "")}</p>`;
         const { done, open, total } = this._todayStats(m.id);
+        const menu = passBtn
+          ? `<details class="kid-menu"><summary aria-label="${esc(this._t("moreActions", { name: m.name }))}" title="${esc(this._t("moreActions", { name: m.name }))}">⋯</summary><div class="menu">${passBtn}</div></details>`
+          : "";
         return `
           <section class="kidcard" style="--kid:${this._color(m.id)}">
             <div class="kidcard-head">
@@ -2215,8 +2228,9 @@ class SternchenplanCard extends HTMLElement {
                 m.progress ? ` · ${esc(this._t("level", { n: m.progress.level }))}${m.progress.streak ? ` · 🔥 ${m.progress.streak}` : ""}` : ""
               }</span></div>
               ${this._ring(done, total || open, this._color(m.id), 44)}
+              ${menu}
             </div>
-            ${status || passBtn ? `<div class="kidcard-status">${status}${passBtn}</div>` : ""}
+            ${status ? `<div class="kidcard-status">${status}</div>` : ""}
             ${this._starsOpen === m.id ? this._renderStarsPanel(m) : ""}
             ${list}
           </section>`;
@@ -2765,7 +2779,55 @@ const STYLE = `
   @keyframes wiggle { 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
   @media (prefers-reduced-motion: reduce) { .streak.hot, .party-card, .party-emoji, .xp i { animation: none; transition: none; } }
   @media (max-width: 420px) { .row { flex-wrap: wrap; } .actions { width: 100%; justify-content: flex-start; }
-    ul.tasks .actions { width: auto; } .hero { padding: 12px; } .hero .hello { font-size: 1.2em; } }
+    ul.tasks .actions { width: auto; } .hero { padding: 12px; } .hero .hello { font-size: 1.2em; } }  /* -- Gestaltung 0.28: Symbole, ruhige Elternkarten, Fertig-Karte -- */
+  .task-icon { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+               font-size: 1.45em; background: color-mix(in srgb, var(--kid, var(--primary-color)) 16%, var(--card-background-color)); }
+  .row.task.overdue .task-icon { background: color-mix(in srgb, var(--error-color, #db4437) 14%, var(--card-background-color)); }
+  ul.tasks .row.task { border-left: none; background: var(--card-background-color);
+                       box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 7%, transparent); }
+  ul.tasks .row.task.overdue { box-shadow: 0 0 0 2px color-mix(in srgb, var(--error-color, #db4437) 55%, transparent); }
+  .kid { --radius: 20px; }
+  .kid .hero { border-radius: var(--radius); padding: 18px; }
+  .kid .level, .kid .goal, .kid .fgoal { border-radius: var(--radius); }
+  .kid .section-title { font-size: 1.15em; font-weight: 700; margin: 18px 0 8px; }
+  .pts-pill { white-space: nowrap; }
+  .done-card { text-align: center; padding: 22px 16px; border-radius: 20px;
+               background: linear-gradient(135deg, color-mix(in srgb, var(--kid, #22a565) 20%, var(--card-background-color)), color-mix(in srgb, #e5a100 14%, var(--card-background-color))); }
+  .done-emoji { font-size: 3em; line-height: 1.1; animation: wiggle 1s ease-in-out 2; }
+  .done-title { font-size: 1.25em; font-weight: 700; margin: 6px 0 2px; }
+  .kidgrid { align-items: start; gap: 14px; }
+  section.kidcard { background: var(--card-background-color); border-top: none; border-radius: 18px; padding: 14px 16px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 6%, transparent);
+                    position: relative; overflow: visible; }
+  section.kidcard::before { content: ""; position: absolute; left: 16px; right: 16px; top: 0; height: 4px; border-radius: 0 0 4px 4px; background: var(--kid); }
+  .kidcard-name strong { font-size: 1.1em; }
+  .kidcard .row.task { padding: 10px 0; }
+  .kidcard .task-icon { width: 36px; height: 36px; border-radius: 11px; font-size: 1.15em; }
+  .kidcard ul { margin-top: 4px; }
+  .kid-done { margin: 10px 0 2px; padding: 10px 12px; border-radius: 12px; font-weight: 600; font-size: 0.95em;
+              background: color-mix(in srgb, var(--kid) 12%, transparent); }
+  details.kid-menu { position: relative; flex: 0 0 auto; }
+  details.kid-menu summary { list-style: none; cursor: pointer; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
+                             justify-content: center; font-size: 1.3em; font-weight: 700; color: var(--secondary-text-color); }
+  details.kid-menu summary::-webkit-details-marker { display: none; }
+  details.kid-menu summary:hover, details.kid-menu[open] summary { background: var(--secondary-background-color); color: var(--primary-text-color); }
+  .menu { position: absolute; right: 0; top: 40px; z-index: 3; min-width: 210px; padding: 6px; border-radius: 14px; display: flex; flex-direction: column;
+          background: var(--card-background-color); box-shadow: 0 8px 28px rgba(0,0,0,.18), 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 8%, transparent); }
+  button.menu-item { background: none; color: var(--primary-text-color); text-align: left; border-radius: 10px; min-height: 40px; padding: 0 12px; white-space: nowrap; }
+  button.menu-item:hover { background: var(--secondary-background-color); }
+  section.week, .starter { border-radius: 18px; }
+  @media (prefers-reduced-motion: reduce) { .done-emoji { animation: none; } }
+  @media (max-width: 480px) {
+    ul.tasks .row.task { display: grid; grid-template-columns: auto 1fr auto; column-gap: 12px; row-gap: 8px; align-items: center; }
+    ul.tasks .row.task > .actions { grid-column: 1 / -1; width: 100%; justify-content: stretch; }
+    ul.tasks .row.task > .actions:empty { display: none; }
+    ul.tasks .row.task > .actions button.primary { width: 100%; }
+    ul.tasks .row.task > ol.steps { grid-column: 1 / -1; }
+    .kidcard .row.task { display: grid; grid-template-columns: auto 1fr auto; column-gap: 12px; row-gap: 6px; align-items: center; }
+    .kidcard .row.task > .actions { grid-column: 2 / -1; width: auto; justify-content: flex-end; }
+    .kidcard .row.task > .actions:empty { display: none; }
+    .kidcard .row.task > ol.steps { grid-column: 1 / -1; }
+  }
 `;
 
 // Eigene Seite in der Seitenleiste („Sternchenplan“). Zeigt die Karte groß,
