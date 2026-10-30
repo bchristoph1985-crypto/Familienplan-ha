@@ -28,7 +28,7 @@ create_chore:
       selector:
         select:
           translation_key: recurrence
-          options: [none, daily, weekly, biweekly]
+          options: [none, daily, weekly, biweekly, on_demand]
     due:
       selector:
         datetime:
@@ -157,7 +157,7 @@ update_chore:
       selector:
         select:
           translation_key: recurrence
-          options: [none, daily, weekly, biweekly]
+          options: [none, daily, weekly, biweekly, on_demand]
     due:
       selector:
         datetime:
@@ -481,6 +481,12 @@ set_theme:
             - ocean
             - candy
             - elegant
+set_photo_privacy:
+  fields:
+    delete:
+      required: true
+      selector:
+        boolean:
 set_weather:
   fields:
     entity:
@@ -546,3 +552,154 @@ clear_tag:
       required: true
       selector:
         text:
+
+set_features:
+  fields:
+    features:
+      selector:
+        select:
+          multiple: true
+          options:
+          - levels
+          - helping
+          - pet
+          - lamp
+          - screen
+          - demand
+          - vote
+          - certificate
+          - parents
+          - money
+          - goal
+      required: true
+set_pet:
+  fields:
+    member:
+      required: true
+      selector:
+        text: {}
+    pet:
+      selector:
+        select:
+          options:
+          - ''
+          - dragon
+          - cat
+          - dog
+          - unicorn
+          - dino
+          - panda
+          - fox
+          - owl
+    name:
+      selector:
+        text: {}
+set_lamp:
+  fields:
+    member:
+      required: true
+      selector:
+        text: {}
+    entity:
+      selector:
+        entity:
+          domain: light
+set_screen:
+  fields:
+    rate:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 60
+          mode: box
+    max_minutes:
+      default: 60
+      selector:
+        number:
+          min: 5
+          max: 600
+          mode: box
+set_screen_devices:
+  fields:
+    member:
+      required: true
+      selector:
+        text: {}
+    devices:
+      selector:
+        entity:
+          multiple: true
+buy_screen_time:
+  fields:
+    minutes:
+      required: true
+      selector:
+        number:
+          min: 5
+          max: 600
+          step: 5
+          mode: box
+    member:
+      selector:
+        text: {}
+stop_screen_time:
+  fields:
+    member:
+      selector:
+        text: {}
+trigger_chore:
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text: {}
+start_vote:
+  fields:
+    question:
+      required: true
+      selector:
+        text: {}
+    options:
+      required: true
+      selector:
+        text:
+          multiple: true
+    hours:
+      default: 24
+      selector:
+        number:
+          min: 1
+          max: 168
+          mode: box
+cast_vote:
+  fields:
+    option:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 5
+          mode: box
+    member:
+      selector:
+        text: {}
+end_vote: {}
+set_private_push:
+  fields:
+    enabled:
+      required: true
+      selector:
+        boolean: {}
+forget_member:
+  fields:
+    member:
+      required: true
+      selector:
+        text: {}
+delete_photo:
+  fields:
+    file:
+      required: true
+      selector:
+        text: {}

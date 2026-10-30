@@ -13,6 +13,7 @@ from datetime import UTC, datetime, timedelta, tzinfo
 from difflib import SequenceMatcher
 from typing import Any
 
+from .extras import ExtrasMixin
 from .models import (
     Chore,
     ChoreState,
@@ -86,7 +87,10 @@ class Actor:
 SYSTEM = Actor(system=True)
 
 
-class Family:
+class Family(ExtrasMixin):
+    _error = staticmethod(FamilyError)
+    _denied = staticmethod(PermissionDenied)
+
     def __init__(
         self,
         members: dict[str, Member] | None = None,
@@ -131,6 +135,7 @@ class Family:
         self.presets: list[dict[str, Any]] = [
             {"id": uuid.uuid4().hex[:8], "name": n, "stars": s} for n, s in DEFAULT_PRESETS
         ]
+        self._init_extras()
 
     # -- Speichern -----------------------------------------------------------
 
@@ -154,6 +159,7 @@ class Family:
             "report_hour": self.report_hour,
             "star_log": list(self.star_log),
             "presets": [dict(p) for p in self.presets],
+            **self._extras_to_dict(),
         }
 
     @classmethod
@@ -181,6 +187,7 @@ class Family:
         family.star_log = list(data.get("star_log", []))
         if "presets" in data:
             family.presets = [dict(p) for p in data["presets"]]
+        family._extras_from_dict(data)
         for raw in data.get("members", []):
             if "progress" not in raw:
                 family._estimate_progress(family.members[raw["id"]])
@@ -355,9 +362,11 @@ class Family:
         member.birth_year = None if age is None else now.year - age
         return member
 
-    def remove_member(self, actor: Actor, member_id: str) -> None:
+    def remove_member(self, actor: Actor, member_id: str) -> list[str]:
+        """Person und alle ihre Spuren löschen. Gibt Fotos zurück, die weg müssen."""
         self._require_manager(actor)
         self.member(member_id)
+        photos = self._purge(member_id)
         del self.members[member_id]
         self.locked.pop(member_id, None)
         for reward in list(self.rewards.values()):
@@ -379,6 +388,7 @@ class Family:
             if chore.claimed_by == member_id:
                 chore.claimed_by = None
                 chore.state = ChoreState.OPEN
+        return photos
 
     def set_absence(
         self,
@@ -492,7 +502,7 @@ class Family:
             self.member(member_id)
         if points < 0:
             raise FamilyError("Punkte dürfen nicht negativ sein.")
-        if recurrence is not Recurrence.NONE and due is None:
+        if recurrence not in (Recurrence.NONE, Recurrence.ON_DEMAND) and due is None:
             raise FamilyError("Wiederkehrende Aufgaben brauchen eine erste Frist.")
         chore = Chore(
             id=uuid.uuid4().hex,
@@ -512,6 +522,9 @@ class Family:
         )
         _set_house(chore, house or {})
         chore.due = self._allowed_day(chore, chore.due)
+        if recurrence is Recurrence.ON_DEMAND:
+            # Ruht, bis ein Gerät oder die Eltern sie fällig machen
+            chore.state, chore.due = ChoreState.DONE, None
         self.chores[chore.id] = chore
         return chore
 
@@ -553,7 +566,7 @@ class Family:
             raise FamilyError("Punkte dürfen nicht negativ sein.")
         new_due = None if clear_due else (due if due is not None else chore.due)
         new_recurrence = recurrence if recurrence is not None else chore.recurrence
-        if new_recurrence is not Recurrence.NONE and new_due is None:
+        if new_recurrence not in (Recurrence.NONE, Recurrence.ON_DEMAND) and new_due is None:
             raise FamilyError("Wiederkehrende Aufgaben brauchen eine Frist.")
 
         if name is not None:
@@ -590,7 +603,9 @@ class Family:
         chore.due = self._allowed_day(chore, new_due)
         if chore.state is ChoreState.OVERDUE and (chore.due is None or chore.due > now):
             chore.state = ChoreState.OPEN
-        if chore.state is ChoreState.DONE and chore.recurrence is not Recurrence.NONE:
+        if chore.state is ChoreState.DONE and chore.recurrence not in (
+            Recurrence.NONE, Recurrence.ON_DEMAND
+        ):
             chore.state = ChoreState.OPEN
         if (
             not chore.requires_approval
@@ -634,6 +649,8 @@ class Family:
                 raise FamilyError("Für diese Aufgabe brauchst du ein Foto.")
         self._check_claimable(chore)
         chore.photo = photo  # altes Foto gehört zur letzten Runde
+        if photo:
+            self._keep_photo(chore, member_id, now, photo)
         self._submit(chore, member_id, now, needs_check=self._needs_check(actor, chore))
         return chore
 
@@ -724,6 +741,8 @@ class Family:
         chore.claim_multiplier = max(1, multiplier)
         chore.claim_taken_from = responsible[0]
         chore.photo = photo  # altes Foto gehört zur letzten Runde
+        if photo:
+            self._keep_photo(chore, member_id, now, photo)
         self._log(chore, "taken_over", member_id, now)
         self._submit(chore, member_id, now, needs_check=self._needs_check(actor, chore))
         return chore
@@ -811,8 +830,13 @@ class Family:
                     chore.state = ChoreState.OVERDUE
                     for member_id in self.responsible(chore, now):
                         self._log(chore, "missed", member_id, now)
+                        self.events.append({"type": "overdue", "member": member_id, "chore": chore.id})
                 changed = True
         if self.pay_allowances(now):
+            changed = True
+        if self._refresh_screen(now):
+            changed = True
+        if self._refresh_vote(now):
             changed = True
         return changed
 
@@ -960,15 +984,28 @@ class Family:
         rotate_from = chore.claim_taken_from or member_id
         self._reset_claim(chore)
         self._log(chore, "completed", member_id, now, points=earned)
+        self._finish(chore, rotate_from, now)
+        self._check_all_done(member, now)
 
+    def _finish(self, chore: Chore, rotate_from: str, now: datetime) -> None:
+        """Nächste Runde vorbereiten: Frist, Reihum, Zustand."""
         if chore.recurrence is Recurrence.NONE:
             chore.state = ChoreState.DONE
             chore.weather_shift = 0
             return
+        if chore.recurrence is Recurrence.ON_DEMAND:
+            chore.state, chore.due, chore.weather_shift = ChoreState.DONE, None, 0
+            self._rotate(chore, rotate_from)
+            return
         # Wegen Regen verschoben: der Takt richtet sich weiter nach der alten Frist.
-        base = chore.due - timedelta(days=chore.weather_shift) if chore.due else None
+        base = _add_days(chore.due, -chore.weather_shift, self.tz) if chore.due else None
         chore.weather_shift = 0
-        chore.due = self._allowed_day(chore, _next_due(base, chore.recurrence, now))
+        chore.due = self._allowed_day(chore, _next_due(base, chore.recurrence, now, self.tz))
+        self._rotate(chore, rotate_from)
+        chore.state = ChoreState.OPEN
+
+    @staticmethod
+    def _rotate(chore: Chore, rotate_from: str) -> None:
         if chore.rotation and chore.assignees:
             # Nach der Person weiter, die dran war bzw. erledigt hat. So zählt
             # auch ein Einspringen bei Abwesenheit als Runde.
@@ -978,7 +1015,6 @@ class Family:
                 else chore.rotation_index
             )
             chore.rotation_index = (start + 1) % len(chore.assignees)
-        chore.state = ChoreState.OPEN
 
     def _count(self, member: Member, chore: Chore, earned: int, now: datetime) -> None:
         """Fortschritt nachführen. Läuft vor dem Zurücksetzen der Übernahme."""
@@ -998,7 +1034,8 @@ class Family:
 
     def _goal_step(self, member: Member, earned: int, now: datetime) -> None:
         goal = self.goal
-        if goal and goal.reached_at is None and member.role is Role.CHILD and earned > 0:
+        counts = member.role is Role.CHILD or (self.has("parents") and member.role is Role.PARENT)
+        if goal and goal.reached_at is None and counts and earned > 0:
             goal.progress = min(goal.target, goal.progress + earned)
             if goal.progress >= goal.target:
                 goal.reached_at = now
@@ -1075,11 +1112,11 @@ class Family:
         for chore in self.chores.values():
             if chore.due is None or chore.due >= end:
                 continue
-            if chore.recurrence is Recurrence.NONE:
+            if chore.recurrence in (Recurrence.NONE, Recurrence.ON_DEMAND):
                 if chore.due >= start:
                     chore.due += end - start
             else:
-                chore.due = self._allowed_day(chore, _next_due(chore.due, chore.recurrence, end))
+                chore.due = self._allowed_day(chore, _next_due(chore.due, chore.recurrence, end, self.tz))
             if chore.state is ChoreState.OVERDUE and chore.due > now:
                 chore.state = ChoreState.OPEN
         start_day = start.astimezone(self.tz).date()
@@ -1098,7 +1135,7 @@ class Family:
         for _ in range(7):
             if due.astimezone(self.tz).weekday() in chore.weekdays:
                 break
-            due += timedelta(days=1)
+            due = _add_days(due, 1, self.tz)
         return due
 
     # -- Wetter und Wochenbericht ---------------------------------------------
@@ -1112,7 +1149,7 @@ class Family:
     def _postpone(self, chore: Chore, now: datetime) -> None:
         """Draußen-Aufgabe bei Regen: gleiche Uhrzeit, nächster passender Tag."""
         while chore.due is not None and chore.due < now:
-            chore.due = self._allowed_day(chore, chore.due + timedelta(days=1))
+            chore.due = self._allowed_day(chore, _add_days(chore.due, 1, self.tz))
             chore.weather_shift += 1
         self._log(chore, "postponed", None, now)
 
@@ -1128,8 +1165,7 @@ class Family:
         rows = {
             m.id: {"member": m.id, "name": m.name, "done": 0, "missed": 0, "stars": 0,
                    "streak": m.progress.current_streak(now.astimezone(self.tz).date())}
-            for m in self.members.values()
-            if m.role is Role.CHILD
+            for m in self.ranked_members()
         }
         for chore in self.chores.values():
             for entry in chore.history:
@@ -1227,7 +1263,7 @@ class Family:
                         result.append((due, chore, who))
                 if step is None:
                     break
-                due += step
+                due = (due.astimezone(self.tz) + step).astimezone(UTC)
                 k += 1
         result.sort(key=lambda r: r[0])
         return result
@@ -1501,15 +1537,20 @@ def _clean_weekdays(days: list[int] | None) -> list[int]:
     return [] if len(cleaned) == 7 else cleaned
 
 
-def _next_due(due: datetime | None, recurrence: Recurrence, now: datetime) -> datetime:
+def _next_due(due: datetime | None, recurrence: Recurrence, now: datetime, tz: tzinfo = UTC) -> datetime:
     """Nächste Frist nach `now`, im festen Takt der ersten Frist.
 
     Wer eine Aufgabe zu spät erledigt, bekommt keine Frist in der
     Vergangenheit, und der Wochentag bzw. die Uhrzeit bleiben gleich.
+    Gerechnet wird in Ortszeit, damit 19 Uhr auch nach der Zeitumstellung 19 Uhr bleibt.
     """
     step = _INTERVALS[recurrence]
-    base = due or now
-    nxt = base + step
+    nxt = (due or now).astimezone(tz) + step
     while nxt <= now:
         nxt += step
-    return nxt
+    return nxt.astimezone(UTC)
+
+
+def _add_days(when: datetime, days: int, tz: tzinfo) -> datetime:
+    """Tage in Ortszeit addieren: gleiche Uhrzeit auch über die Zeitumstellung."""
+    return (when.astimezone(tz) + timedelta(days=days)).astimezone(UTC)

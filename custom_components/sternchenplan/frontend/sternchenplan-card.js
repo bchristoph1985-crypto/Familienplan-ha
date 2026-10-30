@@ -10,12 +10,13 @@
  * die Dienste. Home Assistant prüft dort, wer was darf.
  */
 
-const VERSION = "0.29.0";
+const VERSION = "0.35.0";
 
 const T = {
   de: {
     hello: "Hallo {name}",
     points: "{n} Sterne",
+    pointsOne: "1 Stern",
     done: "Erledigt",
     allDone: "Alles erledigt 🎉",
     waiting: "Wartet auf Freigabe",
@@ -28,6 +29,29 @@ const T = {
     tabApprove: "Freigaben",
     tabChores: "Aufgaben",
     tabAway: "Abwesend",
+    tabFamily: "Familie",
+    tabSettings: "Einstellungen",
+    tabShort: { today: "Heute", chores: "Aufgaben", rewards: "Belohnen", family: "Familie", settings: "Einstellen" },
+    kidTabs: { today: "✅ Heute", rewards: "🎁 Belohnen", me: "🙂 Ich" },
+    doneToday: "✓ {n} heute geschafft",
+    openShort: "{n} offen",
+    waitShort: "{n} wartet",
+    nextUp: "Als Nächstes: {name}",
+    showMore: "Aufgaben zeigen",
+    showLess: "Weniger zeigen",
+    awayMenu: "🏖️ Abwesend melden",
+    gallTitle: "📷 Fotos",
+    gallAll: "Alle",
+    gallEmpty: "Noch keine Fotos. Sie erscheinen hier, sobald ein Kind eine Aufgabe mit Foto meldet.",
+    gallAutoDelete: "Fotos werden gerade nach dem Freigeben gelöscht. Wer sie hier sammeln will, stellt das unter Einstellungen → Datenschutz um.",
+    gallDelete: "🗑️ Löschen",
+    gallConfirm: "Dieses Foto wirklich löschen?",
+    gallClose: "Schließen",
+    gallPrev: "Vorheriges Foto",
+    gallNext: "Nächstes Foto",
+    awaySection: "🏖️ Ferien und Abwesenheit",
+    moneySection: "💶 Taschengeld",
+    helpToggle: "💡 Hilfe-Tipps anzeigen",
     approve: "Freigeben",
     reject: "Ablehnen",
     nothingToApprove: "Nichts freizugeben.",
@@ -62,6 +86,42 @@ const T = {
     givePass: "Freikarte",
     starsBtn: "⭐ Bonus oder Abzug",
     moreActions: "Mehr für {name}",
+    greet: ["Guten Morgen", "Hallo", "Guten Abend"],
+    ckOpen: "Aufgaben offen",
+    ckWaiting: "warten auf dich",
+    ckKidsDone: "Kinder fertig",
+    ckStars: "Sterne heute",
+    ckWaitingTitle: "📬 Wartet auf dich",
+    wzHello: "Willkommen bei Sternchenplan!",
+    wzHelloText: "In einer Minute ist euer Familienplan startklar. Ich stelle dir vier kurze Fragen, alles lässt sich später ändern.",
+    wzStart: "Los geht’s",
+    wzSkip: "Ich richte alles selbst ein",
+    wzNext: "Weiter",
+    wzBack: "Zurück",
+    wzKids: "Wer macht mit?",
+    wzKidsText: "Mit dem Alter schlage ich passende Aufgaben vor. Jedes Kind kann sich auch gleich sein Design aussuchen.",
+    wzNoKids: "Noch keine Kinder angelegt. Das geht unter Einstellungen → Geräte & Dienste → Sternchenplan → Konfigurieren → Mitglied hinzufügen.",
+    wzAge: "Alter",
+    wzAgeNone: "–",
+    wzChores: "Welche Aufgaben passen zu euch?",
+    wzChoresText: "Gemeinsame Aufgaben wechseln reihum, eigene bekommt jedes Kind selbst. Tippe an, was weg soll.",
+    wzShared: "Gemeinsam, reihum",
+    wzOwn: "Für jedes Kind",
+    wzRewards: "Worauf sparen die Kinder?",
+    wzRewardsText: "Belohnungen tauschen die Kinder gegen Sterne ein. Du bestätigst jedes Einlösen.",
+    wzPhotos: "Fotos und Datenschutz",
+    wzPhotosText: "Bei manchen Aufgaben machen Kinder ein Foto als Nachweis. Nur Eltern sehen es. Was soll danach passieren?",
+    wzPhotoDelete: "Nach meiner Entscheidung löschen",
+    wzPhotoDeleteSub: "Empfohlen. Es bleibt nichts gespeichert.",
+    wzPhotoKeep: "Behalten",
+    wzPhotoKeepSub: "Fotos bleiben im Home Assistant, bis du sie löschst.",
+    wzFinish: "✨ Alles anlegen",
+    wzWorking: "Ich lege alles an …",
+    wzDone: "Fertig! Euer Plan steht.",
+    wzDoneText: "{n} Aufgaben und {r} Belohnungen sind angelegt.",
+    wzTips: ["Kinder öffnen in der Home-Assistant-App den Menüpunkt „Sternchenplan“.", "Neue Aufgaben legst du unter „Aufgaben“ an, mit Vorlagen nach Alter.", "Unter „Einstellungen“ kannst du alles später ändern, auch Hilfe-Tipps einschalten."],
+    wzGo: "Zum Plan",
+    wzStep: "Schritt {n} von 5",
     themeTitle: "🎨 Mein Design",
     themeParent: "Design",
     themeNames: { "": "Klar", space: "Weltraum", jungle: "Dschungel", ocean: "Ozean", candy: "Bonbon", elegant: "Elegant" },
@@ -86,6 +146,9 @@ const T = {
       rewards: "Belohnungen, die Kinder mit Sternen einlösen. Kleine Belohnungen (10–20 Sterne) motivieren am meisten.",
       money: "Optional: Sterne in Taschengeld tauschen und wöchentliches Taschengeld verwalten.",
       away: "Ferien eintragen (dann ruht alles) oder ein Kind abwesend melden, z. B. bei Krankheit oder Übernachtung.",
+      extras: "Hier schaltest du Zusatzfunktionen an oder aus und stellst sie ein: Haustier, Lampe, Bildschirmzeit, Familienrat, Urkunden.",
+      family: "Ferien eintragen, ein Kind abwesend melden und Taschengeld verwalten.",
+      settings: "Zusatzfunktionen, Wetter, Wochenbericht, Bonus-Knöpfe und dein Design. Musst du meistens nur einmal einstellen.",
     },
     house: "🏠 Das Haus prüft selbst",
     houseHint: "Ohne Automation: Ein Gerät oder Sensor hakt die Aufgabe ab oder sagt dem Kind, dass es dran ist.",
@@ -153,7 +216,7 @@ const T = {
     great: ["Super!", "Stark!", "Klasse!", "Weiter so!", "Spitze!"],
     openCount: "{n} offen",
     finished: "Fertig",
-    rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen" },
+    rec: { none: "einmalig", daily: "täglich", weekly: "wöchentlich", biweekly: "alle 2 Wochen", on_demand: "bei Bedarf (Gerät meldet)" },
     level: "Level {n}",
     levelTitles: ["Starter", "Helfer", "Macher", "Profi", "Experte", "Meister", "Champion", "Held", "Superheld", "Legende"],
     toNext: "noch {n} ⭐ bis Level {next}",
@@ -195,6 +258,112 @@ const T = {
     fgHint: "Alle Kinder sammeln gemeinsam. Niemandem wird etwas abgezogen.",
     fgConfirm: "Familienziel „{name}“ beenden?",
     tabMoney: "Geld",
+    tabExtras: "Extras",
+    privTitle: "Datenschutz",
+    privPush: "Sparsame Push-Nachrichten",
+    privPhoto: "Fotos nach dem Freigeben löschen",
+    privPhotoSub: "Eingeschaltet wird ein Foto gelöscht, sobald du die Aufgabe freigibst. Aus: Fotos bleiben, bis die Löschfrist abläuft.",
+    privPushSub: "Push-Nachrichten laufen über Google oder Apple. Eingeschaltet stehen darin keine Namen, Aufgaben oder Fotos, nur „Schau in Sternchenplan nach“.",
+    privLocal: "Alles andere bleibt in eurem Home Assistant. Sternchenplan schickt nichts ins Internet.",
+    privPeople: "Daten einer Person",
+    privExport: "📥 Exportieren",
+    privDelete: "🗑️ Löschen",
+    privConfirm: "Wirklich alles über {name} löschen? Aufgaben-Verlauf, Sterne, Taschengeld, Fotos und Einlösungen sind danach weg. Zum Bestätigen den Namen eintippen:",
+    feat: {
+      levels: ["🏆", "Level und Abzeichen", "Level, Serien (🔥) und Abzeichen für fleißige Tage."],
+      helping: ["🤝", "Geschwistern helfen", "Abends Aufgaben der Geschwister übernehmen und doppelte Sterne holen."],
+      pet: ["🐉", "Sternchen-Haustier", "Jedes Kind hat ein Tier, das mit den Sternen wächst."],
+      lamp: ["💡", "Zimmerlampe als Ampel", "Leuchtet kurz orange, wenn etwas offen ist, und grün, wenn alles geschafft ist."],
+      screen: ["📺", "Bildschirmzeit verdienen", "Sterne gegen Minuten am Fernseher, an der Konsole oder im Internet tauschen."],
+      demand: ["🧺", "Geräte melden Aufgaben", "Waschmaschine fertig? Wer dran ist, bekommt sofort „Wäsche aufhängen“."],
+      vote: ["🗳️", "Familienrat", "Gemeinsam abstimmen: Ausflug, Essen, Filmabend."],
+      certificate: ["🏅", "Monatsurkunde", "Jeden Monat eine schöne Urkunde zum Ausdrucken."],
+      parents: ["👨‍👩‍👧", "Eltern machen mit", "Mama und Papa haben auch Aufgaben und zählen in der Wertung mit."],
+      money: ["💶", "Taschengeld", "Wochengeld verwalten und Sterne in Euro tauschen."],
+      goal: ["🎯", "Familienziel", "Alle sammeln zusammen, zum Beispiel für einen Ausflug."],
+    },
+    featTitle: "Was möchtet ihr nutzen?",
+    featText: "Tippe an, was ihr nicht braucht. Nichts davon ist Pflicht. Du kannst alles später unter „Einstellungen“ an- oder abwählen.",
+    featAdmin: "Funktionen",
+    wzFeatures: "Was möchtet ihr nutzen?",
+    pets: { dragon: "Drache", cat: "Katze", dog: "Hund", unicorn: "Einhorn", dino: "Dino", panda: "Panda", fox: "Fuchs", owl: "Eule" },
+    petStages: ["Ei", "Baby", "Kind", "Groß", "Legende"],
+    petPick: "Such dir dein Sternchen-Haustier aus!",
+    petPickText: "Es wächst mit jedem Stern, den du verdienst.",
+    petName: "Wie soll es heißen?",
+    petSave: "Los geht's",
+    petHatch: "Noch {n} ⭐, dann schlüpft es!",
+    petGrow: "Noch {n} ⭐ bis zum nächsten Wachstum",
+    petMax: "Größer geht's nicht. Eine echte Legende!",
+    petMood: {
+      sleep: "Psst … {name} schläft. 💤",
+      sad: "{name} ist traurig: Da ist noch etwas überfällig.",
+      happy: "Juhu! Alles geschafft, {name} ist pappsatt! 💛",
+      eating: "Lecker! Noch {n}, dann ist {name} satt.",
+      hungry: "{name} hat Hunger auf Sterne! 🍪",
+      fine: "{name} geht's prima.",
+    },
+    petChange: "Anderes Tier",
+    screenTitle: "Bildschirmzeit",
+    screenLeft: "Heute noch {n} Min. · 1 ⭐ = {rate} Min.",
+    screenRunning: "Noch {n} Min.",
+    screenUntil: "bis {time}",
+    screenStop: "Beenden",
+    screenBuy: "{n} Min.",
+    screenNoDevices: "Frag Mama oder Papa, ob sie deine Geräte einstellen.",
+    screenLocked: "Erst die überfälligen Aufgaben, dann gibt's Bildschirmzeit.",
+    screenRate: "Minuten pro Stern",
+    screenRateHint: "0 = aus",
+    screenMax: "Höchstens pro Tag (Minuten)",
+    screenDevices: "Geräte (Fernseher, Konsole, Internet …)",
+    screenAdd: "Gerät hinzufügen …",
+    screenHint: "Während der verdienten Zeit schaltet Sternchenplan diese Geräte ein und danach wieder aus. Bei überfälligen Aufgaben gibt es keine Bildschirmzeit.",
+    lampTitle: "Zimmerlampe als Ampel",
+    lampNone: "keine Lampe",
+    lampHint: "Kurz orange bei Erinnerungen und Überfälligem, grün, wenn alles geschafft ist. Zwischen 21 und 7 Uhr bleibt die Lampe in Ruhe.",
+    lampTest: "Testen",
+    voteTitle: "Familienrat",
+    voteNew: "Neue Abstimmung",
+    voteQuestion: "Frage",
+    voteQuestionPh: "Wohin geht's am Samstag?",
+    voteOptions: "Möglichkeiten (eine pro Zeile)",
+    voteOptionsPh: "Zoo\nKino\nSchwimmbad",
+    voteHours: "Offen für",
+    voteHourOpts: [[2, "2 Stunden"], [6, "6 Stunden"], [24, "1 Tag"], [72, "3 Tage"], [168, "1 Woche"]],
+    voteStart: "Abstimmung starten",
+    voteEnd: "Jetzt beenden",
+    voteHide: "Ausblenden",
+    voteMine: "deine Stimme",
+    voteCount: "{n} von {t} haben abgestimmt",
+    voteUntil: "bis {time}",
+    voteWinner: "Entschieden: {name} 🎉",
+    voteTie: "Gleichstand: {list}. Ihr müsst noch mal reden!",
+    voteTap: "Tippe an, wofür du bist:",
+    certTitle: "Urkunde",
+    certFor: "für",
+    certMonth: "Monatsurkunde {month}",
+    certSoFar: "{month} bis heute",
+    certOpen: "🏅 Urkunde {month}",
+    certDone: "Aufgaben erledigt",
+    certStars: "Sterne verdient",
+    certStreak: "Beste Serie",
+    certFav: "Lieblingsaufgabe",
+    certBadges: "Neue Abzeichen",
+    certPrint: "🖨️ Drucken",
+    certClose: "Schließen",
+    certPraise: ["Ein starker Anfang!", "Toll gemacht!", "Ein richtig fleißiger Monat!", "Ein großartiger Monat, Respekt!", "Unglaublich! Ein Monat wie ein Champion!"],
+    certTeaser: "Deine Urkunde für {month} ist da!",
+    certSigned: "Die ganze Familie ist stolz auf dich",
+    monthNames: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+    demandTitle: "Geräte melden Aufgaben",
+    demandHint: "Lege eine Aufgabe mit Wiederholung „Bei Bedarf“ an und wähle unter „Das Haus prüft selbst“ bei „Jetzt dran, wenn …“ das Gerät, z. B. Waschmaschine „aus“. Dann bekommt, wer dran ist, sofort Bescheid und hat 2 Stunden Zeit.",
+    demandNone: "Noch keine Aufgabe „bei Bedarf“.",
+    demandWaiting: "wartet auf das Gerät",
+    demandOpen: "ist gerade fällig",
+    demandNow: "Jetzt fällig machen",
+    petAdminHint: "Die Kinder suchen ihr Haustier selbst in ihrer Ansicht aus.",
+    petNone: "noch keins",
+    parentsHint: "Eltern mit eigenen Aufgaben erscheinen bei „Heute“ und in der Wochenwertung. Ihre Sterne zählen fürs Familienziel.",
     money: "Taschengeld",
     weekly: "{amount} Wochengeld, jeden {day}",
     exchange: "{stars} ⭐ → 1 € tauschen",
@@ -255,6 +424,7 @@ const T = {
   en: {
     hello: "Hi {name}",
     points: "{n} stars",
+    pointsOne: "1 star",
     done: "Done",
     allDone: "All done 🎉",
     waiting: "Waiting for approval",
@@ -267,6 +437,29 @@ const T = {
     tabApprove: "Approvals",
     tabChores: "Chores",
     tabAway: "Away",
+    tabFamily: "Family",
+    tabSettings: "Settings",
+    tabShort: { today: "Today", chores: "Chores", rewards: "Rewards", family: "Family", settings: "Settings" },
+    kidTabs: { today: "✅ Today", rewards: "🎁 Rewards", me: "🙂 Me" },
+    doneToday: "✓ {n} done today",
+    openShort: "{n} open",
+    waitShort: "{n} waiting",
+    nextUp: "Next: {name}",
+    showMore: "Show chores",
+    showLess: "Show less",
+    awayMenu: "🏖️ Mark as away",
+    gallTitle: "📷 Photos",
+    gallAll: "All",
+    gallEmpty: "No photos yet. They show up here as soon as a child reports a chore with a photo.",
+    gallAutoDelete: "Photos are currently deleted after approval. To collect them here, change it under Settings → Privacy.",
+    gallDelete: "🗑️ Delete",
+    gallConfirm: "Really delete this photo?",
+    gallClose: "Close",
+    gallPrev: "Previous photo",
+    gallNext: "Next photo",
+    awaySection: "🏖️ Holidays and absence",
+    moneySection: "💶 Pocket money",
+    helpToggle: "💡 Show help tips",
     approve: "Approve",
     reject: "Reject",
     nothingToApprove: "Nothing to approve.",
@@ -301,6 +494,42 @@ const T = {
     givePass: "Free pass",
     starsBtn: "⭐ Bonus or deduction",
     moreActions: "More for {name}",
+    greet: ["Good morning", "Hello", "Good evening"],
+    ckOpen: "chores open",
+    ckWaiting: "waiting for you",
+    ckKidsDone: "kids done",
+    ckStars: "stars today",
+    ckWaitingTitle: "📬 Waiting for you",
+    wzHello: "Welcome to Sternchenplan!",
+    wzHelloText: "Your family plan is ready in a minute. Four quick questions, and you can change everything later.",
+    wzStart: "Let’s go",
+    wzSkip: "I’ll set it up myself",
+    wzNext: "Next",
+    wzBack: "Back",
+    wzKids: "Who’s joining?",
+    wzKidsText: "With their age I can suggest fitting chores. Each child can pick their look right away.",
+    wzNoKids: "No children yet. Add them under Settings → Devices & services → Sternchenplan → Configure → Add member.",
+    wzAge: "Age",
+    wzAgeNone: "–",
+    wzChores: "Which chores fit your family?",
+    wzChoresText: "Shared chores rotate, personal ones go to each child. Tap to leave one out.",
+    wzShared: "Shared, rotating",
+    wzOwn: "For each child",
+    wzRewards: "What do the kids save up for?",
+    wzRewardsText: "Kids trade stars for rewards. You confirm every redemption.",
+    wzPhotos: "Photos and privacy",
+    wzPhotosText: "Some chores need a photo as proof. Only parents see it. What happens afterwards?",
+    wzPhotoDelete: "Delete after my decision",
+    wzPhotoDeleteSub: "Recommended. Nothing stays stored.",
+    wzPhotoKeep: "Keep",
+    wzPhotoKeepSub: "Photos stay in Home Assistant until you delete them.",
+    wzFinish: "✨ Create everything",
+    wzWorking: "Creating everything …",
+    wzDone: "Done! Your plan is ready.",
+    wzDoneText: "{n} chores and {r} rewards created.",
+    wzTips: ["Kids open “Sternchenplan” in the Home Assistant app.", "Add more chores under “Chores”, with templates by age.", "You can change everything later under “Settings”, and switch on help tips there."],
+    wzGo: "Go to the plan",
+    wzStep: "Step {n} of 5",
     themeTitle: "🎨 My look",
     themeParent: "Look",
     themeNames: { "": "Clear", space: "Space", jungle: "Jungle", ocean: "Ocean", candy: "Candy", elegant: "Elegant" },
@@ -325,6 +554,9 @@ const T = {
       rewards: "Rewards children redeem with stars. Small rewards (10–20 stars) motivate most.",
       money: "Optional: exchange stars for pocket money and manage weekly allowance.",
       away: "Enter holidays (everything pauses) or mark a child as away, e.g. sick or at a sleepover.",
+      extras: "Turn extra features on or off and set them up: pet, lamp, screen time, family vote, certificates.",
+      family: "Enter holidays, mark a child as away and manage pocket money.",
+      settings: "Extra features, weather, weekly report, bonus buttons and your design. Usually set once.",
     },
     house: "🏠 The house checks itself",
     houseHint: "No automation needed: a device or sensor checks the chore off or tells the child it's their turn.",
@@ -392,7 +624,7 @@ const T = {
     great: ["Great!", "Awesome!", "Nice!", "Keep going!", "Brilliant!"],
     openCount: "{n} open",
     finished: "Done",
-    rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks" },
+    rec: { none: "once", daily: "daily", weekly: "weekly", biweekly: "every 2 weeks", on_demand: "on demand (a device reports)" },
     level: "Level {n}",
     levelTitles: ["Starter", "Helper", "Doer", "Pro", "Expert", "Master", "Champion", "Hero", "Superhero", "Legend"],
     toNext: "{n} ⭐ to level {next}",
@@ -434,6 +666,112 @@ const T = {
     fgHint: "All children collect together. Nothing is deducted from anyone.",
     fgConfirm: "End family goal “{name}”?",
     tabMoney: "Money",
+    tabExtras: "Extras",
+    privTitle: "Privacy",
+    privPush: "Sparing push notifications",
+    privPhoto: "Delete photos after approval",
+    privPhotoSub: "When on, a photo is deleted as soon as you approve the chore. Off: photos stay until the retention period ends.",
+    privPushSub: "Push notifications travel via Google or Apple. When on, they contain no names, chores or photos, just “Have a look in Sternchenplan”.",
+    privLocal: "Everything else stays in your Home Assistant. Sternchenplan sends nothing to the internet.",
+    privPeople: "Data of a person",
+    privExport: "📥 Export",
+    privDelete: "🗑️ Delete",
+    privConfirm: "Really delete everything about {name}? Chore history, stars, pocket money, photos and redemptions will be gone. Type the name to confirm:",
+    feat: {
+      levels: ["🏆", "Levels and badges", "Levels, streaks (🔥) and badges for busy days."],
+      helping: ["🤝", "Help your siblings", "In the evening, take over a sibling's chore for double stars."],
+      pet: ["🐉", "Star pet", "Each child has a pet that grows with every star."],
+      lamp: ["💡", "Room lamp signal", "Briefly glows orange when something is open and green when everything is done."],
+      screen: ["📺", "Earn screen time", "Swap stars for minutes on the TV, the console or the internet."],
+      demand: ["🧺", "Devices start chores", "Washing machine done? Whoever's turn it is gets “Hang up laundry” right away."],
+      vote: ["🗳️", "Family vote", "Decide together: trips, dinner, movie night."],
+      certificate: ["🏅", "Monthly certificate", "A beautiful certificate to print every month."],
+      parents: ["👨‍👩‍👧", "Parents join in", "Mum and Dad get chores too and count in the ranking."],
+      money: ["💶", "Pocket money", "Manage weekly allowance and swap stars for money."],
+      goal: ["🎯", "Family goal", "Everyone collects together, e.g. for a trip."],
+    },
+    featTitle: "What do you want to use?",
+    featText: "Tap anything you don't need. None of it is required. You can switch anything on or off later under “Settings”.",
+    featAdmin: "Features",
+    wzFeatures: "What do you want to use?",
+    pets: { dragon: "Dragon", cat: "Cat", dog: "Dog", unicorn: "Unicorn", dino: "Dino", panda: "Panda", fox: "Fox", owl: "Owl" },
+    petStages: ["Egg", "Baby", "Kid", "Big", "Legend"],
+    petPick: "Pick your star pet!",
+    petPickText: "It grows with every star you earn.",
+    petName: "What's its name?",
+    petSave: "Let's go",
+    petHatch: "{n} ⭐ more until it hatches!",
+    petGrow: "{n} ⭐ until it grows again",
+    petMax: "It can't get any bigger. A true legend!",
+    petMood: {
+      sleep: "Shh … {name} is asleep. 💤",
+      sad: "{name} is sad: something is overdue.",
+      happy: "Yay! All done, {name} is full! 💛",
+      eating: "Yummy! {n} more and {name} is full.",
+      hungry: "{name} is hungry for stars! 🍪",
+      fine: "{name} is doing great.",
+    },
+    petChange: "Different pet",
+    screenTitle: "Screen time",
+    screenLeft: "{n} min left today · 1 ⭐ = {rate} min",
+    screenRunning: "{n} min left",
+    screenUntil: "until {time}",
+    screenStop: "Stop",
+    screenBuy: "{n} min",
+    screenNoDevices: "Ask Mum or Dad to set up your devices.",
+    screenLocked: "Overdue chores first, then screen time.",
+    screenRate: "Minutes per star",
+    screenRateHint: "0 = off",
+    screenMax: "Per day at most (minutes)",
+    screenDevices: "Devices (TV, console, internet …)",
+    screenAdd: "Add a device …",
+    screenHint: "During earned time Sternchenplan turns these devices on and off again afterwards. No screen time while chores are overdue.",
+    lampTitle: "Room lamp signal",
+    lampNone: "no lamp",
+    lampHint: "Briefly orange for reminders and overdue chores, green when everything is done. Quiet between 9 pm and 7 am.",
+    lampTest: "Test",
+    voteTitle: "Family vote",
+    voteNew: "New vote",
+    voteQuestion: "Question",
+    voteQuestionPh: "Where do we go on Saturday?",
+    voteOptions: "Choices (one per line)",
+    voteOptionsPh: "Zoo\nCinema\nPool",
+    voteHours: "Open for",
+    voteHourOpts: [[2, "2 hours"], [6, "6 hours"], [24, "1 day"], [72, "3 days"], [168, "1 week"]],
+    voteStart: "Start vote",
+    voteEnd: "End now",
+    voteHide: "Hide",
+    voteMine: "your vote",
+    voteCount: "{n} of {t} have voted",
+    voteUntil: "until {time}",
+    voteWinner: "Decided: {name} 🎉",
+    voteTie: "A tie: {list}. Time to talk again!",
+    voteTap: "Tap what you want:",
+    certTitle: "Certificate",
+    certFor: "for",
+    certMonth: "Certificate for {month}",
+    certSoFar: "{month} so far",
+    certOpen: "🏅 Certificate {month}",
+    certDone: "chores done",
+    certStars: "stars earned",
+    certStreak: "best streak",
+    certFav: "Favourite chore",
+    certBadges: "New badges",
+    certPrint: "🖨️ Print",
+    certClose: "Close",
+    certPraise: ["A strong start!", "Well done!", "A really busy month!", "A great month, respect!", "Amazing! A champion's month!"],
+    certTeaser: "Your certificate for {month} is here!",
+    certSigned: "The whole family is proud of you",
+    monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    demandTitle: "Devices start chores",
+    demandHint: "Create a chore that repeats “On demand” and pick the device under “The house checks itself” → “Your turn when …”, e.g. washing machine “off”. Whoever's turn it is gets told right away and has 2 hours.",
+    demandNone: "No “on demand” chore yet.",
+    demandWaiting: "waiting for the device",
+    demandOpen: "is due right now",
+    demandNow: "Make due now",
+    petAdminHint: "Children pick their pet themselves in their own view.",
+    petNone: "none yet",
+    parentsHint: "Parents with their own chores appear under “Today” and in the weekly ranking. Their stars count towards the family goal.",
     money: "Pocket money",
     weekly: "{amount} allowance, every {day}",
     exchange: "Exchange {stars} ⭐ → 1 €",
@@ -496,6 +834,70 @@ const T = {
 const esc = (value) =>
   String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
+// Datumsformate einmal anlegen statt bei jeder Aufgabe neu (spürbar auf alten Tablets).
+const FORMATS = new Map();
+const fmt = (locale, opts, date) => {
+  const key = locale + JSON.stringify(opts);
+  if (!FORMATS.has(key)) FORMATS.set(key, new Intl.DateTimeFormat(locale, opts));
+  return FORMATS.get(key).format(date);
+};
+
+// Neue Klappboxen merken sich, wie die Karte sie angelegt hat (auf oder zu).
+const fresh = (node) => {
+  if (node.nodeType !== 1) return node;
+  for (const d of [node, ...node.querySelectorAll("details")]) {
+    if (d.nodeName === "DETAILS") d._tplOpen = d.hasAttribute("open");
+  }
+  return node;
+};
+
+const morphChildren = (from, to) => {
+  const a = [...from.childNodes];
+  const b = [...to.childNodes];
+  b.forEach((node, i) => (i < a.length ? morph(a[i], node) : from.appendChild(fresh(node))));
+  for (let i = b.length; i < a.length; i++) a[i].remove();
+};
+
+// Neuen Stand in die bestehende Ansicht einarbeiten, statt alles neu zu bauen.
+// So bleiben offene Menüs, das Feld mit dem Cursor und laufende Animationen
+// erhalten, wenn jemand anderes gerade etwas abhakt, und der Browser muss nur
+// das Geänderte neu zeichnen.
+const morph = (from, to) => {
+  if (from.nodeType !== to.nodeType || from.nodeName !== to.nodeName) {
+    from.replaceWith(fresh(to));
+    return;
+  }
+  if (from.nodeType !== 1) {
+    if (from.nodeValue !== to.nodeValue) from.nodeValue = to.nodeValue;
+    return;
+  }
+  for (const { name } of [...from.attributes]) {
+    if (!to.hasAttribute(name) && name !== "open") from.removeAttribute(name);
+  }
+  for (const { name, value } of to.attributes) {
+    if (name !== "open" && from.getAttribute(name) !== value) from.setAttribute(name, value);
+  }
+  if (from.nodeName === "DETAILS") {
+    // Auf/zu nur übernehmen, wenn die Karte es selbst ändert, nicht bei jedem Stand
+    const open = to.hasAttribute("open");
+    if (from._tplOpen !== open) from.open = open;
+    from._tplOpen = open;
+  }
+  const focused = from === from.getRootNode().activeElement;
+  if (from.nodeName === "INPUT" || from.nodeName === "TEXTAREA") {
+    if (!focused) {
+      if (from.type === "checkbox" || from.type === "radio") from.checked = to.hasAttribute("checked");
+      else if (from.type !== "file") from.value = from.nodeName === "TEXTAREA" ? to.value : to.getAttribute("value") ?? "";
+    }
+    if (from.nodeName === "TEXTAREA") return;
+  }
+  morphChildren(from, to);
+  if (from.nodeName === "SELECT" && !focused) {
+    const pick = [...to.options].find((o) => o.hasAttribute("selected")) || to.options[0];
+    if (pick) from.value = pick.value;
+  }
+};
+
 class SternchenplanCard extends HTMLElement {
   constructor() {
     super();
@@ -503,6 +905,13 @@ class SternchenplanCard extends HTMLElement {
     this._data = null;
     this._error = null;
     this._tab = "today";
+    // Kinderansicht: Heute, Belohnen, Ich
+    this._kidTab = "today";
+    // Elternansicht: aufgeklappte Kinderkarten
+    this._openCards = new Set();
+    // Fotogalerie: Filter nach Person, gerade groß gezeigtes Foto
+    this._galFilter = "";
+    this._photo = null;
     this._form = this._emptyForm();
     this._awayForm = {};
     this._rewardForm = this._emptyReward();
@@ -517,6 +926,13 @@ class SternchenplanCard extends HTMLElement {
     this._actingAs = null;
     this._idleTimer = null;
     this.shadowRoot.addEventListener("click", (ev) => this._onClick(ev));
+    // „close“ blubbert nicht hoch, darum in der Einfangphase (Esc beim Foto)
+    this.shadowRoot.addEventListener("close", (ev) => {
+      if (ev.target.matches?.("dialog.lightbox") && this._photo) {
+        this._photo = null;
+        this._render();
+      }
+    }, true);
     this.shadowRoot.addEventListener("input", (ev) => this._onInput(ev));
     this.shadowRoot.addEventListener("change", (ev) => this._onInput(ev));
   }
@@ -688,6 +1104,7 @@ class SternchenplanCard extends HTMLElement {
     switch (action) {
       case "pick":
         this._actingAs = id;
+        this._kidTab = "today";
         this._touchIdle();
         this._render();
         break;
@@ -698,6 +1115,15 @@ class SternchenplanCard extends HTMLElement {
         break;
       case "tab":
         this._tab = id;
+        this._render();
+        break;
+      case "kid-tab":
+        this._kidTab = id;
+        this._render();
+        break;
+      case "kid-expand":
+        if (this._openCards.has(id)) this._openCards.delete(id);
+        else this._openCards.add(id);
         this._render();
         break;
       case "claim": {
@@ -828,6 +1254,190 @@ class SternchenplanCard extends HTMLElement {
         this._help = !this._help;
         this._render();
         break;
+      case "wz-step":
+        this._wz.step = Math.max(0, Number(id));
+        this._render();
+        this.scrollIntoView?.({ block: "start", behavior: "smooth" });
+        break;
+      case "wz-chore":
+      case "wz-reward": {
+        const set = action === "wz-chore" ? this._wz.offChores : this._wz.offRewards;
+        if (set.has(id)) set.delete(id);
+        else set.add(id);
+        this._render();
+        break;
+      }
+      case "wz-photo":
+        this._wz.photo = !!id;
+        this._render();
+        break;
+      case "wz-feat":
+        if (this._wz.features.has(id)) this._wz.features.delete(id);
+        else this._wz.features.add(id);
+        this._render();
+        break;
+      case "feat": {
+        // Sofort umschalten, der Server bestätigt gleich danach.
+        const set = new Set(this._features());
+        if (set.has(id)) set.delete(id);
+        else set.add(id);
+        this._data.features = [...set].sort();
+        if (this._tab === "money" && !set.has("money")) this._tab = "settings";
+        this._render();
+        this._hass.callService("sternchenplan", "set_features", { features: this._data.features }).catch((err) => this._notify(err.message));
+        break;
+      }
+      case "pet-pick":
+        this._petDraft = { ...(this._petDraft || {}), pet: id };
+        this._render();
+        break;
+      case "pet-save": {
+        const me = this._member(id);
+        const draft = this._petDraft || {};
+        if (!draft.pet || !me) break;
+        me.pet = draft.pet;
+        me.pet_name = (draft.name || "").trim() || this._t("pets")[draft.pet];
+        this._petDraft = null;
+        this._render();
+        this._call("set_pet", { member: id, pet: me.pet, name: me.pet_name });
+        break;
+      }
+      case "pet-change": {
+        const me = this._member(id);
+        this._petDraft = { pet: me?.pet || "", name: me?.pet_name || "", open: true };
+        this._render();
+        break;
+      }
+      case "screen-buy":
+        this._call("buy_screen_time", { member: this._me(), minutes: Number(el.dataset.minutes) });
+        break;
+      case "screen-stop":
+        this._call("stop_screen_time", { member: id });
+        break;
+      case "screen-dev-remove": {
+        const kid = this._member(id);
+        if (!kid) break;
+        kid.screen_devices = kid.screen_devices.filter((e) => e !== el.dataset.entity);
+        this._render();
+        this._hass.callService("sternchenplan", "set_screen_devices", { member: id, devices: kid.screen_devices }).catch((err) => this._notify(err.message));
+        break;
+      }
+      case "lamp-test": {
+        const kid = this._member(id);
+        if (kid?.lamp) this._hass.callService("light", "turn_on", { entity_id: kid.lamp, flash: "short" }).catch(() => {});
+        break;
+      }
+      case "vote": {
+        const me = this._me();
+        const v = this._data.vote;
+        if (!me || !v) break;
+        v.votes = { ...v.votes, [me]: Number(id) };
+        this._render();
+        this._call("cast_vote", { member: me, option: Number(id) });
+        break;
+      }
+      case "vote-start": {
+        const f = this._voteForm || {};
+        const options = String(f.opts || "").split("\n").map((o) => o.trim()).filter(Boolean);
+        if (!String(f.q || "").trim() || options.length < 2) {
+          this._notify(this._t("voteOptions"));
+          break;
+        }
+        this._call("start_vote", { question: f.q.trim(), options, hours: Number(f.hours) || 24 }).then(() => {
+          this._voteForm = {};
+          this._render();
+        });
+        break;
+      }
+      case "vote-end":
+        this._call("end_vote", {});
+        break;
+      case "cert-open":
+        this._cert = { member: id, which: el.dataset.which || "prev" };
+        this._render();
+        break;
+      case "cert-close":
+        this._cert = null;
+        this._render();
+        break;
+      case "cert-print":
+        this._printCert();
+        break;
+      case "priv-push":
+        this._data.private_push = !this._data.private_push;
+        this._render();
+        this._hass.callService("sternchenplan", "set_private_push", { enabled: this._data.private_push }).catch((err) => this._notify(err.message));
+        break;
+      case "priv-photo":
+        this._data.photo_delete = !this._data.photo_delete;
+        this._render();
+        this._hass.callService("sternchenplan", "set_photo_privacy", { delete: this._data.photo_delete }).catch((err) => this._notify(err.message));
+        break;
+      case "wz-priv":
+        this._wz.privatePush = !this._wzPrivate();
+        this._render();
+        break;
+      case "priv-export":
+        this._exportMember(id);
+        break;
+      case "gal-filter":
+        this._galFilter = id || "";
+        this._render();
+        break;
+      case "photo-open":
+        this._photo = id;
+        this._render();
+        break;
+      case "photo-close":
+        this._photo = null;
+        this._render();
+        break;
+      case "photo-step": {
+        const list = this._galleryItems();
+        const i = list.findIndex((e) => e.file === this._photo);
+        if (i >= 0 && list.length) this._photo = list[(i + Number(id) + list.length) % list.length].file;
+        this._render();
+        break;
+      }
+      case "photo-delete":
+        if (!confirm(this._t("gallConfirm"))) break;
+        this._data.gallery = (this._data.gallery || []).filter((e) => e.file !== id);
+        this._photo = null;
+        this._render();
+        this._call("delete_photo", { file: id });
+        break;
+      case "priv-delete": {
+        const who = this._member(id);
+        if (!who) break;
+        const typed = prompt(this._t("privConfirm", { name: who.name }));
+        if (typed == null || typed.trim().toLowerCase() !== who.name.trim().toLowerCase()) break;
+        this._call("forget_member", { member: id });
+        break;
+      }
+      case "demand-now":
+        this._call("trigger_chore", { chore_id: id });
+        break;
+      case "wz-finish":
+        this._finishWelcome();
+        break;
+      case "wz-skip":
+      case "wz-close":
+        try {
+          localStorage.setItem("sternchenplan-welcome-done", "1");
+        } catch (e) {
+          /* egal */
+        }
+        if (action === "wz-skip") {
+          try {
+            localStorage.removeItem("sternchenplan-starter-hidden");
+          } catch (e) {
+            /* egal */
+          }
+        }
+        this._wz = null;
+        this._tab = "today";
+        this._render();
+        break;
       case "theme-toggle":
         this._themeOpen = !this._themeOpen;
         this._render();
@@ -836,7 +1446,7 @@ class SternchenplanCard extends HTMLElement {
         // Sofort umschalten, der Server bestätigt gleich danach.
         const who = this._member(id);
         if (who) who.theme = el.dataset.theme;
-        this._themeOpen = true;
+        if (!this._wz) this._themeOpen = true;
         this._render();
         this._call("set_theme", { member: id, theme: el.dataset.theme });
         break;
@@ -961,6 +1571,13 @@ class SternchenplanCard extends HTMLElement {
 
   _onInput(ev) {
     const el = ev.target;
+    if (el.dataset?.wzAge) {
+      const who = this._member(el.dataset.wzAge);
+      const age = el.value === "" ? null : Number(el.value);
+      if (who) who.age = age;
+      this._call("set_age", { member: el.dataset.wzAge, age });
+      return;
+    }
     const field = el.dataset?.field;
     if (!field) return;
     if (field.startsWith("away.")) {
@@ -974,6 +1591,38 @@ class SternchenplanCard extends HTMLElement {
     }
     if (field.startsWith("preset.")) {
       this._presetForm[field.slice(7)] = el.value;
+      return;
+    }
+    if (field === "pet.name") {
+      this._petDraft = { ...(this._petDraft || {}), name: el.value };
+      return;
+    }
+    if (field.startsWith("vote.")) {
+      this._voteForm = { ...(this._voteForm || {}), [field.slice(5)]: el.value };
+      return;
+    }
+    if (field.startsWith("lamp.") || field.startsWith("screendev.") || field.startsWith("screen.")) {
+      if (ev.type !== "change") return;
+      const send = (service, data) =>
+        this._hass.callService("sternchenplan", service, data).catch((err) => this._notify(err.message));
+      if (field.startsWith("lamp.")) {
+        const kid = this._member(field.slice(5));
+        if (kid) kid.lamp = el.value;
+        send("set_lamp", { member: field.slice(5), entity: el.value });
+      } else if (field.startsWith("screendev.")) {
+        const kid = this._member(field.slice(10));
+        const entity = el.value.trim();
+        if (!kid || !entity || !this._hass.states[entity]) return;
+        kid.screen_devices = [...new Set([...(kid.screen_devices || []), entity])];
+        el.value = "";
+        this._render();
+        send("set_screen_devices", { member: kid.id, devices: kid.screen_devices });
+      } else {
+        const sc = { ...(this._data.screen || { rate: 0, max: 60 }) };
+        sc[field.slice(7)] = Math.max(0, parseInt(el.value, 10) || 0);
+        this._data.screen = sc;
+        send("set_screen", { rate: sc.rate, max_minutes: Math.max(5, sc.max) });
+      }
       return;
     }
     if (field.startsWith("set.")) {
@@ -1227,6 +1876,148 @@ class SternchenplanCard extends HTMLElement {
     return { chores, rewards: this._data.rewards.length ? [] : rewards };
   }
 
+  // -- Willkommens-Assistent -------------------------------------------------
+
+  _welcomeActive() {
+    const d = this._data;
+    if (this._wz?.step === 6) return true; // „Fertig“ noch zeigen, auch wenn jetzt Aufgaben da sind
+    if (this._config.readonly || !d.is_manager || d.chores.length || d.rewards.length) return false;
+    try {
+      if (localStorage.getItem("sternchenplan-welcome-done")) return false;
+    } catch (e) {
+      /* ohne Speicher einfach zeigen */
+    }
+    return true;
+  }
+
+  _wzKey(c) {
+    return `${c.t.name.de}|${c.who.map((k) => k.id).join(",")}`;
+  }
+
+  _wzPlan() {
+    const wz = this._wz;
+    const plan = this._starterPlan();
+    return {
+      chores: plan.chores.filter((c) => !wz.offChores.has(this._wzKey(c))),
+      rewards: plan.rewards.filter(([n]) => !wz.offRewards.has(n)),
+      all: plan,
+    };
+  }
+
+  _renderWelcome() {
+    if (!this._wz) this._wz = { step: 0, offChores: new Set(), offRewards: new Set(), photo: null, features: new Set(this._features()) };
+    const wz = this._wz;
+    const lang = this._lang();
+    const kids = this._children();
+    const dots = wz.step >= 1 && wz.step <= 5
+      ? `<div class="wz-top"><span class="muted small">${this._t("wzStep", { n: wz.step })}</span><div class="wz-dots">${[1, 2, 3, 4, 5]
+          .map((i) => `<i class="${i <= wz.step ? "on" : ""}"></i>`).join("")}</div></div>`
+      : "";
+    const nav = (next, label = this._t("wzNext")) => `
+      <div class="wz-nav">
+        <button class="link" data-action="wz-step" data-id="${wz.step - 1}">← ${this._t("wzBack")}</button>
+        <button class="primary big" data-action="${next === "finish" ? "wz-finish" : "wz-step"}" data-id="${next}">${label}</button>
+      </div>`;
+    let body = "";
+    if (wz.step === 0) {
+      body = `
+        <div class="wz-hero">
+          <div class="wz-star" aria-hidden="true">⭐</div>
+          <h2>${this._t("wzHello")}</h2>
+          <p>${this._t("wzHelloText")}</p>
+          <div class="wz-kids-row">${kids.map((k) => this._avatar(k, 52)).join("")}</div>
+          <button class="primary big" data-action="wz-step" data-id="1">${this._t("wzStart")} →</button>
+          <button class="link" data-action="wz-skip">${this._t("wzSkip")}</button>
+        </div>`;
+    } else if (wz.step === 1) {
+      const names = this._t("themeNames");
+      const cards = kids.length
+        ? kids.map((k) => `
+            <div class="wz-kid" style="--kid:${this._color(k.id)}">
+              <div class="wz-kid-head">${this._avatar(k, 48)}<strong>${esc(k.name)}</strong>
+                <label class="wz-age">${this._t("wzAge")}
+                  <select data-wz-age="${esc(k.id)}"><option value="">${this._t("wzAgeNone")}</option>${Array.from({ length: 16 }, (_, i) => i + 3)
+                    .map((a) => `<option value="${a}" ${k.age === a ? "selected" : ""}>${a}</option>`).join("")}</select></label>
+              </div>
+              <div class="muted small wz-caption">${this._t("themeParent")}</div>
+              <div class="wz-themes">${THEMES.filter((t) => t.id !== "elegant")
+                .map((t) => `<button class="wz-theme ${(k.theme || "") === t.id ? "on" : ""}" data-action="theme" data-id="${esc(k.id)}" data-theme="${t.id}" title="${esc(names[t.id])}" aria-label="${esc(names[t.id])}"><span class="sw sw-${t.id || "clear"}">${t.emoji}</span></button>`)
+                .join("")}</div>
+            </div>`).join("")
+        : `<p class="help-tip">${this._t("wzNoKids")}</p>`;
+      body = `<h2>${this._t("wzKids")}</h2><p class="muted">${this._t("wzKidsText")}</p><div class="wz-kid-list">${cards}</div>${nav(2)}`;
+    } else if (wz.step === 2) {
+      body = `<h2>${this._t("featTitle")}</h2><p class="muted">${this._t("featText")}</p>
+        ${this._featureTiles(wz.features, "wz-feat")}${nav(3)}`;
+    } else if (wz.step === 3) {
+      const plan = this._starterPlan();
+      const item = (c) => {
+        const off = wz.offChores.has(this._wzKey(c));
+        return `<button class="wz-pick ${off ? "off" : ""}" data-action="wz-chore" data-id="${esc(this._wzKey(c))}" aria-pressed="${!off}">
+          <span class="wz-pick-icon">${esc(c.t.emoji)}</span><span class="wz-pick-main"><strong>${esc(c.t.name[lang])}</strong>
+          <span class="muted small">${esc(c.who.map((k) => k.name).join(", "))} · +${c.t.points} ⭐</span></span><span class="wz-check">${off ? "" : "✓"}</span></button>`;
+      };
+      const shared = plan.chores.filter((c) => c.rotation || c.who.length > 1 || ["Tisch decken", "Spülmaschine ausräumen", "Müll rausbringen", "Staubsaugen"].includes(c.t.name.de));
+      const own = plan.chores.filter((c) => !shared.includes(c));
+      body = `<h2>${this._t("wzChores")}</h2><p class="muted">${this._t("wzChoresText")}</p>
+        ${shared.length ? `<div class="wz-group">${this._t("wzShared")}</div><div class="wz-picks">${shared.map(item).join("")}</div>` : ""}
+        ${own.length ? `<div class="wz-group">${this._t("wzOwn")}</div><div class="wz-picks">${own.map(item).join("")}</div>` : ""}
+        ${nav(4)}`;
+    } else if (wz.step === 4) {
+      const plan = this._starterPlan();
+      body = `<h2>${this._t("wzRewards")}</h2><p class="muted">${this._t("wzRewardsText")}</p>
+        <div class="wz-rewards">${plan.rewards.map(([n, c]) => {
+          const off = wz.offRewards.has(n);
+          return `<button class="wz-reward ${off ? "off" : ""}" data-action="wz-reward" data-id="${esc(n)}" aria-pressed="${!off}">
+            <span class="wz-reward-emoji">${this._rewardEmoji(n)}</span><strong>${esc(n)}</strong><span class="muted small">⭐ ${c}</span><span class="wz-check">${off ? "" : "✓"}</span></button>`;
+        }).join("")}</div>${nav(5)}`;
+    } else if (wz.step === 5) {
+      const del = wz.photo ?? this._data.photo_delete ?? true;
+      const opt = (val, emoji, title, sub) => `<button class="wz-choice ${del === val ? "on" : ""}" data-action="wz-photo" data-id="${val ? "1" : ""}">
+        <span class="wz-choice-emoji">${emoji}</span><span><strong>${title}</strong><span class="muted small">${sub}</span></span></button>`;
+      body = `<h2>${this._t("wzPhotos")}</h2><p class="muted">${this._t("wzPhotosText")}</p>
+        <div class="wz-choices">${opt(true, "🗑️", this._t("wzPhotoDelete"), this._t("wzPhotoDeleteSub"))}${opt(false, "🗂️", this._t("wzPhotoKeep"), this._t("wzPhotoKeepSub"))}</div>
+        <div class="feat-grid wz-priv">${this._privacyTile(this._wzPrivate(), "wz-priv")}</div>
+        ${nav("finish", wz.busy ? this._t("wzWorking") : this._t("wzFinish"))}`;
+    } else {
+      body = `
+        <div class="wz-hero">
+          <div class="wz-star" aria-hidden="true">🎉</div>
+          <h2>${this._t("wzDone")}</h2>
+          <p>${esc(this._t("wzDoneText", { n: wz.made?.n ?? 0, r: wz.made?.r ?? 0 }))}</p>
+          <ul class="wz-tips">${this._t("wzTips").map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+          <button class="primary big" data-action="wz-close">${this._t("wzGo")} →</button>
+        </div>`;
+    }
+    return `<section class="wizard">${dots}${body}</section>`;
+  }
+
+  async _finishWelcome() {
+    const wz = this._wz;
+    if (wz.busy) return;
+    wz.busy = true;
+    this._render();
+    const { chores, rewards } = this._wzPlan();
+    try {
+      if (wz.photo !== null && wz.photo !== this._data.photo_delete) {
+        await this._hass.callService("sternchenplan", "set_photo_privacy", { delete: wz.photo });
+      }
+      if (wz.privatePush !== undefined && wz.privatePush !== !!this._data.private_push) {
+        await this._hass.callService("sternchenplan", "set_private_push", { enabled: wz.privatePush });
+      }
+      const features = [...wz.features].sort();
+      if (features.join() !== this._features().slice().sort().join()) {
+        await this._hass.callService("sternchenplan", "set_features", { features });
+      }
+      await this._runStarter({ chores, rewards }, true);
+      wz.made = { n: chores.length, r: rewards.length };
+      wz.step = 6;
+    } finally {
+      wz.busy = false;
+      this._render();
+    }
+  }
+
   _renderStarter() {
     if (this._config.readonly || this._data.chores.length) return "";
     try {
@@ -1258,20 +2049,23 @@ class SternchenplanCard extends HTMLElement {
       </section>`;
   }
 
-  async _runStarter() {
+  async _runStarter(plan = this._starterPlan(), quiet = false) {
     const lang = this._lang();
-    const plan = this._starterPlan();
     const call = (service, data) => this._hass.callService("sternchenplan", service, data);
     try {
+      // Gemeinsame Aufgaben reihum versetzt starten, sonst hat am ersten Tag ein Kind alle
+      let turn = 0;
       for (const c of plan.chores) {
+        const ids = c.who.map((k) => k.id);
+        const shift = c.rotation && ids.length > 1 ? turn++ % ids.length : 0;
         await call("create_chore", {
-          name: c.t.name[lang], assignees: c.who.map((k) => k.id), points: c.t.points, recurrence: c.t.rec,
+          name: c.t.name[lang], assignees: [...ids.slice(shift), ...ids.slice(0, shift)], points: c.t.points, recurrence: c.t.rec,
           due: this._nextAt(c.t.time).toISOString(), rotation: c.rotation, requires_photo: !!c.t.photo,
           min_age: c.t.age, icon: c.t.emoji, steps: c.t.steps?.[lang] || [], outdoor: !!c.t.outdoor,
         });
       }
       for (const [name, cost] of plan.rewards) await call("create_reward", { name, cost });
-      this._notify(this._t("starterDone", { n: plan.chores.length, r: plan.rewards.length }));
+      if (!quiet) this._notify(this._t("starterDone", { n: plan.chores.length, r: plan.rewards.length }));
     } catch (err) {
       this._notify(err.message);
     }
@@ -1357,7 +2151,7 @@ class SternchenplanCard extends HTMLElement {
               <div class="week-head"><strong>${esc(m.name)}</strong>${crown ? ` <span class="chip best">🏆 ${this._t("weekBest")}</span>` : ""}
                 <span class="week-stars">⭐ ${r.stars}</span></div>
               <div class="week-bar ${total ? "" : "nil"}" role="img" aria-label="${esc(this._t("weekRow", r))}"><span style="width:${pct}%"></span></div>
-              <div class="muted small">${esc(this._t("weekRow", r))}${r.streak ? ` · 🔥 ${r.streak}` : ""}</div>
+              <div class="muted small">${esc(this._t("weekRow", r))}${r.streak && this._on("levels") ? ` · 🔥 ${r.streak}` : ""}</div>
             </div>
           </li>`;
       })
@@ -1371,7 +2165,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   // Einstellungen für Wetter und Wochenbericht, oben im Aufgaben-Reiter.
-  _renderSettings() {
+  _renderSettings(open = false) {
     const d = this._data;
     const weathers = Object.keys(this._hass?.states || {}).filter((id) => id.startsWith("weather."));
     const current = d.weather?.entity || "";
@@ -1380,7 +2174,7 @@ class SternchenplanCard extends HTMLElement {
     const days = this._t("days");
     const name = (id) => this._hass?.states?.[id]?.attributes?.friendly_name || id;
     return `
-      <details class="form settings-box">
+      <details class="form settings-box" ${open ? "open" : ""}>
         <summary>${this._t("settings")}</summary>
         <div class="grid">
           <label>${this._t("weatherEntity")}<select data-field="set.weather">
@@ -1476,6 +2270,7 @@ class SternchenplanCard extends HTMLElement {
         ${this._renderBadges(member)}
         ${this._renderChildStarLog(member)}
         ${this._renderThemePicker(member)}
+        ${this._renderCert()}
       </div>`;
   }
 
@@ -1554,7 +2349,7 @@ class SternchenplanCard extends HTMLElement {
   async _createChore() {
     const f = this._form;
     if (!f.name.trim() || !f.assignees.length) return;
-    if (!f.due && f.recurrence !== "none") f.due = this._toLocalInput(this._nextAt("18:00").toISOString());
+    if (!f.due && !["none", "on_demand"].includes(f.recurrence)) f.due = this._toLocalInput(this._nextAt("18:00").toISOString());
     if (f.editId) {
       await this._call("update_chore", {
         chore_id: f.editId,
@@ -1602,7 +2397,7 @@ class SternchenplanCard extends HTMLElement {
 
   // Jedes Kind bekommt eine feste Farbe, damit man es überall wiedererkennt.
   _color(memberId) {
-    const kids = this._children();
+    const kids = [...this._children(), ...this._data.members.filter((m) => m.role === "parent")];
     const i = kids.findIndex((m) => m.id === memberId);
     return i < 0 ? "var(--secondary-text-color)" : PALETTE[i % PALETTE.length];
   }
@@ -1679,13 +2474,13 @@ class SternchenplanCard extends HTMLElement {
     if (!chore.due) return `<span class="muted">${this._t("noDue")}</span>`;
     const due = new Date(chore.due);
     const now = new Date();
-    const time = due.toLocaleTimeString(this._locale(), { hour: "2-digit", minute: "2-digit" });
+    const time = fmt(this._locale(), { hour: "2-digit", minute: "2-digit" }, due);
     const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const diff = Math.round((day(due) - day(now)) / 86400000);
     let label;
     if (diff === 0) label = this._t("today", { time });
     else if (diff === 1) label = this._t("tomorrow", { time });
-    else label = due.toLocaleDateString(this._locale(), { weekday: "short", day: "numeric", month: "numeric" }) + " " + time;
+    else label = fmt(this._locale(), { weekday: "short", day: "numeric", month: "numeric" }, due) + " " + time;
     return `<span class="muted">${esc(label)}</span>`;
   }
 
@@ -1778,7 +2573,7 @@ class SternchenplanCard extends HTMLElement {
 
   _renderTakeOver(member) {
     const t = this._data.takeover;
-    if (!t?.allowed || this._config.readonly || member.id !== this._me()) return "";
+    if (!t?.allowed || !this._on("helping") || this._config.readonly || member.id !== this._me()) return "";
     const chores = this._takeable(member.id);
     if (!chores.length) return "";
     const rows = chores
@@ -1966,7 +2761,7 @@ class SternchenplanCard extends HTMLElement {
           <button class="tile" style="--kid:${this._color(m.id)}" data-action="pick" data-id="${esc(m.id)}">
             <span class="tile-avatar">${esc(m.name.trim().charAt(0).toUpperCase())}</span>
             <span class="tile-name">${esc(m.name)}</span>
-            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}${m.progress?.streak ? ` · 🔥 ${m.progress.streak}` : ""}</span>
+            <span class="tile-sub">${open ? esc(this._t("openCount", { n: open })) : "✓"} · ⭐ ${m.points}${this._on("levels") && m.progress?.streak ? ` · 🔥 ${m.progress.streak}` : ""}</span>
           </button>`;
       })
       .join("");
@@ -1978,11 +2773,61 @@ class SternchenplanCard extends HTMLElement {
     const chores = this._openFor(member.id);
     const color = this._color(member.id);
     const { done, open, total } = this._todayStats(member.id);
-    const left = chores.filter((c) => c.state !== "claimed").length;
+    const todo = chores.filter((c) => c.state !== "claimed");
+    const left = todo.length;
     const line = !left ? this._t("allDoneToday") : left === 1 ? this._t("leftOne") : this._t("leftToday", { n: left });
-    const list = chores.length
-      ? `<ul class="tasks">${chores.map((c) => this._choreRow(c, member.id, { showClaim: c.state !== "claimed" })).join("")}</ul>`
-      : `<div class="done-card"><div class="done-emoji">🎉</div><div class="done-title">${this._t("allDoneKid")}</div><div class="muted">${this._t("allDoneKidSub")}</div></div>`;
+    const streak = this._on("levels") && member.progress?.streak;
+    const tab = ["today", "rewards", "me"].includes(this._kidTab) ? this._kidTab : "today";
+    const labels = this._t("kidTabs");
+    const points = member.points || 0;
+    const affordable = (this._data.rewards || []).filter(
+      (r) => (!r.members.length || r.members.includes(member.id)) && r.cost <= points,
+    ).length;
+    const nav = `<nav class="tabs kid-tabs">${["today", "rewards", "me"]
+      .map((id) => `<button class="tab ${tab === id ? "on" : ""}" data-action="kid-tab" data-id="${id}" aria-pressed="${tab === id}">${esc(labels[id])}${
+        id === "rewards" && affordable && tab !== "rewards" ? ` <span class="count">${affordable}</span>` : ""
+      }</button>`)
+      .join("")}</nav>`;
+    let body;
+    if (tab === "rewards") {
+      body = `
+        ${this._renderGoal(member)}
+        ${this._renderFamilyGoal()}
+        ${this._renderScreen(member)}
+        ${this._renderChildRewards(member)}
+        ${this._renderMoney(member)}`;
+    } else if (tab === "me") {
+      body = `
+        ${this._renderPet(member)}
+        ${this._renderLevel(member)}
+        ${this._certTeaser(member)}
+        ${this._renderBadges(member)}
+        ${this._renderChildStarLog(member)}
+        ${this._renderThemePicker(member)}`;
+    } else {
+      // Erledigtes klappt zu: oben steht nur, was noch zu tun ist
+      const finished = this._data.chores.filter(
+        (c) => c.last_completed_by === member.id && this._isToday(c.last_completed_at) && !chores.includes(c),
+      );
+      const waiting = chores.filter((c) => c.state === "claimed");
+      const doneCount = finished.length + waiting.length;
+      const list = todo.length
+        ? `<ul class="tasks">${todo.map((c) => this._choreRow(c, member.id, { showClaim: true })).join("")}</ul>`
+        : `<div class="done-card"><div class="done-emoji">🎉</div><div class="done-title">${this._t("allDoneKid")}</div><div class="muted">${this._t("allDoneKidSub")}</div></div>`;
+      const doneBox = doneCount
+        ? `<details class="done-box"><summary>${esc(this._t("doneToday", { n: doneCount }))}</summary>
+            ${waiting.length ? `<ul class="tasks">${waiting.map((c) => this._choreRow(c, member.id, { showClaim: false })).join("")}</ul>` : ""}
+            ${finished.length ? `<ul class="done-list">${finished.map((c) => `<li><span>${esc(this._choreIcon(c))}</span><span>${esc(c.name)}</span><span class="muted small">+${c.points} ⭐</span></li>`).join("")}</ul>` : ""}
+          </details>`
+        : "";
+      body = `
+        ${this._pauseBanner()}${this._rainBanner()}
+        ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
+        ${list}
+        ${doneBox}
+        ${this._renderVote()}
+        ${this._renderTakeOver(member)}`;
+    }
     return `
       <div class="kid" style="--kid:${color}">
         <div class="hero">
@@ -1990,23 +2835,13 @@ class SternchenplanCard extends HTMLElement {
           <div class="hero-text">
             <div class="hello">${esc(this._t("hello", { name: member.name }))} 👋</div>
             <div class="muted">${esc(line)}</div>
-            <div class="star">⭐ ${esc(this._t("points", { n: member.points }))}</div>
+            <div class="star">⭐ ${esc(member.points === 1 ? this._t("pointsOne") : this._t("points", { n: member.points }))}${streak ? ` · 🔥 ${streak}` : ""}</div>
           </div>
           ${this._ring(done, total || open, color, 72)}
         </div>
-        ${this._renderLevel(member)}
-        ${this._pauseBanner()}${this._rainBanner()}
-        ${this._renderGoal(member)}
-        ${this._renderFamilyGoal()}
-        ${member.locked ? `<p class="chip bad">${this._t("locked")}</p>` : ""}
-        <div class="section-title">${this._t("todayTitle")}</div>
-        ${list}
-        ${this._renderTakeOver(member)}
-        ${this._renderChildRewards(member)}
-        ${this._renderMoney(member)}
-        ${this._renderBadges(member)}
-        ${this._renderChildStarLog(member)}
-        ${this._renderThemePicker(member)}
+        ${nav}
+        ${body}
+        ${this._renderCert()}
       </div>`;
   }
 
@@ -2048,7 +2883,7 @@ class SternchenplanCard extends HTMLElement {
 
   _renderMoney(member) {
     const m = this._data.money || {};
-    if (!m.rate && !member.allowance && !member.money) return "";
+    if (!this._on("money") || (!m.rate && !member.allowance && !member.money)) return "";
     const ro = this._config.readonly || member.id !== this._me();
     const can = m.rate && member.points >= m.rate;
     return `
@@ -2099,13 +2934,13 @@ class SternchenplanCard extends HTMLElement {
 
   _renderFamilyGoal() {
     const g = this._data.family_goal;
-    if (!g) return "";
+    if (!g || !this._on("goal")) return "";
     const pct = Math.min(100, Math.round((g.progress / g.target) * 100));
     return `
       <div class="fgoal ${g.reached_at ? "ready" : ""}">
         <div class="fgoal-top"><span class="fgoal-icon">🏰</span>
           <div class="goal-main"><div class="muted small">${this._t("familyGoal")}</div><strong>${esc(g.name)}</strong></div>
-          <div class="fgoal-kids">${this._children().map((m) => this._avatar(m, 26)).join("")}</div>
+          <div class="fgoal-kids">${this._ranked().map((m) => this._avatar(m, 26)).join("")}</div>
         </div>
         <div class="xp fgoal-bar"><i style="width:${pct}%"></i></div>
         <div class="muted small">${esc(g.reached_at ? this._t("familyReached") : this._t("together", { n: g.progress, t: g.target }))}</div>
@@ -2118,6 +2953,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderLevel(member) {
+    if (!this._on("levels")) return "";
     const p = member.progress;
     if (!p) return "";
     const span = Math.max(1, p.level_to - p.level_from);
@@ -2142,6 +2978,7 @@ class SternchenplanCard extends HTMLElement {
   }
 
   _renderBadges(member) {
+    if (!this._on("levels")) return "";
     const list = member.progress?.badges;
     if (!list) return "";
     const names = this._t("badgeNames");
@@ -2201,43 +3038,489 @@ class SternchenplanCard extends HTMLElement {
 
   _renderParent() {
     const d = this._data;
-    const waiting = d.chores.filter((c) => c.state === "claimed");
-    const open = waiting.length + (d.redemptions || []).length;
+    if (this._welcomeActive()) return this._renderWelcome();
+    // Alte Reiter von früher landen am neuen Ort
+    const moved = { approve: "today", money: "family", away: "family", extras: "settings" };
+    if (moved[this._tab]) this._tab = moved[this._tab];
+    const open = d.chores.filter((c) => c.state === "claimed").length + (d.redemptions || []).length;
+    // Auf dem Handy: Symbol über kurzem Namen, damit alle 5 ohne Wischen passen
+    const short = this._t("tabShort");
     const tabs = [
-      ["today", this._t("tabToday")],
-      ["approve", `${this._t("tabApprove")}${open ? ` <span class="count">${open}</span>` : ""}`],
-      ["chores", this._t("tabChores")],
-      ["rewards", this._t("tabRewards")],
-      ["money", this._t("tabMoney")],
-      ["away", this._t("tabAway")],
-    ];
+      ["today", "🏠", this._t("tabToday"), open && this._tab !== "today" ? ` <span class="count">${open}</span>` : ""],
+      ["chores", "📝", this._t("tabChores"), ""],
+      ["rewards", "🎁", this._t("tabRewards"), ""],
+      ["family", "👨‍👩‍👧", this._t("tabFamily"), ""],
+      ["settings", "⚙️", this._t("tabSettings"), ""],
+    ].map(([id, ico, label, badge]) => [id,
+      `<span class="tab-ico" aria-hidden="true">${ico}</span><span class="tab-long">${esc(label)}</span><span class="tab-short" aria-hidden="true">${esc(short[id])}</span>${badge}`]);
     let body = "";
-    if (this._tab === "approve") body = this._renderApprovals(waiting);
-    else if (this._tab === "chores") body = this._renderChores();
+    if (this._tab === "chores") body = this._renderChores();
     else if (this._tab === "rewards") body = this._renderRewardAdmin();
-    else if (this._tab === "money") body = this._renderMoneyAdmin();
-    else if (this._tab === "away") body = this._renderAway();
+    else if (this._tab === "family") body = this._renderFamilyTab();
+    else if (this._tab === "settings") body = this._renderSettingsTab();
     else body = this._renderToday();
     return `
-      <nav class="tabs">${tabs
+      <nav class="tabs parent-tabs">${tabs
         .map(([id, label]) => `<button class="tab ${this._tab === id ? "on" : ""}" data-action="tab" data-id="${id}">${label}</button>`)
-        .join("")}<button class="tab theme-btn ${this._themeOpen ? "on" : ""}" data-action="theme-toggle" title="${this._t("themeParent")}" aria-label="${this._t("themeParent")}">🎨</button><button class="tab help-btn ${this._help ? "on" : ""}" data-action="help" title="${this._t("help")}" aria-label="${this._t("help")}">❓</button></nav>
+        .join("")}</nav>
       ${this._helpTip()}
-      ${this._themeOpen && this._member(d.me) ? this._renderThemePicker(this._member(d.me)) : ""}
       ${body}
+      ${this._renderLightbox()}
+      ${this._renderCert()}
       ${this._donateLine()}`;
+  }
+
+  _renderFamilyTab() {
+    const money = this._on("money") ? `<div class="section-title">${this._t("moneySection")}</div>${this._renderMoneyAdmin()}` : "";
+    return `${this._renderGallery()}<div class="section-title">${this._t("awaySection")}</div>${this._renderAway()}${money}`;
+  }
+
+  // -- Fotogalerie (nur Eltern) ----------------------------------------------
+
+  _galleryItems() {
+    const all = this._data.gallery || [];
+    return this._galFilter ? all.filter((e) => e.member === this._galFilter) : all;
+  }
+
+  _photoDate(at) {
+    return fmt(this._locale(), { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }, new Date(at));
+  }
+
+  _renderGallery() {
+    const all = this._data.gallery || [];
+    const hint = this._data.photo_delete ? `<p class="muted small">${this._t("gallAutoDelete")}</p>` : "";
+    if (!all.length) {
+      // Ohne Fotopflicht-Aufgaben braucht es den Abschnitt gar nicht
+      if (!this._data.chores.some((c) => c.requires_photo)) return "";
+      return `<div class="section-title">${this._t("gallTitle")}</div><p class="muted small">${this._t("gallEmpty")}</p>${hint}`;
+    }
+    const people = this._data.members.filter((m) => all.some((e) => e.member === m.id));
+    const chip = (id, label) => `<button class="gal-chip ${(this._galFilter || "") === id ? "on" : ""}" data-action="gal-filter" data-id="${esc(id)}">${esc(label)}</button>`;
+    const items = this._galleryItems();
+    return `
+      <div class="section-title">${this._t("gallTitle")} <span class="muted small">${all.length}</span></div>
+      ${people.length > 1 ? `<div class="gal-chips">${chip("", this._t("gallAll"))}${people.map((m) => chip(m.id, m.name)).join("")}</div>` : ""}
+      <div class="gal-grid">${items.map((e) => {
+        const who = this._member(e.member);
+        return `<button class="gal-item" data-action="photo-open" data-id="${esc(e.file)}" style="--kid:${this._color(e.member)}">
+          <img src="${esc(e.url)}" alt="${esc(e.name)}" loading="lazy">
+          <span class="gal-cap"><strong>${esc(e.name)}</strong><span>${esc(who?.name || "")} · ${esc(this._photoDate(e.at))}</span></span></button>`;
+      }).join("")}</div>
+      ${hint}`;
+  }
+
+  _renderLightbox() {
+    const list = this._galleryItems();
+    const e = this._photo && list.find((x) => x.file === this._photo);
+    if (!e) return "";
+    const who = this._member(e.member);
+    const nav = list.length > 1;
+    // <dialog> liegt als Modal über allem, egal wie das Dashboard gebaut ist; Esc schließt
+    return `<dialog class="lightbox" data-action="photo-close" aria-label="${esc(e.name)}">
+      <figure data-action="noop">
+        <img src="${esc(e.url)}" alt="${esc(e.name)}">
+        <figcaption><span><strong>${esc(e.name)}</strong><br><span class="muted small">${esc(who?.name || "")} · ${esc(this._photoDate(e.at))}</span></span>
+          <span class="lb-actions">${this._config.readonly ? "" : `<button class="link bad" data-action="photo-delete" data-id="${esc(e.file)}">${this._t("gallDelete")}</button>`}
+          <button class="primary" data-action="photo-close" autofocus>${this._t("gallClose")}</button></span></figcaption>
+      </figure>
+      ${nav ? `<button class="lb-nav prev" data-action="photo-step" data-id="-1" aria-label="${this._t("gallPrev")}">‹</button><button class="lb-nav next" data-action="photo-step" data-id="1" aria-label="${this._t("gallNext")}">›</button>` : ""}
+    </dialog>`;
+  }
+
+  _renderSettingsTab() {
+    const me = this._member(this._data.me);
+    const help = `<button class="feat help-switch ${this._help ? "on" : ""}" data-action="help" aria-pressed="${!!this._help}">
+      <span class="feat-main"><strong>${this._t("helpToggle")}</strong></span><span class="feat-switch" aria-hidden="true"><i></i></span></button>`;
+    const design = me && !this._config.readonly ? `<section class="extras-box">${this._renderThemePicker(me)}</section>` : "";
+    // Was man öfter anfasst zuerst, die Zusatzfunktionen danach
+    return `<section class="extras-box">${this._renderSettings(true)}</section>${design}<section class="extras-box">${help}</section>${this._renderExtrasAdmin()}`;
+  }
+
+  // -- Zusatzfunktionen ------------------------------------------------------
+
+  _features() {
+    return this._data?.features ?? FEATURES;
+  }
+
+  _on(feature) {
+    return this._features().includes(feature);
+  }
+
+  // Wer in Wertung, Familienziel und Urkunde zählt
+  _ranked() {
+    return this._data.members.filter((m) => m.role === "child" || (m.role === "parent" && this._on("parents")));
+  }
+
+  _featureTiles(active, action) {
+    const meta = this._t("feat");
+    return `<div class="feat-grid">${FEATURES.map((id) => {
+      const [emoji, title, sub] = meta[id];
+      const on = active.has(id);
+      return `<button class="feat ${on ? "on" : ""}" data-action="${action}" data-id="${id}" aria-pressed="${on}">
+        <span class="feat-emoji">${emoji}</span><span class="feat-main"><strong>${esc(title)}</strong><span class="muted small">${esc(sub)}</span></span>
+        <span class="feat-switch" aria-hidden="true"><i></i></span></button>`;
+    }).join("")}</div>`;
+  }
+
+  _petStage(member) {
+    const level = member.progress?.level || 1;
+    return level <= 1 ? 0 : level <= 3 ? 1 : level <= 5 ? 2 : level <= 8 ? 3 : 4;
+  }
+
+  _renderPet(member) {
+    if (!this._on("pet")) return "";
+    const mine = member.id === this._me() && !this._config.readonly;
+    const draft = this._petDraft;
+    if (!member.pet || (mine && draft?.open)) {
+      if (!mine) return "";
+      const pick = draft?.pet || "";
+      return `
+        <section class="pet pet-picker">
+          <div class="pet-pick-title"><strong>${this._t("petPick")}</strong><span class="muted small">${this._t("petPickText")}</span></div>
+          <div class="pet-choices">${PETS.map((p) => `<button class="pet-choice ${pick === p ? "on" : ""}" data-action="pet-pick" data-id="${p}" aria-pressed="${pick === p}"><span>${PET_EMOJI[p]}</span><small>${esc(this._t("pets")[p])}</small></button>`).join("")}</div>
+          ${pick ? `<div class="pet-name-row"><input data-field="pet.name" maxlength="20" placeholder="${esc(this._t("petName"))}" aria-label="${esc(this._t("petName"))}" value="${esc(draft?.name || "")}"><button class="primary" data-action="pet-save" data-id="${esc(member.id)}">${this._t("petSave")} →</button></div>` : ""}
+        </section>`;
+    }
+    const stage = this._petStage(member);
+    const level = member.progress?.level || 1;
+    const name = member.pet_name || this._t("pets")[member.pet];
+    const next = [2, 4, 6, 9][stage];
+    const floor = (l) => (5 * (l - 1) * l) / 2;
+    const earned = member.progress?.earned || 0;
+    let grow;
+    if (next === undefined) grow = this._t("petMax");
+    else grow = this._t(stage === 0 ? "petHatch" : "petGrow", { n: Math.max(1, floor(next) - earned) });
+    const pct = next === undefined ? 100 : Math.min(100, Math.round(((earned - floor(level)) / Math.max(1, floor(next) - floor(level))) * 100));
+    const mood = this._petMood(member, name);
+    const face = stage === 0 ? "🥚" : PET_EMOJI[member.pet];
+    return `
+      <section class="pet stage-${stage} mood-${mood.key}" style="--kid:${this._color(member.id)}">
+        <div class="pet-stage" aria-hidden="true">
+          <span class="pet-body">${face}</span>${stage === 4 ? `<span class="pet-crown">👑</span>` : ""}
+          ${mood.key === "happy" ? `<span class="pet-heart h1">💛</span><span class="pet-heart h2">⭐</span>` : ""}
+          ${mood.key === "sleep" ? `<span class="pet-zzz">💤</span>` : ""}
+        </div>
+        <div class="pet-info">
+          <div class="pet-name"><strong>${esc(name)}</strong> <span class="chip">${esc(this._t("petStages")[stage])}</span></div>
+          <div class="pet-bubble">${esc(mood.text)}</div>
+          <div class="xp pet-bar"><i style="width:${pct}%"></i></div>
+          <div class="muted small">${esc(grow)}${mine ? ` · <button class="link small" data-action="pet-change" data-id="${esc(member.id)}">${this._t("petChange")}</button>` : ""}</div>
+        </div>
+      </section>`;
+  }
+
+  _petMood(member, name) {
+    const h = new Date().getHours();
+    const open = this._openFor(member.id).filter((c) => c.state !== "claimed");
+    const { done } = this._todayStats(member.id);
+    const moods = this._t("petMood");
+    let key = "fine";
+    if (h >= 21 || h < 7) key = "sleep";
+    else if (open.some((c) => c.state === "overdue")) key = "sad";
+    else if (!open.length && done) key = "happy";
+    else if (done && open.length) key = "eating";
+    else if (open.length) key = "hungry";
+    return { key, text: moods[key].replace("{name}", name).replace("{n}", open.length) };
+  }
+
+  _renderScreen(member) {
+    const sc = this._data.screen || {};
+    if (!this._on("screen") || !sc.rate) return "";
+    const mine = member.id === this._me() && !this._config.readonly;
+    let body;
+    if (member.screen_until) {
+      const left = Math.max(0, Math.ceil((new Date(member.screen_until) - Date.now()) / 60000));
+      body = `<div class="screen-run"><span class="screen-big">${esc(this._t("screenRunning", { n: left }))}</span>
+        <span class="muted small">${esc(this._t("screenUntil", { time: fmt(this._locale(), { hour: "2-digit", minute: "2-digit" }, new Date(member.screen_until)) }))}</span>
+        ${mine ? `<button class="link bad" data-action="screen-stop" data-id="${esc(member.id)}">${this._t("screenStop")}</button>` : ""}</div>`;
+    } else if (!member.has_screen) {
+      body = `<p class="muted small">${this._t("screenNoDevices")}</p>`;
+    } else if (member.locked) {
+      body = `<p class="muted small">${this._t("screenLocked")}</p>`;
+    } else {
+      const left = member.screen_left ?? sc.max;
+      const steps = [10, 20, 30, 60].filter((n) => n <= left);
+      body = `<div class="muted small">${esc(this._t("screenLeft", { n: left, rate: sc.rate }))}</div>
+        ${mine && steps.length ? `<div class="screen-buttons">${steps.map((n) => {
+          const cost = Math.ceil(n / sc.rate);
+          return `<button class="screen-btn" data-action="screen-buy" data-minutes="${n}" ${member.points >= cost ? "" : "disabled"}><strong>${esc(this._t("screenBuy", { n }))}</strong><span>⭐ ${cost}</span></button>`;
+        }).join("")}</div>` : ""}`;
+    }
+    return `<section class="screen ${member.screen_until ? "running" : ""}"><div class="section-title">📺 ${this._t("screenTitle")}</div>${body}</section>`;
+  }
+
+  _renderVote() {
+    const v = this._data.vote;
+    if (!v || !this._on("vote")) return "";
+    const me = this._me();
+    const mine = me != null ? v.votes?.[me] : undefined;
+    const voters = this._data.members.filter((m) => !m.away);
+    const counts = v.options.map((_, i) => Object.values(v.votes || {}).filter((x) => x === i).length);
+    const total = Object.keys(v.votes || {}).length;
+    const closed = !!v.closed_at;
+    const show = closed || mine !== undefined;
+    const canVote = !closed && me && !this._config.readonly;
+    const until = fmt(this._locale(), { weekday: "short", hour: "2-digit", minute: "2-digit" }, new Date(v.closes_at));
+    const opts = v.options.map((o, i) => {
+      const pct = total ? Math.round((counts[i] / total) * 100) : 0;
+      const win = closed && v.winner === i;
+      return `<button class="vote-opt ${mine === i ? "mine" : ""} ${win ? "win" : ""}" ${canVote ? `data-action="vote" data-id="${i}"` : "disabled"}>
+        ${show ? `<span class="vote-fill" style="width:${pct}%"></span>` : ""}
+        <span class="vote-label">${win ? "🏆 " : ""}${esc(o)}${mine === i ? ` <small>· ${this._t("voteMine")}</small>` : ""}</span>
+        ${show ? `<span class="vote-n">${counts[i]}</span>` : ""}</button>`;
+    }).join("");
+    let result = "";
+    if (closed) {
+      const best = Math.max(0, ...counts);
+      const ties = v.options.filter((_, i) => counts[i] === best && best);
+      result = `<div class="vote-result">${esc(v.winner != null ? this._t("voteWinner", { name: v.options[v.winner] }) : this._t("voteTie", { list: ties.join(", ") || "–" }))}</div>`;
+    }
+    const admin = this._data.is_manager && !this._config.readonly && !this._data.tablet
+      ? `<button class="link" data-action="vote-end">${closed ? this._t("voteHide") : this._t("voteEnd")}</button>` : "";
+    return `
+      <section class="vote ${closed ? "closed" : ""}">
+        <div class="vote-head"><span class="vote-icon">🗳️</span><div><div class="muted small">${this._t("voteTitle")}</div><strong>${esc(v.question)}</strong></div></div>
+        ${canVote && mine === undefined ? `<div class="muted small">${this._t("voteTap")}</div>` : ""}
+        <div class="vote-opts">${opts}</div>
+        ${result}
+        <div class="vote-foot muted small"><span>${esc(this._t("voteCount", { n: total, t: voters.length }))}${closed ? "" : " · " + esc(this._t("voteUntil", { time: until }))}</span>${admin}</div>
+      </section>`;
+  }
+
+  _monthName(m) {
+    return this._t("monthNames")[(m - 1) % 12];
+  }
+
+  _certTeaser(member) {
+    const prev = this._data.month?.prev;
+    if (!prev || new Date().getDate() > 7) return "";
+    const row = prev.rows.find((r) => r.member === member.id);
+    if (!row || !(row.done || row.stars)) return "";
+    return `<button class="cert-teaser" data-action="cert-open" data-id="${esc(member.id)}" data-which="prev">🏅 ${esc(this._t("certTeaser", { month: this._monthName(prev.month) }))} →</button>`;
+  }
+
+  _certData() {
+    const c = this._cert;
+    const block = c && this._data.month?.[c.which];
+    const row = block?.rows.find((r) => r.member === c.member);
+    const member = c && this._member(c.member);
+    return row && member ? { row, member, block } : null;
+  }
+
+  _certHtml({ row, member, block }) {
+    const badges = (member.progress?.badges || []).filter((b) => row.badges.includes(b.id)).map((b) => b.emoji).join(" ");
+    const score = row.done + row.stars / 3;
+    const praise = this._t("certPraise")[score >= 80 ? 4 : score >= 45 ? 3 : score >= 20 ? 2 : score >= 6 ? 1 : 0];
+    const title = this._cert.which === "now"
+      ? this._t("certSoFar", { month: this._monthName(block.month) })
+      : this._t("certMonth", { month: `${this._monthName(block.month)} ${block.year}` });
+    const pet = this._on("pet") && member.pet ? PET_EMOJI[member.pet] : "⭐";
+    return `
+      <div class="cert">
+        <div class="cert-inner">
+          <div class="cert-ribbon">${pet}</div>
+          <div class="cert-kicker">${esc(title)}</div>
+          <div class="cert-title">${this._t("certTitle")}</div>
+          <div class="cert-for">${this._t("certFor")}</div>
+          <div class="cert-name">${esc(member.name)}</div>
+          <div class="cert-praise">${esc(praise)}</div>
+          <div class="cert-stats">
+            <div><b>${row.done}</b><span>${this._t("certDone")}</span></div>
+            <div><b>${row.stars + (row.bonus || 0)}</b><span>${this._t("certStars")}</span></div>
+            <div><b>🔥 ${row.best_streak}</b><span>${this._t("certStreak")}</span></div>
+          </div>
+          ${row.favourite ? `<div class="cert-line">${this._t("certFav")}: <b>${esc(row.favourite)}</b></div>` : ""}
+          ${badges ? `<div class="cert-line">${this._t("certBadges")}: <span class="cert-badges">${badges}</span></div>` : ""}
+          <div class="cert-sign">— ${this._t("certSigned")} —</div>
+        </div>
+      </div>`;
+  }
+
+  _renderCert() {
+    const data = this._certData();
+    if (!data) return "";
+    return `
+      <div class="cert-overlay" role="dialog" aria-modal="true">
+        ${this._certHtml(data)}
+        <div class="cert-actions"><button class="primary" data-action="cert-print">${this._t("certPrint")}</button><button class="link" data-action="cert-close">${this._t("certClose")}</button></div>
+      </div>`;
+  }
+
+  _printCert() {
+    const data = this._certData();
+    if (!data) return;
+    const css = STYLE.split("/* -- Urkunde -- */")[1] || "";
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(this._t("certTitle"))} ${esc(data.member.name)}</title>
+      <style>body{margin:0;font-family:Georgia,serif;background:#fff;color:#2b2118} ${css} .cert{margin:24px auto}</style></head>
+      <body>${this._certHtml(data)}<script>setTimeout(() => print(), 300)<\/script></body></html>`);
+    w.document.close();
+  }
+
+  async _exportMember(id) {
+    const who = this._member(id);
+    try {
+      const data = await this._hass.connection.sendMessagePromise({ type: "sternchenplan/export", member: id });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sternchenplan-${(who?.name || id).toLowerCase().replace(/[^a-z0-9äöüß]+/gi, "-")}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } catch (err) {
+      this._notify(err.message);
+    }
+  }
+
+  _wzPrivate() {
+    return this._wz?.privatePush ?? !!this._data.private_push;
+  }
+
+  _renderExtrasAdmin() {
+    const d = this._data;
+    const ro = this._config.readonly;
+    const people = this._ranked();
+    const states = this._hass?.states || {};
+    const name = (id) => states[id]?.attributes?.friendly_name || id;
+    const sections = [];
+    sections.push(`<section class="extras-box"><div class="section-title">${this._t("featAdmin")}</div>${this._featureTiles(new Set(this._features()), ro ? "noop" : "feat")}</section>`);
+
+    if (this._on("pet")) {
+      sections.push(`<section class="extras-box"><div class="section-title">🐉 ${esc(this._t("feat").pet[1])}</div>
+        <p class="muted small">${this._t("petAdminHint")}</p>
+        <div class="pet-overview">${this._children().map((k) => `<div class="pet-ov">${this._avatar(k, 32)}<span>${k.pet ? `${PET_EMOJI[k.pet]} ${esc(k.pet_name)}` : `<span class="muted">${this._t("petNone")}</span>`}</span></div>`).join("")}</div></section>`);
+    }
+    if (this._on("lamp")) {
+      const lights = Object.keys(states).filter((id) => id.startsWith("light.")).sort();
+      sections.push(`<section class="extras-box"><div class="section-title">💡 ${this._t("lampTitle")}</div>
+        <p class="muted small">${this._t("lampHint")}</p>
+        <div class="extras-rows">${people.map((k) => `<div class="extras-row">${this._avatar(k, 32)}<strong>${esc(k.name)}</strong>
+          <select data-field="lamp.${esc(k.id)}" ${ro ? "disabled" : ""}><option value="">${this._t("lampNone")}</option>${[...new Set([...lights, ...(k.lamp ? [k.lamp] : [])])]
+            .map((id) => `<option value="${esc(id)}" ${id === k.lamp ? "selected" : ""}>${esc(name(id))}</option>`).join("")}</select>
+          ${k.lamp ? `<button class="link" data-action="lamp-test" data-id="${esc(k.id)}">${this._t("lampTest")}</button>` : ""}</div>`).join("")}</div></section>`);
+    }
+    if (this._on("screen")) {
+      const sc = d.screen || { rate: 0, max: 60 };
+      const devices = Object.keys(states).filter((id) => /^(switch|media_player|input_boolean)\./.test(id)).sort();
+      sections.push(`<section class="extras-box"><div class="section-title">📺 ${this._t("screenTitle")}</div>
+        <div class="grid">
+          <label>${this._t("screenRate")}<input type="number" min="0" max="60" data-field="screen.rate" value="${sc.rate}"><span class="muted small">${this._t("screenRateHint")}</span></label>
+          <label>${this._t("screenMax")}<input type="number" min="5" max="600" step="5" data-field="screen.max" value="${sc.max}"></label>
+        </div>
+        <datalist id="screen-devices">${devices.map((id) => `<option value="${esc(id)}">${esc(name(id))}</option>`).join("")}</datalist>
+        <div class="extras-rows">${this._children().map((k) => `<div class="extras-row wrap">${this._avatar(k, 32)}<strong>${esc(k.name)}</strong>
+          <div class="chips">${(k.screen_devices || []).map((e) => `<span class="chip dev">${esc(name(e))}${ro ? "" : ` <button class="x" data-action="screen-dev-remove" data-id="${esc(k.id)}" data-entity="${esc(e)}" aria-label="×">×</button>`}</span>`).join("")}</div>
+          ${ro ? "" : `<input list="screen-devices" data-field="screendev.${esc(k.id)}" placeholder="${esc(this._t("screenAdd"))}" aria-label="${esc(this._t("screenAdd"))}">`}</div>`).join("")}</div>
+        <p class="muted small">${this._t("screenHint")}</p></section>`);
+    }
+    if (this._on("demand")) {
+      const demand = d.chores.filter((c) => c.recurrence === "on_demand");
+      sections.push(`<section class="extras-box"><div class="section-title">🧺 ${this._t("demandTitle")}</div>
+        <p class="muted small">${this._t("demandHint")}</p>
+        ${demand.length ? `<ul class="extras-list">${demand.map((c) => `<li><span>${c.icon ? esc(c.icon) + " " : ""}<strong>${esc(c.name)}</strong> <span class="muted small">· ${c.start_entity ? `🏠 ${esc(name(c.start_entity))} · ` : ""}${this._t(c.state === "done" ? "demandWaiting" : "demandOpen")}</span></span>
+          ${c.state === "done" && !ro ? `<button class="link" data-action="demand-now" data-id="${esc(c.id)}">${this._t("demandNow")}</button>` : ""}</li>`).join("")}</ul>` : `<p class="muted small">${this._t("demandNone")}</p>`}</section>`);
+    }
+    if (this._on("vote")) {
+      const f = this._voteForm || {};
+      const running = d.vote && !d.vote.closed_at;
+      sections.push(`<section class="extras-box"><div class="section-title">🗳️ ${this._t("voteTitle")}</div>
+        ${d.vote ? this._renderVote() : ""}
+        ${running || ro ? "" : `<div class="form vote-form">
+          <label>${this._t("voteQuestion")}<input data-field="vote.q" maxlength="100" placeholder="${esc(this._t("voteQuestionPh"))}" value="${esc(f.q || "")}"></label>
+          <label>${this._t("voteOptions")}<textarea data-field="vote.opts" rows="3" placeholder="${esc(this._t("voteOptionsPh"))}">${esc(f.opts || "")}</textarea></label>
+          <label>${this._t("voteHours")}<select data-field="vote.hours">${this._t("voteHourOpts").map(([h, l]) => `<option value="${h}" ${Number(f.hours || 24) === h ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+          <button class="primary" data-action="vote-start">${this._t("voteStart")}</button></div>`}</section>`);
+    }
+    if (this._on("certificate") && d.month) {
+      const btn = (k, which) => {
+        const block = d.month[which];
+        const label = which === "prev" ? this._monthName(block.month) : this._t("certSoFar", { month: this._monthName(block.month) });
+        return `<button class="link" data-action="cert-open" data-id="${esc(k.id)}" data-which="${which}">${esc(label)}</button>`;
+      };
+      sections.push(`<section class="extras-box"><div class="section-title">🏅 ${esc(this._t("feat").certificate[1])}</div>
+        <div class="extras-rows">${people.map((k) => `<div class="extras-row">${this._avatar(k, 32)}<strong>${esc(k.name)}</strong><span class="cert-links">${btn(k, "prev")} · ${btn(k, "now")}</span></div>`).join("")}</div></section>`);
+    }
+    if (this._on("parents")) {
+      sections.push(`<section class="extras-box"><div class="section-title">👨‍👩‍👧 ${esc(this._t("feat").parents[1])}</div><p class="muted small">${this._t("parentsHint")}</p></section>`);
+    }
+    sections.push(this._renderPrivacy());
+    return sections.join("");
+  }
+
+  _privacyTile(on, action) {
+    return `<button class="feat ${on ? "on" : ""}" data-action="${action}" aria-pressed="${on}">
+      <span class="feat-emoji">🔒</span><span class="feat-main"><strong>${this._t("privPush")}</strong><span class="muted small">${this._t("privPushSub")}</span></span>
+      <span class="feat-switch" aria-hidden="true"><i></i></span></button>`;
+  }
+
+  _renderPrivacy() {
+    const ro = this._config.readonly;
+    const people = this._data.members;
+    return `<section class="extras-box"><div class="section-title">🔒 ${this._t("privTitle")}</div>
+      <div class="feat-grid">${this._privacyTile(!!this._data.private_push, ro ? "noop" : "priv-push")}
+        <button class="feat ${this._data.photo_delete ? "on" : ""}" data-action="${ro ? "noop" : "priv-photo"}" aria-pressed="${!!this._data.photo_delete}">
+          <span class="feat-emoji">📷</span><span class="feat-main"><strong>${this._t("privPhoto")}</strong><span class="muted small">${this._t("privPhotoSub")}</span></span>
+          <span class="feat-switch" aria-hidden="true"><i></i></span></button></div>
+      <p class="muted small">${this._t("privLocal")}</p>
+      ${ro ? "" : `<div class="small"><strong>${this._t("privPeople")}</strong></div>
+      <div class="extras-rows">${people.map((m) => `<div class="extras-row">${this._avatar(m, 32)}<strong>${esc(m.name)}</strong>
+        <span class="cert-links"><button class="link" data-action="priv-export" data-id="${esc(m.id)}">${this._t("privExport")}</button>
+        <button class="link bad" data-action="priv-delete" data-id="${esc(m.id)}">${this._t("privDelete")}</button></span></div>`).join("")}</div>`}
+    </section>`;
   }
 
   _children() {
     return this._data.members.filter((m) => m.role === "child");
   }
 
+  _renderCockpit() {
+    const d = this._data;
+    const kids = this._children().filter((k) => !k.away);
+    const waiting = d.chores.filter((c) => c.state === "claimed");
+    const toApprove = waiting.length + (d.redemptions || []).length;
+    const open = kids.reduce((n, k) => n + this._openFor(k.id).filter((c) => c.state !== "claimed").length, 0);
+    const done = kids.filter((k) => !this._openFor(k.id).some((c) => c.state !== "claimed")).length;
+    const stars = d.chores
+      .filter((c) => c.last_completed_by && this._isToday(c.last_completed_at))
+      .reduce((n, c) => n + (c.points || 0), 0);
+    const now = new Date();
+    const h = now.getHours();
+    const greet = this._t("greet")[h >= 5 && h < 11 ? 0 : h >= 11 && h < 17 ? 1 : 2];
+    const me = this._member(d.me);
+    const date = now.toLocaleDateString(this._locale(), { weekday: "long", day: "numeric", month: "long" });
+    const tile = (emoji, value, label, cls = "", action = "") => `
+      <${action ? `button data-action="tab" data-id="${action}"` : "div"} class="ck-tile ${cls}">
+        <span class="ck-emoji">${emoji}</span><span class="ck-value">${value}</span><span class="ck-label">${label}</span>
+      </${action ? "button" : "div"}>`;
+    return `
+      <section class="cockpit">
+        <div class="ck-hello">
+          <div class="ck-greet">${esc(greet)}${me ? `, ${esc(me.name)}` : ""} 👋</div>
+          <div class="muted">${esc(date)}</div>
+        </div>
+        <div class="ck-stats">
+          ${tile("📝", open, this._t("ckOpen"))}
+          ${tile("📬", toApprove, this._t("ckWaiting"), toApprove ? "hot" : "")}
+          ${tile("🎉", `${done}/${kids.length}`, this._t("ckKidsDone"), kids.length && done === kids.length ? "good" : "")}
+          ${tile("⭐", stars, this._t("ckStars"))}
+        </div>
+        ${toApprove && !this._config.readonly ? `<div class="ck-approve"><div class="section-title">${this._t("ckWaitingTitle")}</div>${this._renderApprovals(waiting)}</div>` : ""}
+      </section>`;
+  }
+
   _renderToday() {
-    return `${this._renderStarter()}${this._pauseBanner()}${this._rainBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>${this._renderWeek()}`;
+    return `${this._renderStarter()}${this._renderCockpit()}${this._renderVote()}${this._pauseBanner()}${this._rainBanner()}${this._renderFamilyGoal()}<div class="kidgrid">${this._renderTodayCards()}</div>${this._renderWeek()}`;
   }
 
   _renderTodayCards() {
-    return this._children()
+    const parents = this._on("parents")
+      ? this._data.members.filter((m) => m.role === "parent" && this._data.chores.some((c) => c.responsible.includes(m.id)))
+      : [];
+    const cards = [...this._children(), ...parents];
+    return cards
       .map((m) => {
         const chores = this._openFor(m.id);
         let status = m.away ? `<span class="chip">${esc(this._awayText(m))}</span>` : "";
@@ -2247,22 +3530,42 @@ class SternchenplanCard extends HTMLElement {
           status += ` <span class="chip">${esc(this._t("pass", { time }))}</span>`;
         }
         let passBtn = "";
-        if (!this._config.readonly) {
+        if (!this._config.readonly && m.role === "child") {
           passBtn += `<button class="menu-item" data-action="picture" data-id="${esc(m.id)}" data-on="${m.picture_mode ? "" : "1"}">${
             m.picture_mode ? this._t("pictureOff") : this._t("pictureOn")
           }</button>`;
         }
-        if (!this._config.readonly) {
+        if (!this._config.readonly && m.role === "child") {
           passBtn += `<button class="menu-item" data-action="stars-open" data-id="${esc(m.id)}">${this._t("starsBtn")}</button>`;
+        }
+        if (!this._config.readonly && m.role === "child") {
+          passBtn += `<button class="menu-item" data-action="tab" data-id="family">${this._t("awayMenu")}</button>`;
         }
         if (m.has_devices && !this._config.readonly) {
           passBtn += m.pass_until
             ? `<button class="menu-item" data-action="revoke-pass" data-id="${esc(m.id)}">🎟️ ${this._t("takePass")}</button>`
             : `<button class="menu-item" data-action="pass" data-id="${esc(m.id)}">🎟️ ${this._t("givePass")}</button>`;
         }
-        const list = chores.length
-          ? `<ul>${chores.map((c) => this._choreRow(c, m.id, { showClaim: c.state !== "claimed", forName: m.name })).join("")}</ul>`
-          : `<p class="kid-done">🎉 ${this._t("allDone").replace(" 🎉", "")}</p>`;
+        // Mehrere Karten: zugeklappt, damit die ganze Familie auf einen Blick passt
+        const expanded = cards.length === 1 || this._openCards.has(m.id);
+        const todo = chores.filter((c) => c.state !== "claimed");
+        const waits = chores.length - todo.length;
+        const late = todo.filter((c) => c.state === "overdue").length;
+        const summary = [
+          todo.length ? `<strong>${esc(this._t("openShort", { n: todo.length }))}</strong>` : "",
+          late ? `<span class="chip bad">${esc(this._t("overdue"))}</span>` : "",
+          waits ? `<span class="chip wait">${esc(this._t("waitShort", { n: waits }))}</span>` : "",
+          todo.length && !expanded ? `<span class="muted">${esc(this._t("nextUp", { name: todo[0].name }))}</span>` : "",
+        ].filter(Boolean).join("");
+        const toggle = cards.length > 1 && chores.length
+          ? `<button class="kid-summary" data-action="kid-expand" data-id="${esc(m.id)}" aria-expanded="${expanded}">
+              <span class="kid-sum">${summary}</span><span class="kid-chev">${expanded ? this._t("showLess") : this._t("showMore")} ${expanded ? "▴" : "▾"}</span></button>`
+          : "";
+        const list = !chores.length
+          ? `<p class="kid-done">🎉 ${this._t("allDone").replace(" 🎉", "")}</p>`
+          : expanded
+            ? `<ul>${chores.map((c) => this._choreRow(c, m.id, { showClaim: c.state !== "claimed", forName: m.name })).join("")}</ul>`
+            : "";
         const { done, open, total } = this._todayStats(m.id);
         const menu = passBtn
           ? `<details class="kid-menu"><summary aria-label="${esc(this._t("moreActions", { name: m.name }))}" title="${esc(this._t("moreActions", { name: m.name }))}">⋯</summary><div class="menu">${passBtn}</div></details>`
@@ -2271,14 +3574,15 @@ class SternchenplanCard extends HTMLElement {
           <section class="kidcard" style="--kid:${this._color(m.id)}">
             <div class="kidcard-head">
               ${this._avatar(m, 40)}
-              <div class="kidcard-name"><strong>${esc(m.name)}</strong><span class="muted small">⭐ ${m.points}${
-                m.progress ? ` · ${esc(this._t("level", { n: m.progress.level }))}${m.progress.streak ? ` · 🔥 ${m.progress.streak}` : ""}` : ""
+              <div class="kidcard-name"><strong>${esc(m.name)}${this._on("pet") && m.pet ? ` <span class="pet-mini" title="${esc(m.pet_name)}">${PET_EMOJI[m.pet] || ""}</span>` : ""}</strong><span class="muted small">⭐ ${m.points}${
+                m.progress && this._on("levels") ? ` · ${esc(this._t("level", { n: m.progress.level }))}${m.progress.streak ? ` · 🔥 ${m.progress.streak}` : ""}` : ""
               }</span></div>
               ${this._ring(done, total || open, this._color(m.id), 44)}
               ${menu}
             </div>
             ${status ? `<div class="kidcard-status">${status}</div>` : ""}
             ${this._starsOpen === m.id ? this._renderStarsPanel(m) : ""}
+            ${toggle}
             ${list}
           </section>`;
       })
@@ -2347,7 +3651,7 @@ class SternchenplanCard extends HTMLElement {
       .join("");
     const rec = this._t("rec");
     return `
-      ${f.editId ? "" : this._renderSettings() + this._renderTemplates()}
+      ${f.editId ? "" : this._renderTemplates()}
       <details class="form chore-form" ${this._data.chores.length && !f.editId && !f.name ? "" : "open"}>
         <summary>${f.editId ? this._t("editChore") : "+ " + this._t("newChore")}</summary>
         <label>${this._t("name")}<input data-field="name" value="${esc(f.name)}" maxlength="60"></label>
@@ -2363,6 +3667,7 @@ class SternchenplanCard extends HTMLElement {
         </fieldset>
         <div class="grid">
           <label>${this._t("recurrence")}<select data-field="recurrence">${Object.entries(rec)
+            .filter(([k]) => k !== "on_demand" || this._on("demand") || f.recurrence === k)
             .map(([k, v]) => `<option value="${k}" ${f.recurrence === k ? "selected" : ""}>${esc(v)}</option>`)
             .join("")}</select></label>
           <label>${this._t("due")}<input type="datetime-local" data-field="due" value="${esc(f.due)}"></label>
@@ -2455,7 +3760,20 @@ class SternchenplanCard extends HTMLElement {
     if (theme.id) this._cardEl.dataset.theme = theme.id;
     else delete this._cardEl.dataset.theme;
     const deco = theme.deco.length ? `<div class="deco" aria-hidden="true">${theme.deco.map((e) => `<span>${e}</span>`).join("")}</div>` : "";
-    this._cardEl.innerHTML = `${deco}${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div>`;
+    const html = `${deco}${this._config.title ? `<h1>${esc(this._config.title)}</h1>` : ""}<div class="content">${body}</div>`;
+    if (this._data?.members?.some((m) => m.screen_until) && !this._screenTimer) {
+      this._screenTimer = setTimeout(() => {
+        this._screenTimer = null;
+        this._render();
+      }, 30000);
+    }
+    if (html === this._html) return;
+    this._html = html;
+    const next = document.createElement("template");
+    next.innerHTML = html;
+    morphChildren(this._cardEl, next.content);
+    const box = this._cardEl.querySelector("dialog.lightbox");
+    if (box && !box.open) box.showModal();
   }
 }
 
@@ -2536,6 +3854,10 @@ const THEMES = [
   { id: "candy", emoji: "🍭", deco: ["🍭", "🍬", "🧁", "🌈", "💖", "🍩"] },
   { id: "elegant", emoji: "🤍", deco: [] },
 ];
+
+const FEATURES = ["levels", "helping", "pet", "lamp", "screen", "demand", "vote", "certificate", "parents", "money", "goal"];
+const PETS = ["dragon", "cat", "dog", "unicorn", "dino", "panda", "fox", "owl"];
+const PET_EMOJI = { dragon: "🐉", cat: "🐱", dog: "🐶", unicorn: "🦄", dino: "🦖", panda: "🐼", fox: "🦊", owl: "🦉" };
 
 const PALETTE = ["#4f7cff", "#ff7a45", "#22a565", "#a259ff", "#e5a100", "#f0508c", "#13a8b8"];
 
@@ -2988,6 +4310,82 @@ const STYLE = `
     .kidcard .row.task > .actions:empty { display: none; }
     .kidcard .row.task > ol.steps { grid-column: 1 / -1; }
   }
+  /* -- Willkommens-Assistent (0.29) -- */
+  .wizard { max-width: 720px; margin: 0 auto; padding: 22px 6px 10px; }
+  .wizard h2 { font-size: 1.7em; line-height: 1.15; margin: 6px 0 6px; font-weight: 800; letter-spacing: -.02em; }
+  .wizard > p.muted { margin: 0 0 18px; font-size: 1.02em; }
+  .wz-hero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 26px 12px 18px;
+    border-radius: 28px; background: radial-gradient(circle at 50% 0%, rgba(255, 214, 102, .45), transparent 55%),
+    linear-gradient(160deg, color-mix(in srgb, #4f7cff 16%, var(--card-background-color)), color-mix(in srgb, #a259ff 12%, var(--card-background-color))); }
+  .wz-hero h2 { font-size: 2em; }
+  .wz-hero p { max-width: 460px; margin: 0; color: var(--secondary-text-color); font-size: 1.05em; }
+  .wz-star { font-size: 4.4em; line-height: 1; filter: drop-shadow(0 8px 18px rgba(229, 161, 0, .45)); animation: wzfloat 3s ease-in-out infinite; }
+  @keyframes wzfloat { 50% { transform: translateY(-10px) rotate(6deg); } }
+  .wz-kids-row { display: flex; gap: 0; margin: 6px 0 8px; }
+  .wz-kids-row .avatar { margin-left: -8px; border: 3px solid var(--card-background-color); }
+  .wz-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .wz-dots { display: flex; gap: 6px; }
+  .wz-dots i { width: 28px; height: 6px; border-radius: 3px; background: var(--divider-color, #e0e0e0); }
+  .wz-dots i.on { background: linear-gradient(90deg, #4f7cff, #a259ff); }
+  .wz-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+  .wz-kid-list { display: grid; gap: 12px; }
+  .wz-kid { padding: 14px; border-radius: 20px; background: var(--card-background-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 6%, transparent); border-left: 6px solid var(--kid); }
+  .wz-kid-head { display: flex; align-items: center; gap: 12px; }
+  .wz-kid-head strong { flex: 1; font-size: 1.2em; }
+  .wz-age { display: flex; align-items: center; gap: 8px; font-size: 0.9em; color: var(--secondary-text-color); }
+  .wz-age select { font-size: 1.05em; min-width: 64px; }
+  .wz-caption { margin-top: 12px; }
+  .wz-themes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 6px; }
+  button.wz-theme { padding: 3px; min-height: auto; border-radius: 14px; background: none; }
+  button.wz-theme .sw { height: 46px; font-size: 1.4em; }
+  button.wz-theme.on { box-shadow: 0 0 0 3px var(--kid); }
+  .wz-group { font-weight: 700; margin: 14px 0 8px; color: var(--secondary-text-color); font-size: 0.9em; text-transform: uppercase; letter-spacing: .06em; }
+  .wz-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  button.wz-pick { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px; min-height: 64px; border-radius: 16px;
+    background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 2px #22a565; transition: transform .1s, opacity .2s; }
+  button.wz-pick:active, button.wz-reward:active, button.wz-choice:active { transform: scale(.98); }
+  button.wz-pick.off, button.wz-reward.off { box-shadow: 0 0 0 1px var(--divider-color, #e0e0e0); opacity: .5; }
+  .wz-pick-icon { font-size: 1.6em; width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    background: var(--secondary-background-color); flex: 0 0 auto; }
+  .wz-pick-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .wz-check { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #fff; background: #22a565; font-size: 0.85em; }
+  .off .wz-check { background: none; box-shadow: inset 0 0 0 2px var(--divider-color, #ccc); }
+  .wz-rewards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  button.wz-reward { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 10px 14px; min-height: 150px;
+    border-radius: 20px; background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 2px #e5a100; text-align: center; }
+  .wz-reward-emoji { font-size: 2.6em; }
+  button.wz-reward .wz-check { position: absolute; top: 10px; right: 10px; background: #e5a100; }
+  .wz-choices { display: grid; gap: 12px; }
+  button.wz-choice { display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px; min-height: 76px; border-radius: 18px;
+    background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 1px var(--divider-color, #e0e0e0); }
+  button.wz-choice > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+  button.wz-choice.on { box-shadow: 0 0 0 3px var(--primary-color); background: color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color)); }
+  .wz-choice-emoji { font-size: 2em; }
+  ul.wz-tips { text-align: left; margin: 4px 0 8px; padding-left: 20px; color: var(--secondary-text-color); display: grid; gap: 6px; max-width: 460px; }
+  @media (prefers-reduced-motion: reduce) { .wz-star { animation: none; } }
+  @media (max-width: 480px) { .wizard h2 { font-size: 1.4em; } .wz-hero h2 { font-size: 1.6em; } .wz-themes { gap: 5px; } button.wz-theme .sw { height: 40px; } }
+  /* -- Eltern-Cockpit (0.31) -- */
+  .cockpit { margin: 0 0 14px; }
+  .ck-hello { display: flex; flex-direction: column; gap: 2px; margin: 6px 2px 12px; }
+  .ck-greet { font-size: 1.6em; font-weight: 800; letter-spacing: -.02em; }
+  .ck-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .ck-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 14px 14px 12px; border-radius: 18px; text-align: left;
+    background: var(--card-background-color); color: var(--primary-text-color); min-height: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 6%, transparent); }
+  button.ck-tile { cursor: pointer; font: inherit; }
+  .ck-emoji { font-size: 1.3em; }
+  .ck-value { font-size: 1.9em; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
+  .ck-label { font-size: 0.82em; color: var(--secondary-text-color); }
+  .ck-tile.hot { background: linear-gradient(135deg, #ff7a45, #ffb03a); color: #fff; box-shadow: 0 6px 18px rgba(255,122,69,.35); }
+  .ck-tile.hot .ck-label { color: rgba(255,255,255,.9); }
+  .ck-tile.good { background: linear-gradient(135deg, #22a565, #6cc35f); color: #fff; }
+  .ck-tile.good .ck-label { color: rgba(255,255,255,.9); }
+  .ck-approve { margin-top: 14px; padding: 6px 16px 8px; border-radius: 18px; background: var(--card-background-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, #ff7a45 45%, transparent); }
+  .ck-approve .section-title { margin: 10px 0 2px; }
+  @media (max-width: 560px) { .ck-stats { grid-template-columns: repeat(2, 1fr); } .ck-greet { font-size: 1.35em; } }
   .theme-box { margin-top: 18px; padding: 12px 14px; border-radius: 18px; background: var(--secondary-background-color); }
   .theme-box summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
   .theme-box summary::-webkit-details-marker { display: none; }
@@ -3019,6 +4417,184 @@ const STYLE = `
     .kidcard .row.task > .actions:empty { display: none; }
     .kidcard .row.task > ol.steps { grid-column: 1 / -1; }
   }
+  /* -- Zusatzfunktionen (0.33) -- */
+  .feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin: 8px 0 4px; }
+  button.feat { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 16px; min-height: auto;
+    background: var(--card-background-color); color: var(--primary-text-color); font: inherit; cursor: pointer;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 10%, transparent); transition: box-shadow .2s, transform .1s; }
+  button.feat:active { transform: scale(.98); }
+  button.feat.on { box-shadow: 0 0 0 2px var(--primary-color), 0 4px 14px color-mix(in srgb, var(--primary-color) 22%, transparent); }
+  .feat-emoji { font-size: 1.7em; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; flex: none;
+    background: color-mix(in srgb, var(--primary-color) 10%, var(--card-background-color)); }
+  button.feat:not(.on) .feat-emoji { filter: grayscale(1); opacity: .55; }
+  .feat-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .feat-switch { width: 42px; height: 24px; border-radius: 12px; flex: none; position: relative; transition: background .2s;
+    background: color-mix(in srgb, var(--primary-text-color) 18%, transparent); }
+  .feat-switch i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: left .2s; }
+  button.feat.on .feat-switch { background: var(--primary-color); }
+  button.feat.on .feat-switch i { left: 21px; }
+  .extras-box { margin: 0 0 18px; }
+  .wz-priv { margin-top: 14px; }
+  .extras-rows { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+  .extras-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: var(--secondary-background-color); }
+  .extras-row.wrap { flex-wrap: wrap; }
+  .extras-row select, .extras-row input { margin-left: auto; min-width: 160px; max-width: 100%; }
+  .extras-row .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip.dev { display: inline-flex; align-items: center; gap: 4px; }
+  .chip .x { border: none; background: none; padding: 0 2px; min-height: auto; cursor: pointer; color: inherit; font-size: 1.1em; line-height: 1; }
+  .extras-list { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+  .extras-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--secondary-background-color); flex-wrap: wrap; }
+  .pet-overview { display: flex; flex-wrap: wrap; gap: 10px; }
+  .pet-ov { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 20px; background: var(--secondary-background-color); }
+  .cert-links { margin-left: auto; display: flex; gap: 4px 14px; flex-wrap: wrap; justify-content: flex-end; }
+  .pet-mini { font-size: .95em; }
+
+  /* Haustier */
+  .pet { display: flex; align-items: center; gap: 16px; margin: 12px 0; padding: 14px 16px; border-radius: 22px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--kid) 16%, var(--card-background-color)), color-mix(in srgb, #ffd166 18%, var(--card-background-color))); }
+  .pet-stage { position: relative; width: 96px; height: 96px; flex: none; display: grid; place-items: center; border-radius: 50%;
+    background: radial-gradient(circle at 50% 60%, color-mix(in srgb, #fff 70%, transparent), transparent 70%); }
+  .pet-body { display: inline-block; font-size: 64px; line-height: 1; transform-origin: 50% 90%; animation: petbob 2.6s ease-in-out infinite; }
+  .stage-0 .pet-body { font-size: 54px; animation: petwobble 2.2s ease-in-out infinite; }
+  .stage-1 .pet-body { font-size: 40px; }
+  .stage-2 .pet-body { font-size: 52px; }
+  .stage-3 .pet-body { font-size: 64px; }
+  .stage-4 .pet-body { font-size: 70px; filter: drop-shadow(0 0 10px rgba(255, 200, 40, .7)); }
+  .pet-crown { position: absolute; top: -2px; font-size: 26px; animation: petbob 2.6s ease-in-out infinite; }
+  .mood-happy .pet-body { animation: pethop .9s ease-in-out infinite; }
+  .mood-sad .pet-body { filter: grayscale(.5) saturate(.6); animation: none; transform: rotate(-6deg); }
+  .mood-sleep .pet-body { animation: petbreathe 4s ease-in-out infinite; opacity: .85; }
+  .pet-heart, .pet-zzz { position: absolute; font-size: 18px; animation: petfloat 2.4s ease-in infinite; }
+  .pet-heart.h1 { left: 6px; top: 18px; } .pet-heart.h2 { right: 4px; top: 8px; animation-delay: -1.2s; }
+  .pet-zzz { right: 2px; top: 4px; }
+  .pet-info { flex: 1; min-width: 0; }
+  .pet-name { font-size: 1.15em; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .pet-bubble { position: relative; margin: 8px 0 6px; padding: 8px 12px; border-radius: 14px; background: var(--card-background-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); font-size: .95em; }
+  .pet-bubble::before { content: ""; position: absolute; left: -6px; top: 14px; border: 6px solid transparent; border-right-color: var(--card-background-color); border-left: 0; }
+  .pet-bar { margin: 6px 0 4px; }
+  .pet-picker { flex-direction: column; align-items: stretch; }
+  .pet-pick-title { display: flex; flex-direction: column; gap: 2px; }
+  .pet-choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  button.pet-choice { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 16px; min-height: auto;
+    background: var(--card-background-color); color: var(--primary-text-color); box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 10%, transparent); cursor: pointer; font: inherit; }
+  button.pet-choice span { font-size: 2.1em; line-height: 1.1; transition: transform .2s; }
+  button.pet-choice.on { box-shadow: 0 0 0 3px var(--kid, var(--primary-color)); }
+  button.pet-choice.on span { transform: scale(1.18); }
+  .pet-name-row { display: flex; gap: 8px; }
+  .pet-name-row input { flex: 1; min-width: 0; }
+  @keyframes petbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes pethop { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-12px) scale(1.05, .95); } 60% { transform: translateY(0) scale(.96, 1.04); } }
+  @keyframes petwobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
+  @keyframes petbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  @keyframes petfloat { 0% { opacity: 0; transform: translateY(6px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
+  @media (prefers-reduced-motion: reduce) { .pet-body, .pet-crown, .pet-heart, .pet-zzz { animation: none !important; } }
+  @media (max-width: 420px) { .pet-stage { width: 76px; height: 76px; } .pet-choices { grid-template-columns: repeat(4, 1fr); } }
+
+  /* Bildschirmzeit */
+  .screen { margin: 16px 0; }
+  .screen-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 8px; }
+  button.screen-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 16px; min-height: auto; cursor: pointer; font: inherit;
+    background: linear-gradient(135deg, #4f7cff, #7b5cff); color: #fff; box-shadow: 0 4px 12px rgba(79,124,255,.3); }
+  button.screen-btn:disabled { background: var(--secondary-background-color); color: var(--secondary-text-color); box-shadow: none; cursor: default; }
+  button.screen-btn span { font-size: .85em; opacity: .9; }
+  .screen-run { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-radius: 16px; color: #fff;
+    background: linear-gradient(135deg, #4f7cff, #7b5cff); }
+  .screen-run .muted { color: rgba(255,255,255,.85); }
+  .screen-run .link.bad { color: #fff; text-decoration: underline; margin-left: auto; }
+  .screen-big { font-size: 1.5em; font-weight: 800; }
+
+  /* Familienrat */
+  .vote { margin: 12px 0 14px; padding: 14px 16px; border-radius: 20px; background: linear-gradient(135deg, color-mix(in srgb, #13a8b8 14%, var(--card-background-color)), color-mix(in srgb, #4f7cff 12%, var(--card-background-color))); }
+  .vote-head { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+  .vote-icon { font-size: 1.8em; }
+  .vote-head strong { font-size: 1.1em; }
+  .vote-opts { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+  button.vote-opt { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px;
+    border-radius: 14px; min-height: auto; text-align: left; font: inherit; cursor: pointer; color: var(--primary-text-color);
+    background: var(--card-background-color); box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-text-color) 10%, transparent); }
+  button.vote-opt:disabled { cursor: default; }
+  button.vote-opt.mine { box-shadow: 0 0 0 2px #13a8b8; }
+  button.vote-opt.win { box-shadow: 0 0 0 2px #e5a100; font-weight: 700; }
+  .vote-fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, #13a8b8 18%, transparent); transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  .vote-label, .vote-n { position: relative; }
+  .vote-n { font-weight: 700; }
+  .vote-result { font-weight: 700; font-size: 1.05em; margin: 4px 0 6px; }
+  .vote-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .vote-form { margin-top: 10px; }
+
+  /* Urkunde: Teaser und Ansicht */
+  button.cert-teaser { width: 100%; margin: 6px 0 12px; padding: 12px 16px; border-radius: 16px; min-height: auto; text-align: left; font: inherit; font-weight: 700; cursor: pointer;
+    color: #5a3b00; background: linear-gradient(135deg, #ffe08a, #ffc24b); box-shadow: 0 4px 14px rgba(229,161,0,.3); }
+  .cert-overlay { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.55); display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 16px; overflow: auto; animation: fade .25s ease-out; }
+  .cert-actions { display: flex; gap: 12px; align-items: center; }
+  .cert-actions .link { color: #fff; }
+  /* -- Aufräumen (0.35) -- */
+  .kid-tabs { position: sticky; top: 0; z-index: 2; margin: 4px 0 12px; }
+  .kid-tabs .tab { flex: 1 1 0; font-size: 1em; min-height: 44px; }
+  .done-box { margin: 10px 0; padding: 4px 12px; border-radius: 14px; background: var(--secondary-background-color); }
+  .done-box summary { cursor: pointer; padding: 8px 0; font-weight: 600; color: var(--success-color, #2e7d32); list-style: none; }
+  .done-box summary::-webkit-details-marker { display: none; }
+  .done-list { list-style: none; margin: 0 0 8px; padding: 0; }
+  .done-list li { display: flex; gap: 10px; align-items: center; padding: 6px 0; text-decoration: line-through; opacity: .75; }
+  .done-list li .small { margin-left: auto; text-decoration: none; }
+  button.kid-summary { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--secondary-background-color);
+    color: var(--primary-text-color); text-align: left; font-weight: 500; }
+  .kid-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .kid-sum .chip { margin: 0; }
+  .hero .star { white-space: nowrap; }
+  .kid-chev { color: var(--kid); font-size: 0.9em; white-space: nowrap; }
+  .help-switch { width: 100%; }
+  .tab-ico, .tab-short { display: none; }
+  @media (max-width: 600px) {
+    .tabs.parent-tabs { overflow: visible; gap: 2px; }
+    .parent-tabs .tab { flex: 1 1 0; min-width: 0; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.72em; position: relative; }
+    .parent-tabs .tab-ico { display: block; font-size: 1.5em; line-height: 1.1; }
+    .parent-tabs .tab-long { display: none; }
+    .parent-tabs .tab-short { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .parent-tabs .count { position: absolute; top: 2px; right: 6px; }
+  }
+  /* -- Fotogalerie (0.35) -- */
+  .gal-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+  button.gal-chip { min-height: 32px; padding: 4px 12px; border-radius: 16px; background: var(--secondary-background-color); color: var(--primary-text-color); font-size: 0.9em; }
+  button.gal-chip.on { background: var(--primary-color); color: var(--text-primary-color, #fff); }
+  .gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 8px; }
+  button.gal-item { position: relative; display: block; padding: 0; aspect-ratio: 1; overflow: hidden; border-radius: 14px; background: var(--secondary-background-color); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  button.gal-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s ease; }
+  button.gal-item:hover img { transform: scale(1.04); }
+  .gal-cap { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1px; padding: 18px 8px 6px; text-align: left;
+    color: #fff; font-size: 0.78em; background: linear-gradient(transparent, rgba(0,0,0,.7)); border-bottom: 3px solid var(--kid); }
+  .gal-cap strong { font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  dialog.lightbox { border: none; padding: 16px; margin: 0; width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; box-sizing: border-box; background: transparent; color: var(--primary-text-color); }
+  dialog.lightbox[open] { display: flex; align-items: center; justify-content: center; }
+  dialog.lightbox::backdrop { background: rgba(0,0,0,.82); }
+  .lightbox figure { margin: 0; max-width: min(920px, 100%); max-height: 100%; display: flex; flex-direction: column; background: var(--card-background-color); border-radius: 16px; overflow: hidden; }
+  .lightbox img { max-width: 100%; max-height: calc(100vh - 150px); object-fit: contain; background: #000; }
+  .lightbox figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 14px; }
+  .lb-actions { display: flex; gap: 8px; align-items: center; }
+  button.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.9); color: #222; font-size: 1.8em; line-height: 1; padding: 0; }
+  button.lb-nav.prev { left: 10px; }
+  button.lb-nav.next { right: 10px; }
+  /* -- Urkunde -- */
+  .cert { width: min(560px, 100%); padding: 14px; border-radius: 10px; background: #fffaf0; color: #2b2118; font-family: Georgia, "Times New Roman", serif;
+    box-shadow: 0 18px 50px rgba(0,0,0,.35); box-sizing: border-box; }
+  .cert-inner { border: 3px double #c9a227; border-radius: 6px; padding: 26px 18px 22px; text-align: center; position: relative;
+    background: radial-gradient(circle at 50% 0%, #fff6d8, transparent 60%); }
+  .cert-ribbon { font-size: 44px; line-height: 1; margin-bottom: 6px; }
+  .cert-kicker { text-transform: uppercase; letter-spacing: .18em; font-size: .72em; color: #8a6a12; }
+  .cert-title { font-size: 2.6em; font-weight: 700; color: #b8860b; letter-spacing: .04em; margin: 2px 0; }
+  .cert-for { font-style: italic; color: #6b5a3a; }
+  .cert-name { font-size: 2.1em; font-weight: 700; margin: 4px 0 8px; border-bottom: 1px solid #e4cf8a; display: inline-block; padding: 0 18px 4px; }
+  .cert-praise { font-size: 1.15em; margin: 6px 0 14px; }
+  .cert-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+  .cert-stats div { display: flex; flex-direction: column; padding: 8px 4px; border-radius: 8px; background: #fbf0cf; }
+  .cert-stats b { font-size: 1.5em; }
+  .cert-stats span { font-size: .78em; color: #6b5a3a; }
+  .cert-line { margin: 6px 0; }
+  .cert-badges { font-size: 1.3em; letter-spacing: .1em; }
+  .cert-sign { margin-top: 16px; font-style: italic; color: #8a6a12; }
 `;
 
 // Eigene Seite in der Seitenleiste („Sternchenplan“). Zeigt die Karte groß,

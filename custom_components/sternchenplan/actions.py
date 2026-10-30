@@ -16,6 +16,7 @@ from homeassistant.util import dt as dt_util
 
 from .core import Family, FamilyError, Role
 from .photos import signed_url
+from .privacy import scrub
 
 if TYPE_CHECKING:
     from . import SternchenplanConfigEntry
@@ -68,7 +69,7 @@ async def _send(hass: HomeAssistant, service: str, payload: dict[str, Any]) -> N
     if not service.startswith("mobile_app"):
         # Knöpfe und Bilder versteht nur die Companion-App
         payload = {k: v for k, v in payload.items() if k != "data"}
-    await hass.services.async_call("notify", service, payload, blocking=False)
+    await hass.services.async_call("notify", service, scrub(hass, payload), blocking=False)
 
 
 async def async_ask_parents(hass: HomeAssistant, family: Family, event: dict[str, Any]) -> None:

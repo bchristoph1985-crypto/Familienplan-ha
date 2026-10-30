@@ -18,10 +18,12 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, DONATE_URL, HOUSE_FIELDS, SIGNAL_UPDATED
-from .core import Family, Member, badge_status, level_floor
+from .core import Family, FamilyError, Member, badge_status, level_floor
 from .handsfree import learning
-from .photos import signed_url
+from .photos import delete_after_review, signed_url
 from .takeover import takeover_terms
+
+GALLERY_LIMIT = 120
 
 
 def _progress(member: Member, today) -> dict[str, Any]:
@@ -54,12 +56,27 @@ def snapshot(
     def iso(value: datetime | None) -> str | None:
         return value.isoformat() if value else None
 
+    today = now.astimezone(family.tz).date()
+    month = None
+    if family.has("certificate"):
+        year, mon = family.previous_month(today)
+        month = {
+            "prev": {"year": year, "month": mon, "rows": family.month_report(year, mon)},
+            "now": {"year": today.year, "month": today.month,
+                    "rows": family.month_report(today.year, today.month)},
+        }
+
     return {
+        "features": sorted(family.features),
+        "private_push": family.private_push,
+        "screen": {"rate": family.screen_rate, "max": family.screen_max},
+        "vote": family.vote,
+        "month": month,
         "me": actor.member.id if actor.member else None,
         "is_manager": actor.is_manager,
         "tablet": actor.tablet and not actor.is_manager,
         "donate_url": DONATE_URL if actor.is_manager else None,
-        "takeover": {"allowed": allowed, "multiplier": multiplier},
+        "takeover": {"allowed": allowed and family.has("helping"), "multiplier": multiplier},
         "family_goal": family.goal.to_dict() if family.goal else None,
         "money": {"rate": family.money_rate, "payday": family.payday},
         "pause": (
@@ -76,6 +93,13 @@ def snapshot(
         "week": family.week_report(now) if actor.is_manager else [],
         "presets": [dict(p) for p in family.presets] if actor.is_manager else [],
         "learning_tag": learning(hass) if actor.is_manager else None,
+        "photo_delete": delete_after_review(entry) if actor.is_manager else None,
+        # Fotogalerie nur für Eltern, mit kurz gültigen Links
+        "gallery": [
+            {"file": e["file"], "url": signed_url(hass, e["file"]), "name": e["name"],
+             "member": e["member"], "at": e["at"]}
+            for e in family.gallery()[:GALLERY_LIMIT]
+        ] if actor.is_manager else [],
         "members": [
             {
                 "id": m.id,
@@ -95,6 +119,13 @@ def snapshot(
                 "money": m.money,
                 "picture_mode": m.picture_mode,
                 "theme": m.theme,
+                "pet": m.pet,
+                "pet_name": m.pet_name,
+                "lamp": m.lamp if actor.is_manager else "",
+                "screen_devices": list(m.screen_devices) if actor.is_manager else [],
+                "has_screen": bool(m.screen_devices),
+                "screen_until": iso(m.screen_until) if family.screen_active(m, now) else None,
+                "screen_left": family.screen_left_today(m, now),
                 # Bonus und Abzug sehen Eltern und das Kind selbst
                 "star_log": (
                     family.star_history(m.id, 10)
@@ -169,6 +200,27 @@ def snapshot(
 @callback
 def async_register_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe)
+    websocket_api.async_register_command(hass, ws_export)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/export", vol.Required("member"): str}
+)
+@callback
+def ws_export(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Datenauskunft: alles über eine Person als JSON. Nur für Eltern."""
+    entries = hass.config_entries.async_loaded_entries(DOMAIN)
+    if not entries:
+        connection.send_error(msg["id"], "not_loaded", "Sternchenplan ist nicht eingerichtet.")
+        return
+    family: Family = entries[0].runtime_data.family
+    actor = family.actor_for_user(connection.user.id, is_admin=connection.user.is_admin)
+    try:
+        data = family.export_member(actor, msg["member"])
+    except FamilyError as err:
+        connection.send_error(msg["id"], "not_allowed", str(err))
+        return
+    connection.send_result(msg["id"], data)
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/subscribe"})

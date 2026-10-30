@@ -14,14 +14,12 @@ Bis Version 0.13.0 hieß die Integration `familienplan`. Ab 0.14.0 heißt sie `s
 
 ## Was schon geht
 
-- **Einrichtung in sieben kurzen Schritten** über *Einstellungen → Geräte & Dienste → Integration hinzufügen → Sternchenplan*:
+- **Einrichtung in drei kurzen Schritten** über *Einstellungen → Geräte & Dienste → Integration hinzufügen → Sternchenplan*:
   1. Name der Familie
   2. Wer gehört dazu: die Personen aus Home Assistant sind schon angehakt, Kinder ohne eigenes Konto einfach mit Namen eintragen
   3. Wer sind die Eltern: HA-Administratoren sind vorgeschlagen
-  4. Wie alt sind die Kinder (freiwillig)
-  5. Startaufgaben ankreuzen, passend zum Alter vorgeschlagen (z. B. Spülmaschine reihum ab 7, Zimmer aufräumen je Kind)
-  6. Belohnungen aus Vorschlägen ankreuzen (z. B. Filmabend aussuchen, 40 Punkte)
-  7. Datenschutz: Fotos sofort nach der Bestätigung löschen oder 7 Tage behalten
+
+  Danach öffnet man links **Sternchenplan**. Dort begrüßt einen der **Willkommens-Assistent** mit vier großen, einfachen Schritten: Alter und Design jedes Kindes, passende Aufgaben antippen, Belohnungen antippen, Fotos löschen oder behalten. Ein Tipp auf „✨ Alles anlegen“, fertig.
 
   Eigene Aufgaben legt man danach unter *Sternchenplan → Aufgaben* an.
 
@@ -37,7 +35,7 @@ Bis Version 0.13.0 hieß die Integration `familienplan`. Ab 0.14.0 heißt sie `s
 - Sensoren: Punkte je Mitglied, Status je Aufgabe
 - **Internetsperre** (ausgeschaltet bis man sie aktiviert): Eltern wählen je Kind Internet-Schalter von Freizeitgeräten (z. B. FRITZ!Box „Internetzugang“). Hat das Kind im Sperrzeitraum (Standard 20:00–05:00) überfällige Aufgaben, gehen diese Schalter aus. Sie gehen wieder an, sobald alles erledigt oder gemeldet ist, spätestens am Ende des Zeitraums. Schaltet jemand ein gesperrtes Gerät wieder an, wird es nach spätestens einer Minute erneut gesperrt. Eltern können eine Freikarte geben. Abwesende Kinder werden nie gesperrt. Sternchenplan gibt nur Geräte frei, die es selbst gesperrt hat, und fasst keine anderen Schalter an.
 - **Fotonachweis** je Aufgabe, standardmäßig aus: Eltern haken ihn pro Aufgabe an. Kinder machen beim Abhaken ein Foto (Kamera öffnet sich in der Karte), die Aufgabe geht dann immer zur Bestätigung an die Eltern. Fotos bleiben lokal in `config/sternchenplan_photos`, sind nicht öffentlich, nur Eltern sehen sie über einen kurz gültigen Link.
-- **Datenschutz bei Fotos**: Die Familie wählt im Assistenten (später unter *Konfigurieren → Regeln*), ob Fotos sofort nach Bestätigen oder Ablehnen gelöscht werden (Standard) oder bis zu 7 Tage (einstellbar) bleiben. Nimmt ein Kind seine Meldung zurück, wird das Foto immer sofort gelöscht.
+- **Datenschutz bei Fotos**: Die Familie wählt im Willkommens-Assistenten (später unter *Konfigurieren → Regeln*), ob Fotos sofort nach Bestätigen oder Ablehnen gelöscht werden (Standard) oder bis zu 7 Tage (einstellbar) bleiben. Nimmt ein Kind seine Meldung zurück, wird das Foto immer sofort gelöscht.
 - **Aufgaben übernehmen („wegmopsen“)**: Ab 16:30 können Kinder offene Aufgaben der Geschwister übernehmen und bekommen die Punkte, ab 19:00 doppelt. Höchstens 2 pro Tag. Bei Reihum-Aufgaben geht die Reihenfolge danach normal weiter. Zeiten und Anzahl unter *Konfigurieren → Regeln*.
 - Dienste: `sternchenplan.create_chore`, `update_chore`, `delete_chore`, `claim_chore`, `take_over_chore`, `announce`, `create_reward`, `update_reward`, `delete_reward`, `redeem_reward`, `approve_redemption`, `reject_redemption`, `undo_claim`, `approve_chore`, `reject_chore`, `set_absence`, `end_absence`, `set_devices`, `grant_pass`, `revoke_pass`
 
@@ -101,7 +99,7 @@ Dienste: `sternchenplan.set_goal`, `sternchenplan.set_family_goal`,
 
 ## Taschengeld
 
-Im Eltern-Reiter **Geld** führt Sternchenplan für jedes Kind ein
+Im Eltern-Reiter **Familie** führt Sternchenplan für jedes Kind ein
 Taschengeld-Konto. Das Geld selbst liegt nicht in Sternchenplan: Ihr zahlt bar
 oder per Überweisung aus und tippt dann auf „Auszahlen“.
 
@@ -128,18 +126,18 @@ Dienste: `set_money`, `set_allowance`, `exchange_stars`, `payout`,
 
 ## Ferien-Pause, Schultage und Bilder-Modus
 
-- **Ferien-Pause:** Unter „Abwesend“ trägst du Ferien von–bis ein. In der Zeit ist nichts fällig, nichts wird gesperrt und keine Serie reißt. Danach rücken die Fristen automatisch nach. Geht auch per Dienst `sternchenplan.set_pause` / `sternchenplan.end_pause`.
+- **Ferien-Pause:** Im Reiter „Familie“ trägst du Ferien von–bis ein. In der Zeit ist nichts fällig, nichts wird gesperrt und keine Serie reißt. Danach rücken die Fristen automatisch nach. Geht auch per Dienst `sternchenplan.set_pause` / `sternchenplan.end_pause`.
 - **Nur an bestimmten Tagen:** Tägliche Aufgaben kannst du auf Wochentage beschränken, z. B. „Schultasche packen“ nur Mo–Fr. Die Vorlagen für Schulsachen setzen das schon.
 - **Bilder-Modus:** Für Kinder, die noch nicht lesen. Große Bildkacheln statt Text, ein 🔊-Knopf liest die Aufgabe vor (im Browser, ohne Internetdienst). Einschalten in der Elternansicht beim Kind („Bilder-Modus“) oder per `sternchenplan.set_picture_mode`. Jede Aufgabe kann ein eigenes Symbol bekommen.
 
 ## Wetter und Wochenbericht
 
-- **Draußen-Aufgaben:** Hak bei einer Aufgabe „Draußen“ an (z. B. Rasen mähen, Laub rechen). Regnet es zur Frist, wird sie nicht überfällig und sperrt nichts, sondern rückt einen Tag weiter. Der Wochentakt bleibt dabei gleich. Welche Wetter-Entität zählt, stellst du im Reiter „Aufgaben“ unter „Einstellungen“ ein (oder per `sternchenplan.set_weather`). Als nass gilt: Regen, Schauer, Schnee, Gewitter, Hagel.
+- **Draußen-Aufgaben:** Hak bei einer Aufgabe „Draußen“ an (z. B. Rasen mähen, Laub rechen). Regnet es zur Frist, wird sie nicht überfällig und sperrt nichts, sondern rückt einen Tag weiter. Der Wochentakt bleibt dabei gleich. Welche Wetter-Entität zählt, stellst du im Reiter „Einstellungen“ ein (oder per `sternchenplan.set_weather`). Als nass gilt: Regen, Schauer, Schnee, Gewitter, Hagel.
 - **Wochenbericht:** Eltern sehen unter „Heute“, wie die Woche lief: erledigt, verpasst, verdiente Sterne und wer am fleißigsten war. Einmal pro Woche (Standard: Sonntag 18 Uhr) kommt das als Push. Tag und Uhrzeit stellst du an derselben Stelle ein, `-1` schaltet ihn ab. Für eigene Automationen gibt es das Ereignis `sternchenplan_week_report` und den Dienst `sternchenplan.send_report`.
 
 ## Bonus und Abzug
 
-In der Elternansicht hat jedes Kind unter „Heute“ den Knopf „± Sterne“. Damit gibst du Extra-Sterne („Oma beim Tragen geholfen“) oder ziehst welche ab („Streit“). Fertige Schnellknöpfe legst du im Reiter „Aufgaben“ unter „Einstellungen“ an. Das Kind bekommt eine Push-Nachricht mit dem Grund und sieht den Verlauf in seiner Ansicht.
+In der Elternansicht hat jedes Kind unter „Heute“ den Knopf „± Sterne“. Damit gibst du Extra-Sterne („Oma beim Tragen geholfen“) oder ziehst welche ab („Streit“). Fertige Schnellknöpfe legst du im Reiter „Einstellungen“ an. Das Kind bekommt eine Push-Nachricht mit dem Grund und sieht den Verlauf in seiner Ansicht.
 
 Ein Abzug geht nie unter null und kostet kein Level: Was ein Kind erreicht hat, bleibt. Bonus-Sterne zählen dagegen fürs Level und fürs Familienziel. Für Automationen gibt es den Dienst `sternchenplan.give_stars` und das Ereignis `sternchenplan_stars`.
 
@@ -176,11 +174,41 @@ Jede Aufgabe kann mit einem Gerät oder Sensor aus Home Assistant verbunden werd
 
 - **In einer Minute startklar:** Ist noch nichts angelegt, schlägt Sternchenplan unter „Heute“ ein Startpaket nach Alter vor: gemeinsame Aufgaben reihum (Tisch decken, Spülmaschine, Müll, Staubsaugen), eigene je Kind (Bett machen, Zimmer) und vier Belohnungen. Ein Tipp auf „Alles anlegen“ genügt.
 - **Kurzes Formular:** Für eine neue Aufgabe reichen Name, wer, wie oft und Sterne. Alles Weitere steht unter „Mehr Optionen“. Ohne Frist nimmt Sternchenplan 18 Uhr.
-- **❓ Hilfe:** Der Knopf oben erklärt jeden Reiter in einem Satz.
+- **💡 Hilfe-Tipps:** Unter „Einstellungen“ eingeschaltet, erklärt ein Satz oben jeden Reiter.
 
 ## Designs zum Aussuchen
 
-Jedes Kind wählt unten in seiner Ansicht unter „🎨 Mein Design“ sein eigenes Aussehen: 🚀 Weltraum, 🌴 Dschungel, 🐠 Ozean, 🍭 Bonbon oder ✨ Klar. Eltern finden den 🎨-Knopf oben in der Reiterleiste und können zusätzlich „Elegant“ wählen. Die Wahl wird in Home Assistant gespeichert und gilt auf jedem Gerät. Per Dienst geht es auch: `sternchenplan.set_theme`.
+Jedes Kind wählt in seinem Reiter „🙂 Ich“ unter „🎨 Mein Design“ sein eigenes Aussehen: 🚀 Weltraum, 🌴 Dschungel, 🐠 Ozean, 🍭 Bonbon oder ✨ Klar. Eltern finden ihr Design unter „Einstellungen“ und können zusätzlich „Elegant“ wählen. Die Wahl wird in Home Assistant gespeichert und gilt auf jedem Gerät. Per Dienst geht es auch: `sternchenplan.set_theme`.
+
+## Extras: Was ihr nutzen wollt
+
+Im Willkommens-Assistenten (Schritt 2) und später im Reiter **Einstellungen** schaltet ihr an oder aus, was ihr braucht. Was aus ist, verschwindet aus der Ansicht. Nichts davon ist Pflicht, und jede Wahl lässt sich später wieder ändern, auch die Foto- und Push-Einstellungen aus dem Assistenten (Einstellungen → Datenschutz).
+
+- **🏆 Level und Abzeichen:** Level, Serien (🔥) und Abzeichen. Aus: keine Level-Leiste, keine Abzeichen, keine Level-Pushes.
+- **🤝 Geschwistern helfen:** Abends Aufgaben der Geschwister übernehmen und mehr Sterne holen. Aus: Übernehmen ist auch per Dienst gesperrt.
+
+- **🐉 Sternchen-Haustier:** Jedes Kind sucht sich ein Tier aus (Drache, Katze, Hund, Einhorn, Dino, Panda, Fuchs, Eule) und gibt ihm einen Namen. Es schlüpft aus dem Ei und wächst mit jedem Level. Es freut sich, wenn alles geschafft ist, hat Hunger, wenn noch etwas offen ist, ist traurig bei Überfälligem und schläft nachts.
+- **💡 Zimmerlampe als Ampel:** Pro Person eine Lampe. Sie leuchtet ein paar Sekunden orange bei Erinnerungen und überfälligen Aufgaben und grün, wenn heute alles geschafft ist. Danach ist sie wieder genau wie vorher. Zwischen 21 und 7 Uhr bleibt sie in Ruhe.
+- **📺 Bildschirmzeit verdienen:** Eltern legen fest, wie viele Minuten ein Stern wert ist und wie viel höchstens pro Tag geht, und wählen pro Kind Geräte (Fernseher-Steckdose, Konsole, Internet-Schalter). Das Kind tauscht Sterne gegen 10, 20, 30 oder 60 Minuten. Die Geräte gehen an und danach wieder aus, 5 Minuten vorher kommt ein Hinweis. Bei überfälligen Aufgaben gibt es keine Bildschirmzeit.
+- **🧺 Geräte melden Aufgaben:** Aufgaben mit Wiederholung „bei Bedarf“ ruhen, bis ein Gerät sie fällig macht (unter „Das Haus prüft selbst“ → „Jetzt dran, wenn …“, z. B. Waschmaschine fertig). Wer dran ist, bekommt sofort Bescheid und hat 2 Stunden Zeit. Reihum geht es danach weiter. Eltern können sie auch per Knopf oder Dienst `sternchenplan.trigger_chore` fällig machen.
+- **🗳️ Familienrat:** Eltern stellen eine Frage mit 2 bis 6 Möglichkeiten. Alle stimmen ab, auch die Eltern. Sind alle fertig oder ist die Zeit um, bekommen alle das Ergebnis per Push.
+- **🏅 Monatsurkunde:** Am Monatsersten gibt es pro Kind eine Urkunde mit erledigten Aufgaben, Sternen, bester Serie, Lieblingsaufgabe und neuen Abzeichen, zum Ansehen und Ausdrucken.
+- **👨‍👩‍👧 Eltern machen mit:** Eltern mit eigenen Aufgaben erscheinen bei „Heute“, in der Wochenwertung und auf der Urkunde. Ihre Sterne zählen fürs Familienziel.
+- **💶 Taschengeld** und **🎯 Familienziel** lassen sich ebenfalls abschalten.
+
+Neue Ereignisse für eigene Automationen: `sternchenplan_all_done`, `sternchenplan_screen_start`, `sternchenplan_screen_ending`, `sternchenplan_screen_over`, `sternchenplan_vote_started`, `sternchenplan_vote_result`, `sternchenplan_month_report`.
+
+## Fotogalerie
+
+Behaltet ihr Fotos (Einstellungen → Datenschutz → „Fotos nach dem Freigeben löschen“ aus), sammelt Sternchenplan sie im Eltern-Reiter **Familie** unter „📷 Fotos“: neueste zuerst, mit Aufgabe, Kind und Uhrzeit, filterbar nach Kind. Ein Tipp öffnet das Foto groß, mit Blättern und Löschen. Die Galerie sehen nur Eltern, die Links gelten jeweils eine Stunde. Nach der Löschfrist (Integrations-Optionen) verschwinden Fotos automatisch, auch aus der Galerie. Wird eine Person gelöscht, gehen alle ihre Fotos mit. Dienst: `sternchenplan.delete_photo`.
+
+## Datenschutz
+
+- **Alles bleibt zu Hause.** Sternchenplan läuft komplett in eurem Home Assistant. Es gibt keine Cloud, kein Konto und keine Statistik, und die Integration schickt nichts ins Internet.
+- **Fotos** sehen nur Eltern, über Links, die eine Stunde gelten. Standardmäßig werden sie nach der Entscheidung gelöscht, sonst nach der eingestellten Frist.
+- **Sparsame Push-Nachrichten:** Pushes ans Handy laufen über Google (Android) bzw. Apple (iPhone). Eingeschaltet (im Assistenten oder unter Einstellungen → Datenschutz) stehen darin keine Namen, Aufgaben oder Fotos mehr, nur „Schau in Sternchenplan nach“. Die Knöpfe zum Freigeben bleiben. Hinweis: Ansagen über Alexa laufen über Amazon.
+- **Daten einer Person:** Unter Einstellungen → Datenschutz lässt sich alles über eine Person als Datei exportieren oder komplett löschen (Verlauf, Sterne, Taschengeld, Einlösungen, Fotos). Dienst: `sternchenplan.forget_member`.
+- **Alles löschen:** Wer die Integration entfernt, löscht damit alle Familiendaten.
 
 ## Trinkgeld
 
@@ -201,8 +229,8 @@ readonly: false   # true: nur anzeigen, z. B. Küchen-Tablet
 title: Sternchenplan
 ```
 
-- **Kinder** sehen ihre Aufgaben für heute, Punkte und einen Erledigt-Knopf (bei Fotopflicht „Foto & erledigt“). Ab 16:30 erscheint „Geschwistern helfen“ mit Aufgaben, die sie übernehmen können.
-- **Eltern** sehen Reiter für Heute (alle Kinder, für ein Kind abhaken), Freigaben, Aufgaben (anlegen, bearbeiten, löschen) und Abwesend (eintragen, beenden). Bei Freigaben sehen Eltern das Foto als Vorschau.
+- **Kinder** haben drei Reiter: **✅ Heute** zeigt nur, was noch offen ist, mit Erledigt-Knopf (bei Fotopflicht „Foto & erledigt“). Was geschafft ist, klappt unter „✓ 3 heute geschafft“ zusammen. Ab 16:30 erscheint „Geschwistern helfen“. **🎁 Belohnen** zeigt Sparziel, Familienziel, Bildschirmzeit, Belohnungen und Taschengeld (die Zahl am Reiter sagt, wie viele Belohnungen schon drin sind). **🙂 Ich** zeigt Haustier, Level, Abzeichen, Verlauf und Design.
+- **Eltern** haben fünf Reiter: **Heute** (Überblick, Freigaben mit Foto-Vorschau, jedes Kind als kompakte Karte mit „2 offen · Als Nächstes …“, ein Tipp klappt die Aufgaben auf), **Aufgaben**, **Belohnungen**, **Familie** (Ferien, Abwesenheit, Taschengeld) und **Einstellungen** (Wetter, Wochenbericht, Schnellknöpfe, Design, Hilfe-Tipps, Zusatzfunktionen, Datenschutz). Abwesend melden geht auch direkt über das ⋯-Menü beim Kind. Auf dem Handy passen alle fünf Reiter ohne Wischen nebeneinander.
 
 ## Rechte (serverseitig geprüft)
 

@@ -24,6 +24,8 @@ from .const import (
     DEFAULT_REMINDER_TIMES,
 )
 from .actions import async_ask_parents
+from .lamp import GREEN, ORANGE, async_flash
+from .privacy import scrub
 from .core import ChoreState, Family, Role
 
 if TYPE_CHECKING:
@@ -53,6 +55,17 @@ _TEXT = {
         "week_empty": "Diese Woche wurde nichts erledigt.",
         "bonus": "⭐ +{stars} Bonus: {reason}",
         "penalty": "⚠️ {stars} Sterne: {reason}",
+        "screen_start": "📺 Viel Spaß! {minutes} Minuten Bildschirmzeit laufen.",
+        "screen_ending": "⏳ Noch 5 Minuten Bildschirmzeit.",
+        "screen_over": "📺 Die Bildschirmzeit ist um.",
+        "demand": "🔔 Jetzt bist du dran: {chore}",
+        "vote_started": "🗳️ Familienrat: {question} Stimm in Sternchenplan ab!",
+        "vote_result": "🗳️ Familienrat entschieden: {winner}",
+        "vote_tie": "🗳️ Familienrat: Gleichstand zwischen {list}. Ihr müsst noch mal reden.",
+        "month_title": "🏅 Urkunden für {month}",
+        "month_text": "Die Monatsurkunden sind da. Schaut sie euch in Sternchenplan an!",
+        "months": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August",
+                   "September", "Oktober", "November", "Dezember"],
     },
     "en": {
         "title": "Sternchenplan",
@@ -75,6 +88,17 @@ _TEXT = {
         "week_empty": "Nothing was done this week.",
         "bonus": "⭐ +{stars} bonus: {reason}",
         "penalty": "⚠️ {stars} stars: {reason}",
+        "screen_start": "📺 Have fun! {minutes} minutes of screen time started.",
+        "screen_ending": "⏳ 5 minutes of screen time left.",
+        "screen_over": "📺 Screen time is over.",
+        "demand": "🔔 Your turn now: {chore}",
+        "vote_started": "🗳️ Family vote: {question} Vote in Sternchenplan!",
+        "vote_result": "🗳️ The family decided: {winner}",
+        "vote_tie": "🗳️ Family vote: a tie between {list}. Time to talk again.",
+        "month_title": "🏅 Certificates for {month}",
+        "month_text": "This month's certificates are ready. Have a look in Sternchenplan!",
+        "months": ["January", "February", "March", "April", "May", "June", "July", "August",
+                   "September", "October", "November", "December"],
     },
 }
 
@@ -118,7 +142,54 @@ def level_title(hass: HomeAssistant, level: int) -> str:
 async def async_celebrate(hass: HomeAssistant, family: Family, events: list[dict]) -> None:
     """Neue Level und Abzeichen: Ereignis für eigene Automationen und Push ans Kind."""
     text = _text(hass)
+    flashed: set[str] = set()
     for event in events:
+        kind = event["type"]
+        if kind in ("level", "badge") and not family.has("levels"):
+            continue
+        if kind in ("all_done", "overdue"):
+            member = family.members.get(event["member"])
+            if member and member.lamp and family.has("lamp") and member.id not in flashed:
+                flashed.add(member.id)
+                await async_flash(hass, member.lamp, GREEN if kind == "all_done" else ORANGE)
+            if kind == "all_done" and member:
+                hass.bus.async_fire(
+                    "sternchenplan_all_done", {"member": member.name, "member_id": member.id}
+                )
+            continue
+        if kind == "demand":
+            for member_id in event["members"]:
+                member = family.members.get(member_id)
+                if member is None:
+                    continue
+                if member.notify_service:
+                    await _notify(hass, member.notify_service, text["title"],
+                                  text["demand"].format(chore=event["name"]))
+                if member.lamp and family.has("lamp"):
+                    await async_flash(hass, member.lamp, ORANGE)
+            continue
+        if kind in ("vote_started", "vote_result"):
+            if kind == "vote_started":
+                message = text["vote_started"].format(question=event["question"])
+            elif event["winner"]:
+                message = text["vote_result"].format(winner=event["winner"])
+            else:
+                message = text["vote_tie"].format(list=", ".join(event["tie"]) or "–")
+            hass.bus.async_fire(f"sternchenplan_{kind}", dict(event))
+            for m in family.members.values():
+                if m.notify_service:
+                    await _notify(hass, m.notify_service, text["title"], message)
+            continue
+        if kind in ("screen_start", "screen_ending", "screen_over"):
+            member = family.members.get(event["member"])
+            if member and member.notify_service:
+                await _notify(hass, member.notify_service, text["title"],
+                              text[kind].format(minutes=event.get("minutes", "")))
+            if member:
+                hass.bus.async_fire(
+                    f"sternchenplan_{kind}", {"member": member.name, "member_id": member.id}
+                )
+            continue
         if event["type"] in ("needs_approval", "redeemed"):
             await async_ask_parents(hass, family, event)
             continue
@@ -288,7 +359,7 @@ async def _notify(hass: HomeAssistant, service: str, title: str, message: str) -
         _LOGGER.warning("Benachrichtigungsdienst notify.%s gibt es nicht", service)
         return
     await hass.services.async_call(
-        "notify", service, {"title": title, "message": message}, blocking=False
+        "notify", service, scrub(hass, {"title": title, "message": message}), blocking=False
     )
 
 
@@ -319,6 +390,20 @@ async def async_send_week_report(hass: HomeAssistant, family: Family, now: datet
             await _notify(hass, member.notify_service, text["week_title"], message)
 
 
+async def async_send_month_note(hass: HomeAssistant, family: Family, today) -> None:
+    """Am Monatsersten: Hinweis an alle, dass die Urkunden fertig sind."""
+    text = _text(hass)
+    year, month = family.previous_month(today)
+    title = text["month_title"].format(month=text["months"][month - 1])
+    hass.bus.async_fire(
+        "sternchenplan_month_report",
+        {"year": year, "month": month, "report": family.month_report(year, month)},
+    )
+    for m in family.members.values():
+        if m.notify_service:
+            await _notify(hass, m.notify_service, title, text["month_text"])
+
+
 @callback
 def async_setup_reminders(
     hass: HomeAssistant, entry: SternchenplanConfigEntry
@@ -345,6 +430,8 @@ def async_setup_reminders(
                 continue
             if message := child_message(hass, family, member.id, now):
                 await _notify(hass, member.notify_service, _text(hass)["title"], message)
+                if member.lamp and family.has("lamp"):
+                    await async_flash(hass, member.lamp, ORANGE)
 
     async def summary_for_parents(now: datetime) -> None:
         family = entry.runtime_data.family
@@ -367,7 +454,17 @@ def async_setup_reminders(
         if family.report_day == local.weekday() and family.report_hour == local.hour:
             await async_send_week_report(hass, family, dt_util.utcnow())
 
-    unsubs = [async_track_time_change(hass, week_report, minute=0, second=0)]
+    async def month_certificates(now: datetime) -> None:
+        family = entry.runtime_data.family
+        local = dt_util.now()
+        if local.day != 1 or not family.has("certificate"):
+            return
+        await async_send_month_note(hass, family, local.date())
+
+    unsubs = [
+        async_track_time_change(hass, week_report, minute=0, second=0),
+        async_track_time_change(hass, month_certificates, hour=9, minute=0, second=0),
+    ]
     unsubs += [
         async_track_time_change(hass, remind_children, hour=t.hour, minute=t.minute, second=0)
         for t in child_times

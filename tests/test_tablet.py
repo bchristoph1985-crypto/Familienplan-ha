@@ -135,13 +135,7 @@ async def test_tablet_im_assistenten(hass: HomeAssistant, hass_admin_user, hass_
     flow = await hass.config_entries.flow.async_configure(
         flow["flow_id"], {"tablet": ["person.kueche"], "tablet_approval": True}
     )
-    assert flow["step_id"] == "ages"
-    assert [str(k) for k in flow["data_schema"].schema] == ["Lucas"]
-    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"Lucas": 12})
-    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"starters": []})
-    flow = await hass.config_entries.flow.async_configure(flow["flow_id"], {"rewards": []})
-    result = await hass.config_entries.flow.async_configure(flow["flow_id"], {"photo_privacy": "delete"})
-    assert result["type"] == "create_entry"
+    assert flow["type"] == "create_entry"
     await hass.async_block_till_done()
     family = hass.config_entries.async_entries(DOMAIN)[0].runtime_data.family
     assert {m.name for m in family.members.values()} == {"Benni", "Lucas"}

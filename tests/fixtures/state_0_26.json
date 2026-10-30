@@ -1,0 +1,422 @@
+{
+ "members": [
+  {
+   "id": "07832c16bc424eaba28f668e4c3e7665",
+   "name": "Papa",
+   "role": "parent",
+   "user_id": "u-papa",
+   "notify_service": null,
+   "points": 0,
+   "away_from": null,
+   "away_until": null,
+   "substitute_id": null,
+   "devices": [],
+   "pass_until": null,
+   "birth_year": null,
+   "progress": {
+    "earned": 0,
+    "done": 0,
+    "taken_over": 0,
+    "photos": 0,
+    "early": 0,
+    "redeemed": 0,
+    "streak": 0,
+    "best_streak": 0,
+    "streak_day": null,
+    "badges": {}
+   },
+   "goal_reward_id": null,
+   "goal_ready_told": false,
+   "money": 0,
+   "allowance": 0,
+   "allowance_paid": null,
+   "picture_mode": false
+  },
+  {
+   "id": "5b1aec03393e47838498e83f6dc5ed72",
+   "name": "Mia",
+   "role": "child",
+   "user_id": "u-mia",
+   "notify_service": null,
+   "points": 29,
+   "away_from": null,
+   "away_until": null,
+   "substitute_id": null,
+   "devices": [],
+   "pass_until": null,
+   "birth_year": null,
+   "progress": {
+    "earned": 3,
+    "done": 1,
+    "taken_over": 0,
+    "photos": 1,
+    "early": 0,
+    "redeemed": 1,
+    "streak": 1,
+    "best_streak": 1,
+    "streak_day": "2026-10-27",
+    "badges": {
+     "first": "2026-10-27T15:00:00+00:00",
+     "reward1": "2026-10-27T15:00:00+00:00"
+    }
+   },
+   "goal_reward_id": null,
+   "goal_ready_told": false,
+   "money": 0,
+   "allowance": 0,
+   "allowance_paid": null,
+   "picture_mode": false
+  },
+  {
+   "id": "316d7a2b60e64768bd2ddd43ad769dc1",
+   "name": "Ben",
+   "role": "child",
+   "user_id": null,
+   "notify_service": null,
+   "points": 29,
+   "away_from": null,
+   "away_until": null,
+   "substitute_id": null,
+   "devices": [],
+   "pass_until": null,
+   "birth_year": null,
+   "progress": {
+    "earned": 1,
+    "done": 1,
+    "taken_over": 0,
+    "photos": 0,
+    "early": 0,
+    "redeemed": 1,
+    "streak": 1,
+    "best_streak": 1,
+    "streak_day": "2026-10-27",
+    "badges": {
+     "first": "2026-10-27T15:00:00+00:00",
+     "reward1": "2026-10-27T15:00:00+00:00"
+    }
+   },
+   "goal_reward_id": null,
+   "goal_ready_told": false,
+   "money": 0,
+   "allowance": 0,
+   "allowance_paid": null,
+   "picture_mode": false
+  },
+  {
+   "id": "35c8af5ab54e4fc59a39dc57b42c5c7c",
+   "name": "Lena",
+   "role": "child",
+   "user_id": "u-lena",
+   "notify_service": null,
+   "points": 30,
+   "away_from": null,
+   "away_until": null,
+   "substitute_id": null,
+   "devices": [],
+   "pass_until": null,
+   "birth_year": null,
+   "progress": {
+    "earned": 0,
+    "done": 0,
+    "taken_over": 0,
+    "photos": 0,
+    "early": 0,
+    "redeemed": 0,
+    "streak": 0,
+    "best_streak": 0,
+    "streak_day": null,
+    "badges": {}
+   },
+   "goal_reward_id": null,
+   "goal_ready_told": false,
+   "money": 0,
+   "allowance": 0,
+   "allowance_paid": null,
+   "picture_mode": false
+  }
+ ],
+ "chores": [
+  {
+   "id": "7b3ed89b6af5423a8cdd738719fca01e",
+   "name": "Tisch decken",
+   "assignees": [
+    "5b1aec03393e47838498e83f6dc5ed72",
+    "316d7a2b60e64768bd2ddd43ad769dc1",
+    "35c8af5ab54e4fc59a39dc57b42c5c7c"
+   ],
+   "points": 2,
+   "recurrence": "daily",
+   "due": "2026-10-27T17:00:00+00:00",
+   "rotation": true,
+   "rotation_index": 0,
+   "requires_approval": false,
+   "requires_photo": false,
+   "min_age": 0,
+   "claim_multiplier": 1,
+   "claim_taken_from": null,
+   "photo": null,
+   "state": "overdue",
+   "claimed_by": null,
+   "last_completed_by": null,
+   "last_completed_at": null,
+   "history": [
+    {
+     "event": "missed",
+     "member": "5b1aec03393e47838498e83f6dc5ed72",
+     "at": "2026-10-27T20:00:00+00:00"
+    }
+   ],
+   "steps": [],
+   "steps_done": [],
+   "weekdays": [],
+   "icon": "",
+   "outdoor": false,
+   "weather_shift": 0,
+   "tag_id": "",
+   "done_entity": "",
+   "done_state": "",
+   "start_entity": "",
+   "start_state": ""
+  },
+  {
+   "id": "915c3d62a3c84c72ae300fb16d971887",
+   "name": "Zimmer",
+   "assignees": [
+    "5b1aec03393e47838498e83f6dc5ed72"
+   ],
+   "points": 3,
+   "recurrence": "daily",
+   "due": "2026-10-28T12:00:00+00:00",
+   "rotation": false,
+   "rotation_index": 0,
+   "requires_approval": false,
+   "requires_photo": true,
+   "min_age": 0,
+   "claim_multiplier": 1,
+   "claim_taken_from": null,
+   "photo": "old.jpg",
+   "state": "open",
+   "claimed_by": null,
+   "last_completed_by": "5b1aec03393e47838498e83f6dc5ed72",
+   "last_completed_at": "2026-10-27T15:00:00+00:00",
+   "history": [
+    {
+     "event": "completed",
+     "member": "5b1aec03393e47838498e83f6dc5ed72",
+     "at": "2026-10-27T15:00:00+00:00",
+     "points": 3
+    }
+   ],
+   "steps": [],
+   "steps_done": [],
+   "weekdays": [],
+   "icon": "",
+   "outdoor": false,
+   "weather_shift": 0,
+   "tag_id": "",
+   "done_entity": "",
+   "done_state": "",
+   "start_entity": "",
+   "start_state": ""
+  },
+  {
+   "id": "ae7e20683d0a4ec0830abfc5aad81911",
+   "name": "M\u00fcll",
+   "assignees": [
+    "316d7a2b60e64768bd2ddd43ad769dc1"
+   ],
+   "points": 1,
+   "recurrence": "weekly",
+   "due": "2026-11-05T15:00:00+00:00",
+   "rotation": false,
+   "rotation_index": 0,
+   "requires_approval": true,
+   "requires_photo": false,
+   "min_age": 0,
+   "claim_multiplier": 1,
+   "claim_taken_from": null,
+   "photo": null,
+   "state": "open",
+   "claimed_by": null,
+   "last_completed_by": "316d7a2b60e64768bd2ddd43ad769dc1",
+   "last_completed_at": "2026-10-27T15:00:00+00:00",
+   "history": [
+    {
+     "event": "completed",
+     "member": "316d7a2b60e64768bd2ddd43ad769dc1",
+     "at": "2026-10-27T15:00:00+00:00",
+     "points": 1
+    }
+   ],
+   "steps": [],
+   "steps_done": [],
+   "weekdays": [],
+   "icon": "",
+   "outdoor": false,
+   "weather_shift": 0,
+   "tag_id": "",
+   "done_entity": "",
+   "done_state": "",
+   "start_entity": "",
+   "start_state": ""
+  },
+  {
+   "id": "e3542f3f6849436391ffef95006dfb54",
+   "name": "Bad",
+   "assignees": [
+    "35c8af5ab54e4fc59a39dc57b42c5c7c",
+    "5b1aec03393e47838498e83f6dc5ed72"
+   ],
+   "points": 1,
+   "recurrence": "daily",
+   "due": "2026-10-26T15:00:00+00:00",
+   "rotation": true,
+   "rotation_index": 0,
+   "requires_approval": false,
+   "requires_photo": false,
+   "min_age": 0,
+   "claim_multiplier": 1,
+   "claim_taken_from": null,
+   "photo": null,
+   "state": "overdue",
+   "claimed_by": null,
+   "last_completed_by": null,
+   "last_completed_at": null,
+   "history": [
+    {
+     "event": "missed",
+     "member": "35c8af5ab54e4fc59a39dc57b42c5c7c",
+     "at": "2026-10-27T20:00:00+00:00"
+    }
+   ],
+   "steps": [],
+   "steps_done": [],
+   "weekdays": [],
+   "icon": "",
+   "outdoor": false,
+   "weather_shift": 0,
+   "tag_id": "",
+   "done_entity": "",
+   "done_state": "",
+   "start_entity": "",
+   "start_state": ""
+  },
+  {
+   "id": "cbb7965819794ddb869fa685a4e96d1a",
+   "name": "Einmal",
+   "assignees": [
+    "316d7a2b60e64768bd2ddd43ad769dc1"
+   ],
+   "points": 1,
+   "recurrence": "biweekly",
+   "due": "2026-10-27T16:00:00+00:00",
+   "rotation": false,
+   "rotation_index": 0,
+   "requires_approval": false,
+   "requires_photo": false,
+   "min_age": 0,
+   "claim_multiplier": 1,
+   "claim_taken_from": null,
+   "photo": null,
+   "state": "overdue",
+   "claimed_by": null,
+   "last_completed_by": null,
+   "last_completed_at": null,
+   "history": [
+    {
+     "event": "missed",
+     "member": "316d7a2b60e64768bd2ddd43ad769dc1",
+     "at": "2026-10-27T20:00:00+00:00"
+    }
+   ],
+   "steps": [],
+   "steps_done": [],
+   "weekdays": [],
+   "icon": "",
+   "outdoor": false,
+   "weather_shift": 0,
+   "tag_id": "",
+   "done_entity": "",
+   "done_state": "",
+   "start_entity": "",
+   "start_state": ""
+  }
+ ],
+ "locked": {
+  "316d7a2b60e64768bd2ddd43ad769dc1": [
+   "switch.ps5"
+  ]
+ },
+ "rewards": [
+  {
+   "id": "518f08ef99b6425786a885169caad8d1",
+   "name": "Kino",
+   "cost": 1,
+   "members": []
+  },
+  {
+   "id": "d1ce93d8c27a42dc8058fdef130cec48",
+   "name": "Eis",
+   "cost": 1,
+   "members": [
+    "5b1aec03393e47838498e83f6dc5ed72"
+   ]
+  }
+ ],
+ "redemptions": [
+  {
+   "id": "c202c284ad274935b289174ed1706834",
+   "reward_id": "518f08ef99b6425786a885169caad8d1",
+   "reward_name": "Kino",
+   "member_id": "316d7a2b60e64768bd2ddd43ad769dc1",
+   "cost": 1,
+   "requested_at": "2026-10-27T15:00:00+00:00",
+   "state": "pending",
+   "decided_at": null
+  },
+  {
+   "id": "12bf58cf45cf4afd972da9d50d51e23b",
+   "reward_id": "d1ce93d8c27a42dc8058fdef130cec48",
+   "reward_name": "Eis",
+   "member_id": "5b1aec03393e47838498e83f6dc5ed72",
+   "cost": 1,
+   "requested_at": "2026-10-27T15:00:00+00:00",
+   "state": "approved",
+   "decided_at": "2026-10-27T15:00:00+00:00"
+  }
+ ],
+ "tablet_users": [],
+ "tablet_approval": false,
+ "goal": null,
+ "money_rate": 0,
+ "payday": 6,
+ "money_log": [],
+ "pause_from": null,
+ "pause_until": null,
+ "weather_entity": null,
+ "report_day": 6,
+ "report_hour": 18,
+ "star_log": [],
+ "presets": [
+  {
+   "id": "7d34add0",
+   "name": "Extra geholfen",
+   "stars": 3
+  },
+  {
+   "id": "8e5c88b6",
+   "name": "Besonders lieb",
+   "stars": 2
+  },
+  {
+   "id": "2b0b2c83",
+   "name": "Nicht geh\u00f6rt",
+   "stars": -1
+  },
+  {
+   "id": "04504f33",
+   "name": "Streit",
+   "stars": -2
+  }
+ ]
+}

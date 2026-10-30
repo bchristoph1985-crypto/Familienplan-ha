@@ -13,6 +13,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_PHOTO_DELETE_AFTER_REVIEW,
     ATTR_ASSIGNEES,
     ATTR_CHORE_ID,
     ATTR_DEVICES,
@@ -73,8 +74,10 @@ from .const import (
     SERVICE_SET_PAUSE,
     SERVICE_SET_PICTURE_MODE,
     SERVICE_SET_THEME,
+    SERVICE_SET_PHOTO_PRIVACY,
     ATTR_ENABLED,
     ATTR_THEME,
+    ATTR_DELETE,
     ATTR_ICON,
     ATTR_OUTDOOR,
     ATTR_ENTITY,
@@ -99,10 +102,35 @@ from .const import (
     SERVICE_SET_ALLOWANCE,
     SERVICE_SET_MONEY,
 )
+from .const import (
+    ATTR_FEATURES,
+    ATTR_HOURS,
+    ATTR_MAX_MINUTES,
+    ATTR_MINUTES,
+    ATTR_OPTION,
+    ATTR_OPTIONS,
+    ATTR_PET,
+    ATTR_QUESTION,
+    SERVICE_BUY_SCREEN_TIME,
+    SERVICE_CAST_VOTE,
+    SERVICE_END_VOTE,
+    SERVICE_SET_FEATURES,
+    SERVICE_SET_LAMP,
+    SERVICE_SET_PET,
+    SERVICE_SET_SCREEN,
+    SERVICE_SET_SCREEN_DEVICES,
+    SERVICE_START_VOTE,
+    SERVICE_STOP_SCREEN_TIME,
+    SERVICE_TRIGGER_CHORE,
+    SERVICE_FORGET_MEMBER,
+    SERVICE_DELETE_PHOTO,
+    ATTR_FILE,
+    SERVICE_SET_PRIVATE_PUSH,
+)
 from .consequences import next_release
 from .reminders import async_send_week_report, weather_is_bad
 from .takeover import takeover_terms
-from .core import THEMES, Actor, FamilyError, PermissionDenied, Recurrence
+from .core import FEATURES, PETS, THEMES, Actor, FamilyError, PermissionDenied, Recurrence
 
 if TYPE_CHECKING:
     from . import SternchenplanData
@@ -234,6 +262,7 @@ GIVE_STARS_SCHEMA = vol.Schema(
 ADD_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_NAME): cv.string, vol.Required(ATTR_STARS): _STARS})
 DELETE_PRESET_SCHEMA = vol.Schema({vol.Required(ATTR_PRESET_ID): cv.string})
 PICTURE_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_ENABLED): cv.boolean})
+PHOTO_PRIVACY_SCHEMA = vol.Schema({vol.Required(ATTR_DELETE): cv.boolean})
 THEME_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_THEME, default=""): vol.In(THEMES)})
 _EURO = vol.All(vol.Coerce(float), vol.Range(min=-10000, max=10000))
 MONEY_SCHEMA = vol.Schema(
@@ -255,6 +284,37 @@ PAYOUT_SCHEMA = vol.Schema(
 ADJUST_SCHEMA = vol.Schema(
     {vol.Required(ATTR_MEMBER): cv.string, vol.Required(ATTR_AMOUNT): _EURO,
      vol.Optional(ATTR_NOTE, default=""): cv.string}
+)
+
+
+FEATURES_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_FEATURES): vol.All(cv.ensure_list, [vol.In(FEATURES)])}
+)
+PET_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_PET, default=""): vol.In(("", *PETS)),
+     vol.Optional(ATTR_NAME, default=""): cv.string}
+)
+LAMP_SCHEMA = vol.Schema({vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_ENTITY, default=""): cv.string})
+SCREEN_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_RATE): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
+     vol.Optional(ATTR_MAX_MINUTES, default=60): vol.All(vol.Coerce(int), vol.Range(min=5, max=600))}
+)
+SCREEN_DEVICES_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MEMBER): cv.string, vol.Optional(ATTR_DEVICES, default=[]): cv.entity_ids}
+)
+BUY_SCREEN_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_MINUTES): vol.All(vol.Coerce(int), vol.Range(min=5, max=600)),
+     vol.Optional(ATTR_MEMBER): cv.string}
+)
+MEMBER_OPTIONAL_SCHEMA = vol.Schema({vol.Optional(ATTR_MEMBER): cv.string})
+VOTE_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_QUESTION): cv.string,
+     vol.Required(ATTR_OPTIONS): vol.All(cv.ensure_list, [cv.string]),
+     vol.Optional(ATTR_HOURS, default=24): vol.All(vol.Coerce(int), vol.Range(min=1, max=168))}
+)
+CAST_VOTE_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_OPTION): vol.All(vol.Coerce(int), vol.Range(min=0, max=9)),
+     vol.Optional(ATTR_MEMBER): cv.string}
 )
 
 
@@ -385,6 +445,8 @@ def take_over(data, actor, chore_id: str, member_id: str, photo: str | None = No
     """Gemeinsam für Dienst und Foto-Upload."""
     now = dt_util.utcnow()
     allowed, multiplier, max_per_day, day_start = takeover_terms(data.entry, now)
+    if not data.family.has("helping"):
+        raise FamilyError("Geschwistern helfen ist ausgeschaltet.")
     if not allowed and not actor.is_manager:
         raise FamilyError("Übernehmen geht erst später am Tag.")
     data.family.take_over(
@@ -463,9 +525,7 @@ async def _drop_photo(hass, data, chore_id: str, photo: str | None, always: bool
 
     if photo is None or not (always or delete_after_review(data.entry)):
         return
-    chore = data.family.chores.get(chore_id)
-    if chore is not None and chore.photo == photo:
-        chore.photo = None
+    data.family.forget_photos([photo])
     await async_discard(hass, photo)
 
 
@@ -586,6 +646,16 @@ async def _set_theme(hass, call, data, actor) -> None:
     data.family.set_theme(actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_THEME])
 
 
+async def _set_photo_privacy(hass, call, data, actor) -> None:
+    """Fotos nach der Entscheidung löschen oder behalten (Willkommens-Assistent)."""
+    if not actor.is_manager:
+        raise PermissionDenied("Nur Eltern.")
+    hass.config_entries.async_update_entry(
+        data.entry,
+        options={**data.entry.options, CONF_PHOTO_DELETE_AFTER_REVIEW: call.data[ATTR_DELETE]},
+    )
+
+
 async def _set_weather(hass, call, data, actor) -> None:
     data.family.set_weather(actor, call.data[ATTR_ENTITY])
     data.family.bad_weather = weather_is_bad(hass, data.family.weather_entity)
@@ -629,6 +699,71 @@ async def _clear_tag(hass, call, data, actor) -> None:
     data.family.set_tag(actor, call.data[ATTR_CHORE_ID], "")
 
 
+async def _set_private_push(hass, call, data, actor) -> None:
+    data.family.set_private_push(actor, call.data[ATTR_ENABLED])
+
+
+async def _forget_member(hass, call, data, actor) -> None:
+    """Person mit allen Spuren löschen, auch ihre Fotos."""
+    from .photos import async_discard  # noqa: PLC0415
+
+    for photo in data.family.remove_member(actor, _member_id(data, call.data[ATTR_MEMBER])):
+        await async_discard(hass, photo)
+
+
+async def _delete_photo(hass, call, data, actor) -> None:
+    from .photos import async_discard  # noqa: PLC0415
+
+    data.family.delete_photo(actor, call.data[ATTR_FILE])
+    await async_discard(hass, call.data[ATTR_FILE])
+
+
+async def _set_features(hass, call, data, actor) -> None:
+    data.family.set_features(actor, call.data[ATTR_FEATURES])
+
+
+async def _set_pet(hass, call, data, actor) -> None:
+    d = call.data
+    data.family.set_pet(actor, _member_id(data, d[ATTR_MEMBER]), d[ATTR_PET], d[ATTR_NAME])
+
+
+async def _set_lamp(hass, call, data, actor) -> None:
+    data.family.set_lamp(actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_ENTITY])
+
+
+async def _set_screen(hass, call, data, actor) -> None:
+    data.family.set_screen(actor, call.data[ATTR_RATE], call.data[ATTR_MAX_MINUTES])
+
+
+async def _set_screen_devices(hass, call, data, actor) -> None:
+    data.family.set_screen_devices(actor, _member_id(data, call.data[ATTR_MEMBER]), call.data[ATTR_DEVICES])
+
+
+async def _buy_screen(hass, call, data, actor) -> None:
+    data.family.buy_screen_time(actor, _who(data, call, actor), call.data[ATTR_MINUTES], dt_util.utcnow())
+
+
+async def _stop_screen(hass, call, data, actor) -> None:
+    data.family.stop_screen_time(actor, _who(data, call, actor), dt_util.utcnow())
+
+
+async def _trigger_chore(hass, call, data, actor) -> None:
+    data.family.trigger_chore(actor, call.data[ATTR_CHORE_ID], dt_util.utcnow())
+
+
+async def _start_vote(hass, call, data, actor) -> None:
+    d = call.data
+    data.family.start_vote(actor, d[ATTR_QUESTION], d[ATTR_OPTIONS], d[ATTR_HOURS], dt_util.utcnow())
+
+
+async def _cast_vote(hass, call, data, actor) -> None:
+    data.family.cast_vote(actor, _who(data, call, actor), call.data[ATTR_OPTION], dt_util.utcnow())
+
+
+async def _end_vote(hass, call, data, actor) -> None:
+    data.family.end_vote(actor, dt_util.utcnow())
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     for name, handler, schema in (
         (SERVICE_CREATE_CHORE, _create, CREATE_SCHEMA),
@@ -661,6 +796,7 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_END_PAUSE, _end_pause, EMPTY_SCHEMA),
         (SERVICE_SET_PICTURE_MODE, _set_picture_mode, PICTURE_SCHEMA),
         (SERVICE_SET_THEME, _set_theme, THEME_SCHEMA),
+        (SERVICE_SET_PHOTO_PRIVACY, _set_photo_privacy, PHOTO_PRIVACY_SCHEMA),
         (SERVICE_SET_WEATHER, _set_weather, WEATHER_SCHEMA),
         (SERVICE_SET_REPORT, _set_report, REPORT_SCHEMA),
         (SERVICE_SEND_REPORT, _send_report, EMPTY_SCHEMA),
@@ -673,5 +809,19 @@ def async_register_services(hass: HomeAssistant) -> None:
         (SERVICE_EXCHANGE_STARS, _exchange, EXCHANGE_SCHEMA),
         (SERVICE_PAYOUT, _payout, PAYOUT_SCHEMA),
         (SERVICE_ADJUST_MONEY, _adjust_money, ADJUST_SCHEMA),
+        (SERVICE_SET_FEATURES, _set_features, FEATURES_SCHEMA),
+        (SERVICE_SET_PET, _set_pet, PET_SCHEMA),
+        (SERVICE_SET_LAMP, _set_lamp, LAMP_SCHEMA),
+        (SERVICE_SET_SCREEN, _set_screen, SCREEN_SCHEMA),
+        (SERVICE_SET_SCREEN_DEVICES, _set_screen_devices, SCREEN_DEVICES_SCHEMA),
+        (SERVICE_BUY_SCREEN_TIME, _buy_screen, BUY_SCREEN_SCHEMA),
+        (SERVICE_STOP_SCREEN_TIME, _stop_screen, MEMBER_OPTIONAL_SCHEMA),
+        (SERVICE_TRIGGER_CHORE, _trigger_chore, CHORE_SCHEMA),
+        (SERVICE_START_VOTE, _start_vote, VOTE_SCHEMA),
+        (SERVICE_CAST_VOTE, _cast_vote, CAST_VOTE_SCHEMA),
+        (SERVICE_END_VOTE, _end_vote, EMPTY_SCHEMA),
+        (SERVICE_SET_PRIVATE_PUSH, _set_private_push, vol.Schema({vol.Required(ATTR_ENABLED): cv.boolean})),
+        (SERVICE_FORGET_MEMBER, _forget_member, vol.Schema({vol.Required(ATTR_MEMBER): cv.string})),
+        (SERVICE_DELETE_PHOTO, _delete_photo, vol.Schema({vol.Required(ATTR_FILE): cv.string})),
     ):
         hass.services.async_register(DOMAIN, name, _guarded(handler), schema=schema)

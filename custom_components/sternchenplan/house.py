@@ -11,13 +11,15 @@ import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from .const import SIGNAL_UPDATED
-from .core import ChoreState, FamilyError
+from .privacy import scrub
+from .core import SYSTEM, ChoreState, FamilyError, Recurrence
 
 if TYPE_CHECKING:
     from . import SternchenplanConfigEntry
@@ -48,13 +50,17 @@ def async_setup_house(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> l
         service = member.notify_service.removeprefix("notify.")
         if hass.services.has_service("notify", service):
             await hass.services.async_call(
-                "notify", service, {"title": "Sternchenplan", "message": message}, blocking=False
+                "notify", service, scrub(hass, {"title": "Sternchenplan", "message": message}), blocking=False
             )
 
     async def changed(event: Event[EventStateChangedData]) -> None:
         entity_id = event.data["entity_id"]
         new, old = event.data["new_state"], event.data["old_state"]
-        if new is None or (old is not None and old.state == new.state):
+        if new is None or old is None or old.state == new.state:
+            return
+        if old.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+            # Gerät war kurz weg (WLAN, Neustart) und meldet sich zurück: das ist kein
+            # neues Ereignis. Sonst käme „Wäsche aufhängen“ nach jedem Aussetzer erneut.
             return
         now = dt_util.utcnow()
         save = False
@@ -69,6 +75,11 @@ def async_setup_house(hass: HomeAssistant, entry: SternchenplanConfigEntry) -> l
                     save = True
                     await notify(member_id, text["done"].format(chore=chore.name, points=chore.points))
             if chore.start_entity == entity_id and _matches(new.state, chore.start_state):
+                if chore.recurrence is Recurrence.ON_DEMAND:
+                    # Bei Bedarf: Das Gerät macht die Aufgabe fällig, der Push kommt beim Speichern.
+                    if family.has("demand") and family.trigger_chore(SYSTEM, chore.id, now):
+                        save = True
+                    continue
                 if chore.state in (ChoreState.OPEN, ChoreState.OVERDUE):
                     for member_id in family.responsible(chore, now):
                         await notify(member_id, text["start"].format(chore=chore.name))

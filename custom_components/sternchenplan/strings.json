@@ -26,31 +26,6 @@
           "parents": "Parents"
         }
       },
-      "chores": {
-        "title": "What do you want to start with?",
-        "description": "Suggestions that suit your children's ages. Shared chores rotate, children who are too young are skipped. Add your own chores afterwards in the sidebar under Sternchenplan → Chores.",
-        "data": {
-          "starters": "Starter chores"
-        }
-      },
-      "ages": {
-        "title": "How old are the children?",
-        "description": "Age in years. Each child only gets chores that suit their age and automatically moves into new chores as they grow older. You can leave it empty."
-      },
-      "rewards": {
-        "title": "Which rewards are there?",
-        "description": "Children earn points with completed chores and redeem them here. You confirm every redemption. Add your own rewards and prices later under Sternchenplan → Rewards.",
-        "data": {
-          "rewards": "Rewards"
-        }
-      },
-      "photos": {
-        "title": "Photos and privacy",
-        "description": "For chores with photo proof, children take a photo that only parents can see. Photos stay in your Home Assistant and never leave it. You decide per chore whether photo proof is needed; it is off by default.",
-        "data": {
-          "photo_privacy": "What happens to the photos?"
-        }
-      },
       "tablet": {
         "title": "Family tablet",
         "description": "Children without their own phone? Pick the HA account of the shared tablet (e.g. in the kitchen). Children tap their name there and tick off chores. Leave empty if you have no tablet. Parents can always tick off for a child too.",
@@ -190,7 +165,8 @@
         "none": "Once",
         "daily": "Daily",
         "weekly": "Weekly",
-        "biweekly": "Every 2 weeks"
+        "biweekly": "Every 2 weeks",
+        "on_demand": "On demand (a device reports)"
       }
     },
     "starter": {
@@ -905,6 +881,186 @@
         "theme": {
           "name": "Theme",
           "description": "space, jungle, ocean, candy, elegant or empty for Clear."
+        }
+      }
+    },
+    "set_photo_privacy": {
+      "name": "Photo privacy",
+      "description": "Whether proof photos are deleted after a parent decides.",
+      "fields": {
+        "delete": {
+          "name": "Delete",
+          "description": "On: delete after approve or reject. Off: keep."
+        }
+      }
+    },
+    "set_features": {
+      "name": "Features",
+      "description": "Chooses which extra features the family uses.",
+      "fields": {
+        "features": {
+          "name": "Features",
+          "description": "levels, helping, pet, lamp, screen, demand, vote, certificate, parents, money, goal."
+        }
+      }
+    },
+    "set_pet": {
+      "name": "Pet",
+      "description": "Chooses a child's star pet and its name.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        },
+        "pet": {
+          "name": "Pet",
+          "description": "Kind of animal."
+        },
+        "name": {
+          "name": "Name",
+          "description": "The pet's name."
+        }
+      }
+    },
+    "set_lamp": {
+      "name": "Room lamp",
+      "description": "Lamp that briefly shows orange (something open) or green (all done).",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        },
+        "entity": {
+          "name": "Lamp",
+          "description": "Empty turns it off."
+        }
+      }
+    },
+    "set_screen": {
+      "name": "Screen time",
+      "description": "Minutes of screen time per star (0 = off) and the daily maximum.",
+      "fields": {
+        "rate": {
+          "name": "Minutes per star",
+          "description": "0 turns it off."
+        },
+        "max_minutes": {
+          "name": "Per day at most",
+          "description": "Minutes."
+        }
+      }
+    },
+    "set_screen_devices": {
+      "name": "Screen time devices",
+      "description": "Devices that are on during earned screen time (TV plug, console, internet switch).",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        },
+        "devices": {
+          "name": "Devices",
+          "description": "Switches or media players."
+        }
+      }
+    },
+    "buy_screen_time": {
+      "name": "Buy screen time",
+      "description": "A child swaps stars for screen time.",
+      "fields": {
+        "minutes": {
+          "name": "Minutes",
+          "description": "In steps of 5."
+        },
+        "member": {
+          "name": "Member",
+          "description": "Only needed for parents or the family tablet."
+        }
+      }
+    },
+    "stop_screen_time": {
+      "name": "Stop screen time",
+      "description": "Ends running screen time early.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        }
+      }
+    },
+    "trigger_chore": {
+      "name": "Make due now",
+      "description": "Makes an on-demand chore due now, e.g. from an automation.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "ID of the chore."
+        }
+      }
+    },
+    "start_vote": {
+      "name": "Start family vote",
+      "description": "Asks the family a question with 2 to 6 choices.",
+      "fields": {
+        "question": {
+          "name": "Question",
+          "description": "E.g. Where do we go on Saturday?"
+        },
+        "options": {
+          "name": "Choices",
+          "description": "2 to 6."
+        },
+        "hours": {
+          "name": "Open for",
+          "description": "Hours."
+        }
+      }
+    },
+    "cast_vote": {
+      "name": "Vote",
+      "description": "Casts a vote in the family vote.",
+      "fields": {
+        "option": {
+          "name": "Choice",
+          "description": "Number of the choice, starting at 0."
+        },
+        "member": {
+          "name": "Member",
+          "description": "Only needed for the family tablet."
+        }
+      }
+    },
+    "end_vote": {
+      "name": "End family vote",
+      "description": "Closes the vote now, or hides a finished result."
+    },
+    "set_private_push": {
+      "name": "Sparing notifications",
+      "description": "No names, chores or photos in push messages (they travel via Google/Apple).",
+      "fields": {
+        "enabled": {
+          "name": "On",
+          "description": ""
+        }
+      }
+    },
+    "forget_member": {
+      "name": "Delete member data",
+      "description": "Removes a member and everything stored about them, including photos.",
+      "fields": {
+        "member": {
+          "name": "Member",
+          "description": "Name or ID."
+        }
+      }
+    },
+    "delete_photo": {
+      "name": "Delete photo",
+      "description": "Deletes a photo from the gallery and from disk. Parents only.",
+      "fields": {
+        "file": {
+          "name": "File",
+          "description": "File name from the gallery."
         }
       }
     }
